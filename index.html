@@ -428,6 +428,54 @@
                                         </div>
                                     )}
                                 </div>
+                           ) : activeTab === 'RANKING' ? (
+                                <div className="bg-[#0a0f1e] rounded-[2.5rem] border border-slate-800 overflow-hidden shadow-2xl">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead className="bg-slate-900/50 border-b border-slate-800">
+                                            <tr>
+                                                <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Puesto</th>
+                                                <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Perfil</th>
+                                                <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Ubicación</th>
+                                                <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Edad</th>
+                                                <th className="px-8 py-6 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest">G2 Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredProfiles.length === 0 ? (
+                                                <tr><td colSpan="5" className="py-20 text-center text-slate-700 font-black italic text-xl uppercase tracking-tighter">No hay perfiles que coincidan</td></tr>
+                                            ) : (
+                                                filteredProfiles.map((p, idx) => (
+                                                    <tr key={p.id} onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} className="hover:bg-cyan-500/5 cursor-pointer transition-colors border-b border-slate-800/50 last:border-0">
+                                                        <td className="px-8 py-5">
+                                                            <span className={`text-lg font-black italic ${idx < 3 ? 'text-cyan-400' : 'text-slate-600'}`}>#{idx + 1}</span>
+                                                        </td>
+                                                        <td className="px-8 py-5">
+                                                            <div className="flex items-center gap-4">
+                                                                <img src={p.fotos[0] || 'https://via.placeholder.com/100'} className="w-12 h-12 rounded-xl object-cover border border-slate-800" />
+                                                                <div>
+                                                                    <p className="font-black text-white text-sm">{p.nombre}</p>
+                                                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{p.profesion || 'Perfil'}</p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-5">
+                                                            <p className="text-xs font-bold text-slate-400">{p.ciudad}</p>
+                                                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">{p.nacionalidad}</p>
+                                                        </td>
+                                                        <td className="px-8 py-5 font-bold text-xs text-slate-400">
+                                                            {calcularEdad(p.fechaNacimiento)} Años
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right">
+                                                            <div className="inline-block bg-cyan-500/10 border border-cyan-500/20 px-4 py-2 rounded-xl">
+                                                                <span className="text-cyan-400 font-black text-lg leading-none">{calcularPromedio(p)}</span>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
                                     {activeTab === 'CATEGORIAS' && selectedCategory && (
@@ -445,9 +493,6 @@
                                         filteredProfiles.map((p, idx) => (
                                             <div key={p.id} onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} className="profile-card group relative bg-slate-900 rounded-[3.5rem] overflow-hidden border border-slate-800 cursor-pointer shadow-xl hover:border-cyan-500/50 transition-all duration-500">
                                                 <div className="aspect-[4/5] bg-slate-950 relative overflow-hidden">
-                                                    {activeTab === 'RANKING' && (
-                                                        <div className="absolute top-6 left-6 z-10 bg-cyan-500 text-white px-4 py-2 rounded-2xl font-black text-xs shadow-lg shadow-cyan-900/50">#{idx + 1}</div>
-                                                    )}
                                                     <img src={p.fotos[0] || 'https://via.placeholder.com/400x500?text=G2+Elite'} className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" />
                                                     
                                                     <div className="absolute top-6 right-6 w-14 h-14 bg-slate-900/90 backdrop-blur-md rounded-full flex flex-col items-center justify-center border border-cyan-500/30">
@@ -664,3 +709,4 @@
     </script>
 </body>
 </html>
+
