@@ -1,0 +1,539 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  LayoutGrid, TrendingUp, Award, FolderHeart, Plus, 
+  Search, X, User, UserPlus, Camera, Star, 
+  ArrowLeft, Trash2, MapPin, Briefcase, 
+  Image as ImageIcon, Upload, ImagePlus, Calendar,
+  Globe, UserCircle, ChevronRight, Cake
+} from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
+import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+
+const apiKey = ""; 
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'g2-elite-db-v5';
+
+const CARACTERISTICAS = [
+  'Ojos', 'Rostro', 'Busto', 'Cola', 'Cintura', 
+  'Cabello', 'Estatura', 'Sensualidad', 'Dulzura', 'Elegancia'
+];
+
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [perfiles, setPerfiles] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [activeTab, setActiveTab] = useState('EXPLORAR');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCatModalOpen, setIsCatModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
+  const [rankingFilters, setRankingFilters] = useState({
+    nacionalidad: '', profesion: '', ciudad: '', edadMin: '', edadMax: '', minScore: 0
+  });
+
+  const [formData, setFormData] = useState({
+    nombre: '', nacionalidad: '', ciudad: '', profesion: '', fechaNacimiento: '', fotos: [],
+    puntuaciones: Object.fromEntries(CARACTERISTICAS.map(c => [c, 0]))
+  });
+
+  const [catFormData, setCatFormData] = useState({
+    label: '', emoji: '📁', coverUrl: '',
+    reglas: { 
+      nacionalidad: '', profesion: '', ciudad: '',
+      edadMin: '', edadMax: '', caracteristica: 'Rostro', 
+      umbral: 0 
+    }
+  });
+
+  useEffect(() => {
+    const init = async () => {
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+      else await signInAnonymously(auth);
+    };
+    init();
+    return onAuthStateChanged(auth, setUser);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const unsubP = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'), (s) => 
+      setPerfiles(s.docs.map(d => ({ ...d.data(), id: d.id }))), (err) => console.error(err));
+    const unsubC = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'categories'), (s) => 
+      setCategorias(s.docs.map(d => ({ ...d.data(), id: d.id }))), (err) => console.error(err));
+    return () => { unsubP(); unsubC(); };
+  }, [user]);
+
+  const handleFileUpload = (e, target) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (target === 'profile') {
+          setFormData(prev => ({ ...prev, fotos: [...prev.fotos, reader.result] }));
+        } else if (target === 'category') {
+          setCatFormData(prev => ({ ...prev, coverUrl: reader.result }));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const calcularEdad = (f) => {
+    if (!f) return null;
+    const d = new Date(f);
+    const hoy = new Date();
+    let e = hoy.getFullYear() - d.getFullYear();
+    const m = hoy.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < d.getDate())) e--;
+    return e;
+  };
+
+  const getPromedio = (p) => {
+    const vals = Object.values(p.puntuaciones);
+    return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+  };
+
+  const checkMatch = (p, r) => {
+    const edad = calcularEdad(p.fechaNacimiento);
+    if (r.nacionalidad && !p.nacionalidad?.toLowerCase().includes(r.nacionalidad.toLowerCase())) return false;
+    if (r.profesion && !p.profesion?.toLowerCase().includes(r.profesion.toLowerCase())) return false;
+    if (r.ciudad && !p.ciudad?.toLowerCase().includes(r.ciudad.toLowerCase())) return false;
+    if (r.edadMin && (edad === null || edad < parseInt(r.edadMin))) return false;
+    if (r.edadMax && (edad === null || edad > parseInt(r.edadMax))) return false;
+    if (r.umbral > 0) {
+      if (p.puntuaciones[r.caracteristica] < r.umbral) return false;
+    }
+    return true;
+  };
+
+  const filteredProfiles = useMemo(() => {
+    let list = perfiles;
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      list = list.filter(p => {
+        const edad = calcularEdad(p.fechaNacimiento)?.toString() || "";
+        return (
+          p.nombre?.toLowerCase().includes(query) ||
+          p.ciudad?.toLowerCase().includes(query) ||
+          p.nacionalidad?.toLowerCase().includes(query) ||
+          p.profesion?.toLowerCase().includes(query) ||
+          edad === query
+        );
+      });
+    }
+
+    if (activeTab === 'RANKING') {
+      list = list.filter(p => {
+        const edad = calcularEdad(p.fechaNacimiento);
+        const prom = parseFloat(getPromedio(p));
+        return (!rankingFilters.nacionalidad || p.nacionalidad?.toLowerCase().includes(rankingFilters.nacionalidad.toLowerCase())) &&
+               (!rankingFilters.profesion || p.profesion?.toLowerCase().includes(rankingFilters.profesion.toLowerCase())) &&
+               (!rankingFilters.ciudad || p.ciudad?.toLowerCase().includes(rankingFilters.ciudad.toLowerCase())) &&
+               (!rankingFilters.edadMin || (edad && edad >= parseInt(rankingFilters.edadMin))) &&
+               (!rankingFilters.edadMax || (edad && edad <= parseInt(rankingFilters.edadMax))) &&
+               (prom >= rankingFilters.minScore);
+      }).sort((a, b) => parseFloat(getPromedio(b)) - parseFloat(getPromedio(a)));
+    }
+
+    if (activeTab === 'CATEGORIAS' && selectedCategory) {
+      const cat = categorias.find(c => c.id === selectedCategory);
+      if (cat) list = list.filter(p => checkMatch(p, cat.reglas));
+    }
+    return list;
+  }, [perfiles, searchQuery, activeTab, selectedCategory, rankingFilters, categorias]);
+
+  const saveProfile = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+    const id = editingId || `p_${Date.now()}`;
+    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', id), formData);
+    setIsModalOpen(false);
+    setEditingId(null);
+  };
+
+  const saveCategory = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', `cat_${Date.now()}`), catFormData);
+    setIsCatModalOpen(false);
+    setCatFormData({ label: '', emoji: '📁', coverUrl: '', reglas: { nacionalidad: '', profesion: '', ciudad: '', edadMin: '', edadMax: '', caracteristica: 'Rostro', umbral: 0 } });
+  };
+
+  const deleteCategory = async (id) => {
+    if (!window.confirm("¿Deseas eliminar esta carpeta permanentemente?")) return;
+    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categories', id));
+    setSelectedCategory(null);
+  };
+
+  const openProfile = (p) => {
+    setFormData(p);
+    setEditingId(p.id);
+    setIsModalOpen(true);
+  };
+
+  return (
+    <div className="flex h-screen bg-[#0f1115] text-slate-200 font-sans overflow-hidden">
+      {/* Sidebar Oscura */}
+      <aside className="w-80 bg-[#16191f] border-r border-white/5 flex flex-col p-8 shadow-2xl shrink-0">
+        <div className="mb-12 text-center">
+          <h1 className="text-6xl font-black text-pink-500 italic tracking-tighter drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">G2</h1>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Elite Database • V5</p>
+        </div>
+
+        <nav className="flex-1 space-y-3">
+          {[
+            { id: 'EXPLORAR', icon: LayoutGrid, label: 'Explorar' },
+            { id: 'RANKING', icon: TrendingUp, label: 'Ranking Élite' },
+            { id: 'CATEGORIAS', icon: FolderHeart, label: 'Mis Carpetas' }
+          ].map(item => (
+            <button 
+              key={item.id} 
+              onClick={() => { setActiveTab(item.id); setSelectedCategory(null); }} 
+              className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-sm transition-all duration-300 ${activeTab === item.id ? 'bg-pink-600 text-white shadow-[0_0_20px_rgba(219,39,119,0.3)]' : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'}`}
+            >
+              <item.icon size={18} /> {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <button 
+          onClick={() => { setEditingId(null); setFormData({nombre:'', nacionalidad:'', ciudad:'', profesion:'', fechaNacimiento:'', fotos:[], puntuaciones:Object.fromEntries(CARACTERISTICAS.map(c=>[c,0]))}); setIsModalOpen(true); }} 
+          className="mt-8 bg-white text-[#0f1115] py-5 rounded-2xl font-black uppercase text-[11px] hover:bg-pink-500 hover:text-white transition-all flex items-center justify-center gap-2 shadow-xl shadow-white/5 active:scale-95"
+        >
+          <Plus size={16} /> Agregar Talento
+        </button>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-24 bg-[#0f1115]/80 backdrop-blur-xl border-b border-white/5 flex items-center px-12 justify-between shrink-0 z-10">
+          <div className="relative w-full max-w-2xl group">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-pink-500 transition-colors" size={20} />
+            <input 
+              type="text" 
+              placeholder="Busca por nombre, ciudad, país, profesión o edad..." 
+              className="w-full bg-[#1c1f26] border border-white/5 py-4 pl-16 pr-8 rounded-2xl text-sm text-white outline-none focus:ring-2 focus:ring-pink-500/50 transition-all placeholder:text-slate-600" 
+              value={searchQuery} 
+              onChange={e => setSearchQuery(e.target.value)} 
+            />
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-12 custom-scrollbar bg-[#0f1115]">
+          {activeTab === 'RANKING' ? (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+              {/* Filtros de Ranking */}
+              <div className="mb-10 bg-[#16191f] p-8 rounded-[2rem] border border-white/5 shadow-2xl grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <input placeholder="País" className="bg-[#0f1115] border border-white/5 p-3 rounded-xl text-xs font-bold text-white outline-none" value={rankingFilters.nacionalidad} onChange={e => setRankingFilters({...rankingFilters, nacionalidad: e.target.value})} />
+                <input placeholder="Ciudad" className="bg-[#0f1115] border border-white/5 p-3 rounded-xl text-xs font-bold text-white outline-none" value={rankingFilters.ciudad} onChange={e => setRankingFilters({...rankingFilters, ciudad: e.target.value})} />
+                <input placeholder="Profesión" className="bg-[#0f1115] border border-white/5 p-3 rounded-xl text-xs font-bold text-white outline-none" value={rankingFilters.profesion} onChange={e => setRankingFilters({...rankingFilters, profesion: e.target.value})} />
+                <input type="number" placeholder="Edad Min" className="bg-[#0f1115] border border-white/5 p-3 rounded-xl text-xs font-bold text-white outline-none" value={rankingFilters.edadMin} onChange={e => setRankingFilters({...rankingFilters, edadMin: e.target.value})} />
+                <input type="number" placeholder="Edad Max" className="bg-[#0f1115] border border-white/5 p-3 rounded-xl text-xs font-bold text-white outline-none" value={rankingFilters.edadMax} onChange={e => setRankingFilters({...rankingFilters, edadMax: e.target.value})} />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase text-pink-500 mb-1">Puntaje Mín: {rankingFilters.minScore}</span>
+                  <input type="range" min="0" max="100" className="accent-pink-500" value={rankingFilters.minScore} onChange={e => setRankingFilters({...rankingFilters, minScore: parseInt(e.target.value)})} />
+                </div>
+              </div>
+
+              {/* Listado de Ranking */}
+              <div className="bg-[#16191f] rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/5 bg-black/20">
+                        <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest">Puesto</th>
+                        <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest">Talento</th>
+                        <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest">Ubicación</th>
+                        <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest">Profesión</th>
+                        <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest text-center">Edad</th>
+                        <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest text-right">Score</th>
+                        <th className="px-8 py-6 w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {filteredProfiles.map((p, idx) => (
+                        <tr 
+                          key={p.id} 
+                          onClick={() => openProfile(p)}
+                          className="hover:bg-white/[0.03] transition-colors cursor-pointer group"
+                        >
+                          <td className="px-8 py-5">
+                            <span className={`text-xl font-black italic ${idx < 3 ? 'text-pink-500' : 'text-slate-600'}`}>
+                              #{idx + 1}
+                            </span>
+                          </td>
+                          <td className="px-8 py-5">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-pink-500/50 transition-colors shrink-0">
+                                <img src={p.fotos[0] || 'https://via.placeholder.com/100'} className="w-full h-full object-cover" />
+                              </div>
+                              <span className="font-bold text-white tracking-tight">{p.nombre}</span>
+                            </div>
+                          </td>
+                          <td className="px-8 py-5">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-slate-300">{p.ciudad || 'N/A'}</span>
+                              <span className="text-[10px] text-slate-500 uppercase font-black">{p.nacionalidad}</span>
+                            </div>
+                          </td>
+                          <td className="px-8 py-5">
+                            <span className="text-xs bg-white/5 px-3 py-1 rounded-lg border border-white/5 text-slate-400 font-bold">
+                              {p.profesion || 'Independiente'}
+                            </span>
+                          </td>
+                          <td className="px-8 py-5 text-center">
+                            <span className="text-sm font-bold text-white">{calcularEdad(p.fechaNacimiento) || '-'}</span>
+                          </td>
+                          <td className="px-8 py-5 text-right">
+                            <div className="inline-flex items-center justify-center w-12 h-12 bg-pink-600/10 rounded-xl border border-pink-500/20">
+                              <span className="text-sm font-black text-pink-500 italic">{getPromedio(p)}</span>
+                            </div>
+                          </td>
+                          <td className="px-8 py-5 text-slate-600">
+                            <ChevronRight size={18} className="group-hover:text-pink-500 group-hover:translate-x-1 transition-all" />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === 'CATEGORIAS' && !selectedCategory ? (
+            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex justify-between items-center">
+                <h2 className="text-4xl font-black italic tracking-tighter text-white">Carpetas Inteligentes</h2>
+                <button onClick={() => setIsCatModalOpen(true)} className="bg-pink-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-pink-500 transition-all shadow-lg">
+                  <FolderHeart size={16} /> Nueva Carpeta
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                {categorias.map(cat => (
+                  <div key={cat.id} onClick={() => setSelectedCategory(cat.id)} className="relative group bg-[#16191f] rounded-[2.5rem] border border-white/5 overflow-hidden cursor-pointer hover:shadow-2xl hover:border-pink-500/50 transition-all h-64 flex flex-col items-center justify-center p-6">
+                    {cat.coverUrl ? (
+                      <img src={cat.coverUrl} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 brightness-[0.4]" />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#16191f] to-slate-900 group-hover:to-pink-900/40 transition-colors"></div>
+                    )}
+                    <div className="relative z-10 text-center">
+                      <div className="text-5xl mb-4 filter drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]">{cat.emoji}</div>
+                      <h3 className="text-xl font-black text-white uppercase tracking-tighter drop-shadow-lg">{cat.label}</h3>
+                      <p className="text-[10px] font-black text-pink-500 mt-1 uppercase bg-black/40 px-3 py-1 rounded-full inline-block backdrop-blur-sm">{perfiles.filter(p => checkMatch(p, cat.reglas)).length} Miembros</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+              {selectedCategory && (
+                <div className="flex justify-between items-center mb-10">
+                  <button onClick={() => setSelectedCategory(null)} className="flex items-center gap-2 text-slate-500 font-black text-xs uppercase hover:text-white transition-colors">
+                    <ArrowLeft size={16} /> Volver a Carpetas
+                  </button>
+                  <button onClick={() => deleteCategory(selectedCategory)} className="flex items-center gap-2 text-red-400 font-black text-xs uppercase hover:text-red-300 transition-colors bg-white/5 px-6 py-3 rounded-xl border border-white/5">
+                    <Trash2 size={16} /> Eliminar Carpeta
+                  </button>
+                </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {filteredProfiles.map((p) => (
+                  <div key={p.id} onClick={() => openProfile(p)} className="bg-[#16191f] rounded-[2rem] overflow-hidden border border-white/5 cursor-pointer shadow-2xl hover:border-pink-500/40 transition-all duration-500 group relative">
+                    <div className="aspect-[3/4] bg-[#0f1115] relative overflow-hidden">
+                      <img src={p.fotos[0] || 'https://via.placeholder.com/400x600?text=Sin+Foto'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      
+                      <div className="absolute top-5 right-5 w-12 h-12 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 shadow-xl">
+                        <span className="text-xs font-black text-pink-500">{getPromedio(p)}</span>
+                      </div>
+
+                      <div className="absolute inset-x-4 bottom-4 p-5 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl">
+                        <h3 className="text-lg font-black text-white italic tracking-tighter leading-tight">{p.nombre}</h3>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <span className="flex items-center gap-1 text-[8px] font-black bg-pink-600/20 text-pink-400 px-2 py-1 rounded-lg uppercase border border-pink-500/30">
+                            <Briefcase size={8} /> {p.profesion || 'Talento'}
+                          </span>
+                          <span className="flex items-center gap-1 text-[8px] font-black bg-white/10 text-slate-300 px-2 py-1 rounded-lg uppercase border border-white/5">
+                            <Cake size={8} /> {calcularEdad(p.fechaNacimiento)} Años
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Modal Perfil */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-2xl overflow-y-auto">
+          <div className="bg-[#16191f] w-full max-w-6xl rounded-[3rem] shadow-[0_0_50px_rgba(0,0,0,0.5)] relative my-auto border border-white/10">
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 bg-white/5 p-3 rounded-full text-slate-400 hover:text-pink-500 z-50 transition-colors"><X size={20} /></button>
+            <form onSubmit={saveProfile} className="p-12 space-y-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                <div className="space-y-8">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-2 h-10 bg-pink-500 rounded-full"></div>
+                      <h3 className="text-3xl font-black italic tracking-tighter uppercase text-white">Ficha Técnica</h3>
+                    </div>
+                    {/* Visualización de Edad en Ficha Técnica */}
+                    {formData.fechaNacimiento && (
+                      <div className="bg-pink-600/10 border border-pink-500/20 px-6 py-2 rounded-2xl flex items-center gap-3">
+                        <Cake size={16} className="text-pink-500" />
+                        <span className="text-lg font-black text-pink-500 italic">{calcularEdad(formData.fechaNacimiento)} Años</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-[9px] font-black uppercase text-slate-500 ml-2">Nombre Completo</label>
+                      <input required className="w-full bg-[#0f1115] p-4 rounded-2xl outline-none font-bold text-sm border border-white/5 focus:border-pink-500/50 text-white" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-slate-500 ml-2 flex justify-between">
+                        Nacimiento
+                        {formData.fechaNacimiento && <span className="text-pink-500 lowercase">({calcularEdad(formData.fechaNacimiento)} años)</span>}
+                      </label>
+                      <input type="date" className="w-full bg-[#0f1115] p-4 rounded-2xl outline-none font-bold text-xs border border-white/5 text-white" value={formData.fechaNacimiento} onChange={e => setFormData({...formData, fechaNacimiento: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-slate-500 ml-2">Ciudad</label>
+                      <input className="w-full bg-[#0f1115] p-4 rounded-2xl outline-none font-bold text-sm border border-white/5 text-white" value={formData.ciudad} onChange={e => setFormData({...formData, ciudad: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-slate-500 ml-2">Nacionalidad</label>
+                      <input className="w-full bg-[#0f1115] p-4 rounded-2xl outline-none font-bold text-sm border border-white/5 text-white" value={formData.nacionalidad} onChange={e => setFormData({...formData, nacionalidad: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-slate-500 ml-2">Profesión</label>
+                      <input className="w-full bg-[#0f1115] p-4 rounded-2xl outline-none font-bold text-sm border border-white/5 text-white" value={formData.profesion} onChange={e => setFormData({...formData, profesion: e.target.value})} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-black uppercase text-pink-500 ml-2 tracking-widest">Galería Fotográfica</label>
+                      <label className="cursor-pointer bg-white text-black px-6 py-2 rounded-xl text-[9px] font-black uppercase hover:bg-pink-500 hover:text-white transition-all shadow-lg">
+                        Sube Fotos Localmente
+                        <input type="file" multiple accept="image/*" className="hidden" onChange={e => handleFileUpload(e, 'profile')} />
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4 bg-[#0f1115] p-6 rounded-[2rem] min-h-[140px] border border-white/5 shadow-inner">
+                      {formData.fotos.map((url, i) => (
+                        <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-white/5 shadow-md group">
+                          <img src={url} className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => setFormData(prev => ({ ...prev, fotos: prev.fotos.filter((_, idx) => idx !== i) }))} className="absolute inset-0 bg-red-600/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white">
+                            <Trash2 size={18}/>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex justify-between items-end p-6 bg-white/5 rounded-[2rem] border border-white/5">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-pink-500 uppercase">Promedio Élite</p>
+                      <h3 className="text-xl font-bold text-white italic">Calificaciones Globales</h3>
+                    </div>
+                    <div className="text-6xl font-black text-pink-500 italic drop-shadow-[0_0_15px_rgba(236,72,153,0.4)]">{getPromedio(formData)}</div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    {CARACTERISTICAS.map(c => (
+                      <div key={c} className="bg-[#1c222b] p-5 rounded-2xl border border-white/5">
+                        <div className="flex justify-between text-[10px] font-black uppercase text-slate-400 mb-3">
+                          <span>{c}</span>
+                          <span className="text-pink-500">{formData.puntuaciones[c]}</span>
+                        </div>
+                        <input type="range" min="0" max="100" className="w-full h-1 accent-pink-500 bg-white/10 rounded-full cursor-pointer" value={formData.puntuaciones[c]} onChange={e => setFormData({...formData, puntuaciones: {...formData.puntuaciones, [c]: parseInt(e.target.value)}})} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                {editingId && (
+                  <button type="button" onClick={async () => { if(window.confirm("¿Confirmas la eliminación?")){ await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', editingId)); setIsModalOpen(false); }}} className="bg-white/5 hover:bg-red-500/20 text-red-400 px-8 py-6 rounded-2xl font-black uppercase text-[10px] transition-all border border-white/5">
+                    <Trash2 size={18}/>
+                  </button>
+                )}
+                <button type="submit" className="flex-1 bg-pink-600 text-white py-6 rounded-2xl font-black uppercase text-sm tracking-widest hover:bg-pink-500 transition-all shadow-[0_10px_30px_rgba(219,39,119,0.2)] active:scale-95">Guardar en Base de Datos</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Carpeta */}
+      {isCatModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-2xl">
+          <div className="bg-[#16191f] w-full max-w-2xl rounded-[3rem] p-12 relative shadow-2xl border border-white/10">
+            <button onClick={() => setIsCatModalOpen(false)} className="absolute top-10 right-10 text-slate-500 hover:text-pink-500 transition-colors"><X size={24} /></button>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-1.5 h-8 bg-pink-500 rounded-full"></div>
+              <h3 className="text-2xl font-black italic tracking-tighter text-white uppercase">Crear Nueva Carpeta</h3>
+            </div>
+            
+            <form onSubmit={saveCategory} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <input required placeholder="Nombre de Carpeta" className="bg-[#0f1115] border border-white/5 p-4 rounded-2xl outline-none font-bold text-white text-sm" value={catFormData.label} onChange={e => setCatFormData({...catFormData, label: e.target.value})} />
+                <div className="grid grid-cols-2 gap-2">
+                  <input className="bg-[#0f1115] border border-white/5 p-4 rounded-2xl outline-none font-bold text-center text-xl text-white" value={catFormData.emoji} onChange={e => setCatFormData({...catFormData, emoji: e.target.value})} />
+                  <label className="cursor-pointer bg-white/5 border border-white/5 rounded-2xl flex items-center justify-center text-pink-500 hover:bg-white/10 overflow-hidden">
+                    {catFormData.coverUrl ? <img src={catFormData.coverUrl} className="w-full h-full object-cover" /> : <ImagePlus size={20}/>}
+                    <input type="file" accept="image/*" className="hidden" onChange={e => handleFileUpload(e, 'category')} />
+                  </label>
+                </div>
+              </div>
+
+              <div className="bg-[#0f1115] p-8 rounded-[2rem] border border-white/5 space-y-4">
+                 <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest mb-2">Criterios de Agrupación</p>
+                 <div className="grid grid-cols-2 gap-3">
+                    <input placeholder="País" className="bg-[#16191f] p-3 rounded-xl text-xs font-bold text-white border border-white/5" value={catFormData.reglas.nacionalidad} onChange={e => setCatFormData({...catFormData, reglas: {...catFormData.reglas, nacionalidad: e.target.value}})} />
+                    <input placeholder="Ciudad" className="bg-[#16191f] p-3 rounded-xl text-xs font-bold text-white border border-white/5" value={catFormData.reglas.ciudad} onChange={e => setCatFormData({...catFormData, reglas: {...catFormData.reglas, ciudad: e.target.value}})} />
+                 </div>
+                 <div className="grid grid-cols-3 gap-3">
+                    <input placeholder="Profesión" className="bg-[#16191f] p-3 rounded-xl text-xs font-bold text-white border border-white/5" value={catFormData.reglas.profesion} onChange={e => setCatFormData({...catFormData, reglas: {...catFormData.reglas, profesion: e.target.value}})} />
+                    <input type="number" placeholder="Edad Min" className="bg-[#16191f] p-3 rounded-xl text-xs font-bold text-white border border-white/5" value={catFormData.reglas.edadMin} onChange={e => setCatFormData({...catFormData, reglas: {...catFormData.reglas, edadMin: e.target.value}})} />
+                    <input type="number" placeholder="Edad Max" className="bg-[#16191f] p-3 rounded-xl text-xs font-bold text-white border border-white/5" value={catFormData.reglas.edadMax} onChange={e => setCatFormData({...catFormData, reglas: {...catFormData.reglas, edadMax: e.target.value}})} />
+                 </div>
+                 <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
+                    <select className="bg-transparent text-[10px] font-black text-pink-500 uppercase outline-none" value={catFormData.reglas.caracteristica} onChange={e => setCatFormData({...catFormData, reglas: {...catFormData.reglas, caracteristica: e.target.value}})}>
+                      {CARACTERISTICAS.map(c => <option key={c} className="bg-[#16191f]">{c}</option>)}
+                    </select>
+                    <span className="text-[10px] font-black text-slate-500">MAYOR A</span>
+                    <input type="number" className="flex-1 bg-transparent text-[10px] font-black text-white text-right outline-none" placeholder="0" value={catFormData.reglas.umbral} onChange={e => setCatFormData({...catFormData, reglas: {...catFormData.reglas, umbral: parseInt(e.target.value)}})} />
+                 </div>
+              </div>
+
+              <button type="submit" className="w-full bg-white text-black py-5 rounded-2xl font-black uppercase text-[11px] tracking-widest hover:bg-pink-600 hover:text-white transition-all">Crear Carpeta Inteligente</button>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(236,72,153,0.3); }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; }
+        select { -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+      `}</style>
+    </div>
+  );
+};
+
+export default App;
