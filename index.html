@@ -80,11 +80,22 @@
         const STORAGE_KEY = 'g2_elite_database_v4';
         const CAT_STORAGE_KEY = 'g2_elite_categories_v4';
         const CARACTERISTICAS = [
-            'Ojos', 'Rostro', 'Busto', 'Cola', 'Cintura', 
-            'Cabello', 'Estatura', 'Sensualidad', 'Dulzura', 'Elegancia'
+            'Rostro', 'Ojos', 'Boca', 'Cabello',
+            'Cuerpo', 'Cola', 'Pechos', 'Cintura', 'Piernas', 'Estatura',
+            'Sensualidad', 'Carisma', 'Elegancia', 'Dulzura', 'Talento'
         ];
-
         const INITIAL_CATEGORIES = [];
+        const PROFESIONES_CONFIG = {
+            'Cantante': { emoji: '🎤', color: 'rgba(34, 211, 238, 0.8)', tailwind: 'cyan-400' },
+            'Actriz': { emoji: '🎬', color: 'rgba(34, 197, 94, 0.8)', tailwind: 'green-500' },
+            'Modelo': { emoji: '👠', color: 'rgba(168, 85, 247, 0.8)', tailwind: 'purple-500' },
+            'NSFW': { emoji: '🔥', color: 'rgba(239, 68, 68, 0.8)', tailwind: 'red-500' },
+            'Influencer': { emoji: '📱', color: 'rgba(236, 72, 153, 0.8)', tailwind: 'pink-500' },
+            'Periodista': { emoji: '👓', color: 'rgba(234, 179, 8, 0.8)', tailwind: 'yellow-500' },
+            'Bailarina': { emoji: '💃', color: 'rgba(249, 115, 22, 0.8)', tailwind: 'orange-500' },
+            'Atleta': { emoji: '🏋️‍♀️', color: 'rgba(59, 130, 246, 0.8)', tailwind: 'blue-500' },
+            'Otro': { emoji: '📖', color: 'rgba(148, 163, 184, 0.8)', tailwind: 'slate-400' }
+        };
 
         const LucideIcon = ({ name, size = 20, className = "" }) => {
             return (
@@ -98,6 +109,27 @@
 
         const App = () => {
             const [perfiles, setPerfiles] = useState([]);
+                const neonColors = {
+                    "CANTANTE": "border-cyan-400 shadow-[0_0_25px_rgba(34,211,238,0.8),inset_0_0_10px_rgba(34,211,238,0.4)]",
+                    "NSFW": "border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.8),inset_0_0_10px_rgba(239,68,68,0.4)]",
+                    "ACTRIZ": "border-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.8),inset_0_0_10px_rgba(250,204,21,0.4)]",
+                    "MODELO": "border-purple-500 shadow-[0_0_25px_rgba(168,85,247,0.8),inset_0_0_10px_rgba(168,85,247,0.4)]",
+                    "INFLUENCER": "border-pink-500 shadow-[0_0_25px_rgba(236,72,153,0.8),inset_0_0_10px_rgba(236,72,153,0.4)]",
+                    "DEFAULT": "border-slate-700 shadow-none"
+                };
+            const [minEdad, setMinEdad] = useState(18);
+            const [maxEdad, setMaxEdad] = useState(60);
+
+                // Función para obtener el emoji según profesión
+                const getEmoji = (prof) => {
+                    const lowP = prof?.toLowerCase() || '';
+                    if (lowP.includes('cantante')) return '🎤';
+                    if (lowP.includes('nsfw')) return '🔥';
+                    if (lowP.includes('actriz')) return '🎬';
+                    if (lowP.includes('modelo')) return '📸';
+                    if (lowP.includes('influencer')) return '📱';
+                    return '💎';
+                };
             const [categorias, setCategorias] = useState(INITIAL_CATEGORIES);
             const [activeTab, setActiveTab] = useState('EXPLORAR');
             const [searchQuery, setSearchQuery] = useState('');
@@ -105,6 +137,7 @@
             const [isCatModalOpen, setIsCatModalOpen] = useState(false);
             const [editingId, setEditingId] = useState(null);
             const [selectedCategory, setSelectedCategory] = useState(null);
+            const [sortBy, setSortBy] = useState('promedio'); // Por defecto ordena por el total
             
             const [filters, setFilters] = useState({
                 nacionalidad: 'Todas',
@@ -126,11 +159,13 @@
                 emoji: '📁',
                 coverImg: '',
                 reglas: {
-                    nacionalidad: '',
-                    profesion: '',
-                    ciudad: '',
+                    nacionalidades: [], // Cambiado a plural y array
+                    profesiones: [],    // Cambiado a plural y array
+                    ciudades: [],       // Cambiado a plural y array
                     edadMin: '',
                     edadMax: '',
+                    // Aquí agregaremos luego los 15 items y promedios, 
+                    // pero primero aseguremos que esto cargue bien.
                     caracteristica: 'Rostro',
                     operador: 'Superior a',
                     umbral: ''
@@ -165,9 +200,21 @@
             };
 
             const calcularPromedio = (p) => {
-                const valores = Object.values(p.puntuaciones);
-                const suma = valores.reduce((a, b) => a + b, 0);
-                return (suma).toFixed(0);
+                const s = p.puntuaciones;
+                
+                // Promedio Rostro (4 ítems)
+                const promRostro = (s.Rostro + s.Ojos + s.Boca + s.Cabello) / 4;
+                
+                // Promedio Cuerpo (6 ítems)
+                const promCuerpo = (s.Cuerpo + s.Cola + s.Pechos + s.Cintura + s.Piernas + s.Estatura) / 6;
+                
+                // Promedio Actitud (5 ítems)
+                const promActitud = (s.Sensualidad + s.Carisma + s.Elegancia + s.Dulzura + s.Talento) / 5;
+                
+                // El Score Total es el promedio de las 3 categorías principales
+                const scoreTotal = (promRostro + promCuerpo + promActitud) / 3;
+                
+                return scoreTotal.toFixed(0);
             };
 
             const obtenerCategoriasDePerfil = (p) => {
@@ -180,9 +227,13 @@
                 categorias.forEach(c => {
                     const r = c.reglas;
                     let matches = true;
-                    if (r.nacionalidad && !nac.includes(r.nacionalidad.toLowerCase())) matches = false;
-                    if (r.profesion && !prof.includes(r.profesion.toLowerCase())) matches = false;
-                    if (r.ciudad && !ciu.includes(r.ciudad.toLowerCase())) matches = false;
+                    
+                    // Filtros acumulables (si la lista tiene algo, el perfil debe estar en ella)
+                    if (r.nacionalidades?.length > 0 && !r.nacionalidades.some(n => nac === n.toLowerCase())) matches = false;
+                    if (r.profesiones?.length > 0 && !r.profesiones.some(p => prof === p.toLowerCase())) matches = false;
+                    if (r.ciudades?.length > 0 && !r.ciudades.some(ciu_regla => ciu === ciu_regla.toLowerCase())) matches = false;
+                    
+                    // Filtros de edad
                     if (r.edadMin && (edad === '?' || edad < parseInt(r.edadMin))) matches = false;
                     if (r.edadMax && (edad === '?' || edad > parseInt(r.edadMax))) matches = false;
                     if (r.caracteristica && r.umbral) {
@@ -217,8 +268,21 @@
                 const newCat = { ...catFormData, id: 'cat_' + Date.now(), type: 'custom' };
                 setCategorias([...categorias, newCat]);
                 setIsCatModalOpen(false);
-                setCatFormData({ label: '', emoji: '📁', coverImg: '', reglas: { nacionalidad: '', profesion: '', ciudad: '', edadMin: '', edadMax: '', caracteristica: 'Rostro', operador: 'Superior a', umbral: '' }});
-            };
+                setCatFormData({ 
+                    label: '', 
+                    emoji: '📁', 
+                    coverImg: '', 
+                    reglas: { 
+                        nacionalidades: [], 
+                        profesiones: [], 
+                        ciudades: [], 
+                        edadMin: '', 
+                        edadMax: '', 
+                        caracteristica: 'Rostro', 
+                        operador: 'Superior a', 
+                        umbral: '' 
+                    }
+                });            };
 
             const filteredProfiles = useMemo(() => {
                 let base = perfiles.filter(p => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -230,18 +294,22 @@
                         const matchProf = filters.profesion === 'Todas' || p.profesion === filters.profesion;
                         const matchCiudad = filters.ciudad === 'Todas' || p.ciudad === filters.ciudad;
                         
-                        let matchEdad = true;
-                        if (filters.edad === 'Menores de 25') matchEdad = edad < 25;
-                        else if (filters.edad === '25 a 30') matchEdad = edad >= 25 && edad <= 30;
-                        else if (filters.edad === 'Mayores de 30') matchEdad = edad > 30;
+                        const matchEdad = edad >= minEdad && edad <= maxEdad;
 
+                    
                         let matchScore = true;
-                        if (filters.scoreAttr !== 'Cualquiera' && filters.scoreVal !== '') {
-                            const valPerfil = p.puntuaciones[filters.scoreAttr];
-                            const valFiltro = parseInt(filters.scoreVal);
-                            if (filters.scoreOp === 'Superior a') matchScore = valPerfil >= valFiltro;
-                            else if (filters.scoreOp === 'Inferior a') matchScore = valPerfil <= valFiltro;
-                            else if (filters.scoreOp === 'Igual a') matchScore = valPerfil === valFiltro;
+                        if (filters.scoreAttr !== 'Cualquiera') {
+                            // Si elige Score Total usamos el promedio, si no, el atributo específico
+                            const valPerfil = filters.scoreAttr === 'promedio' 
+                                ? parseFloat(calcularPromedio(p)) 
+                                : p.puntuaciones[filters.scoreAttr];
+                            
+                            if (filters.scoreVal !== '') {
+                                const valFiltro = parseInt(filters.scoreVal);
+                                if (filters.scoreOp === 'Superior a') matchScore = valPerfil >= valFiltro;
+                                else if (filters.scoreOp === 'Inferior a') matchScore = valPerfil <= valFiltro;
+                                else if (filters.scoreOp === 'Igual a') matchScore = valPerfil === valFiltro;
+                            }
                         }
                         
                         return matchNac && matchProf && matchEdad && matchCiudad && matchScore;
@@ -258,7 +326,13 @@
                 
                 return base;
             }, [perfiles, searchQuery, activeTab, selectedCategory, filters]);
-
+            const sortedProfiles = [...filteredProfiles].sort((a, b) => {
+                if (sortBy === 'promedio') {
+                    return calcularPromedio(b) - calcularPromedio(a);
+                }
+                // Si elegimos un atributo específico (ej: 'rostro')
+                return (b.scores?.[sortBy] || 0) - (a.scores?.[sortBy] || 0);
+            });   
             return (
                 <div className="flex h-screen overflow-hidden bg-[#020617]">
                     <aside className="w-72 bg-[#0a0f1e] border-r border-slate-800 flex flex-col p-8 z-20 shadow-xl overflow-y-auto">
@@ -308,8 +382,7 @@
 
                                     <select className="w-full bg-[#0a0f1e] border border-slate-800 p-3 rounded-2xl text-[11px] font-bold outline-none text-slate-300 filter-select" value={filters.edad} onChange={e => setFilters({...filters, edad: e.target.value})}>
                                         <option value="Todas">Edad: Todas</option>
-                                        <option value="Menores de 25">Menores de 25</option>
-                                        <option value="25 a 30">25 a 30</option>
+                                        <option value="Menores de 30">Menores de 30</option>
                                         <option value="Mayores de 30">Mayores de 30</option>
                                     </select>
 
@@ -364,162 +437,271 @@
                         </header>
 
                         <div className="flex-1 overflow-y-auto p-12">
-                            {activeTab === 'RANKING' && (
-                                <div className="mb-12">
-                                    <h2 className="text-4xl font-black italic tracking-tighter text-white">Elite Ranking</h2>
-                                    <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest mt-1">Ordenado por G2 Score</p>
-                                </div>
-                            )}
+    {/* 1. VISTA EXPLORAR (SOLO CARPETAS) */}
+    {activeTab === 'EXPLORAR' && !selectedCategory && (
+        <div className="space-y-10 animate-in fade-in duration-500">
+            <div>
+                <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Explorar </h2>
+                <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest mt-1">Organización automática por profesión</p>
+            </div>
 
-                            {activeTab === 'CATEGORIAS' && !selectedCategory ? (
-                                <div className="space-y-10">
-                                    <div className="flex justify-between items-end">
-                                        <div>
-                                            <h2 className="text-3xl font-black italic text-white">Mis Carpetas</h2>
-                                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Carpetas con reglas automáticas</p>
-                                        </div>
-                                        <button 
-                                            onClick={() => setIsCatModalOpen(true)}
-                                            className="bg-transparent border-2 border-cyan-500 text-cyan-500 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest hover:bg-cyan-500 hover:text-white transition-all flex items-center gap-2"
-                                        >
-                                            <LucideIcon name="folder-plus" size={16} /> NUEVA CATEGORÍA
-                                        </button>
-                                    </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {[...new Set(perfiles.map(p => p.profesion || 'Perfil'))].map(prof => {
+                    const count = perfiles.filter(p => (p.profesion || 'Perfil') === prof).length;
+                    const getEmoji = (p) => {
+                    const lowP = p.toLowerCase();
+                    if(lowP.includes('cantante')) return '🎤';
+                    if(lowP.includes('modelo')) return '📸';
+                    if(lowP.includes('actriz') || lowP.includes('actor')) return '🎬'; // <-- Aquí el de cine
+                    if(lowP.includes('nsfw')) return '🔥'; // <-- Aquí el fueguito
+                    if(lowP.includes('influencer')) return '📱';
+                    if(lowP.includes('atleta')) return '🏋️‍♀️';
+                    if(lowP.includes('bailarina')) return '💃';
+                    return '💼'; // Emoji por defecto si no encuentra la profesión
+                };
 
-                                    {categorias.length === 0 ? (
-                                        <div className="bg-slate-900/30 border-2 border-dashed border-slate-800 rounded-[3rem] p-20 text-center">
-                                            <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-700 shadow-sm">
-                                                <LucideIcon name="folder-heart" size={40} />
-                                            </div>
-                                            <h3 className="text-xl font-black text-slate-600 italic">No hay categorías aún</h3>
-                                            <p className="text-slate-700 font-bold text-xs uppercase mt-2">Crea tu primera carpeta inteligente</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                                            {categorias.map(cat => (
-                                                <div key={cat.id} onClick={() => setSelectedCategory(cat.id)} className="bg-[#0a0f1e] rounded-[3.5rem] border border-slate-800 overflow-hidden cursor-pointer hover:shadow-2xl hover:border-cyan-500/50 transition-all group relative">
-                                                    {cat.coverImg ? (
-                                                        <div className="h-48 relative overflow-hidden">
-                                                            <img src={cat.coverImg} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-60" />
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1e] via-transparent to-transparent"></div>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="h-48 bg-slate-900 flex items-center justify-center text-5xl opacity-40">
-                                                            {cat.emoji}
-                                                        </div>
-                                                    )}
-                                                    <div className="p-8 text-center -mt-12 relative z-10">
-                                                        <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-xl border border-slate-700 group-hover:scale-110 group-hover:border-cyan-500 transition-all">
-                                                            {cat.emoji}
-                                                        </div>
-                                                        <h3 className="text-lg font-black text-white mb-2 truncate px-4">{cat.label}</h3>
-                                                        <span className="text-[9px] font-black uppercase text-cyan-400 bg-cyan-500/10 px-4 py-1 rounded-full border border-cyan-500/20">
-                                                            {perfiles.filter(p => obtenerCategoriasDePerfil(p).includes(cat.id)).length} Perfiles
-                                                        </span>
-                                                        <button 
-                                                            onClick={(e) => { e.stopPropagation(); setCategorias(categorias.filter(c => c.id !== cat.id)); }}
-                                                            className="absolute top-4 right-4 text-slate-600 hover:text-red-500"
-                                                        >
-                                                            <LucideIcon name="trash-2" size={14} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                           ) : activeTab === 'RANKING' ? (
-                                <div className="bg-[#0a0f1e] rounded-[2.5rem] border border-slate-800 overflow-hidden shadow-2xl">
-                                    <table className="w-full text-left border-collapse">
-                                        <thead className="bg-slate-900/50 border-b border-slate-800">
-                                            <tr>
-                                                <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Puesto</th>
-                                                <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Perfil</th>
-                                                <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Ubicación</th>
-                                                <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Edad</th>
-                                                <th className="px-8 py-6 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest">G2 Score</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredProfiles.length === 0 ? (
-                                                <tr><td colSpan="5" className="py-20 text-center text-slate-700 font-black italic text-xl uppercase tracking-tighter">No hay perfiles que coincidan</td></tr>
-                                            ) : (
-                                                filteredProfiles.map((p, idx) => (
-                                                    <tr key={p.id} onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} className="hover:bg-cyan-500/5 cursor-pointer transition-colors border-b border-slate-800/50 last:border-0">
-                                                        <td className="px-8 py-5">
-                                                            <span className={`text-lg font-black italic ${idx < 3 ? 'text-cyan-400' : 'text-slate-600'}`}>#{idx + 1}</span>
-                                                        </td>
-                                                        <td className="px-8 py-5">
-                                                            <div className="flex items-center gap-4">
-                                                                <img src={p.fotos[0] || 'https://via.placeholder.com/100'} className="w-12 h-12 rounded-xl object-cover border border-slate-800" />
-                                                                <div>
-                                                                    <p className="font-black text-white text-sm">{p.nombre}</p>
-                                                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{p.profesion || 'Perfil'}</p>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-8 py-5">
-                                                            <p className="text-xs font-bold text-slate-400">{p.ciudad}</p>
-                                                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">{p.nacionalidad}</p>
-                                                        </td>
-                                                        <td className="px-8 py-5 font-bold text-xs text-slate-400">
-                                                            {calcularEdad(p.fechaNacimiento)} Años
-                                                        </td>
-                                                        <td className="px-8 py-5 text-right">
-                                                            <div className="inline-block bg-cyan-500/10 border border-cyan-500/20 px-4 py-2 rounded-xl">
-                                                                <span className="text-cyan-400 font-black text-lg leading-none">{calcularPromedio(p)}</span>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
-                                    {activeTab === 'CATEGORIAS' && selectedCategory && (
-                                        <div className="col-span-full mb-4">
-                                            <button onClick={() => setSelectedCategory(null)} className="flex items-center gap-2 text-cyan-500 font-bold text-sm hover:translate-x-[-4px] transition-transform">
-                                                <LucideIcon name="arrow-left" size={16} /> Volver a categorías
-                                            </button>
-                                        </div>
-                                    )}
-                                    {filteredProfiles.length === 0 ? (
-                                        <div className="col-span-full py-20 text-center">
-                                            <p className="text-slate-700 font-black italic text-xl uppercase tracking-tighter">No hay perfiles que coincidan</p>
-                                        </div>
-                                    ) : (
-                                        filteredProfiles.map((p, idx) => (
-                                            <div key={p.id} onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} className="profile-card group relative bg-slate-900 rounded-[3.5rem] overflow-hidden border border-slate-800 cursor-pointer shadow-xl hover:border-cyan-500/50 transition-all duration-500">
-                                                <div className="aspect-[4/5] bg-slate-950 relative overflow-hidden">
-                                                    <img src={p.fotos[0] || 'https://via.placeholder.com/400x500?text=G2+Elite'} className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" />
-                                                    
-                                                    <div className="absolute top-6 right-6 w-14 h-14 bg-slate-900/90 backdrop-blur-md rounded-full flex flex-col items-center justify-center border border-cyan-500/30">
-                                                        <span className="text-[9px] font-black text-cyan-400 leading-none">G2</span>
-                                                        <span className="text-lg font-black text-white">{calcularPromedio(p)}</span>
-                                                    </div>
-
-                                                    <div className="absolute bottom-6 left-6 right-6 flex flex-col items-start gap-2">
-                                                        <div className="text-bubble w-full">
-                                                            <span className="text-cyan-400 text-[8px] font-black uppercase tracking-widest block mb-1">
-                                                                {p.profesion || 'Perfil'} • {p.ciudad}
-                                                            </span>
-                                                            <h3 className="text-2xl font-black text-white italic tracking-tighter leading-none">
-                                                                {p.nombre}
-                                                            </h3>
-                                                            <p className="text-[10px] font-bold text-slate-300 mt-1 uppercase">
-                                                                {calcularEdad(p.fechaNacimiento)} Años • {p.nacionalidad}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            )}
+                    return (
+                        <div key={prof} onClick={() => setSelectedCategory(prof)} className="bg-[#0a0f1e] rounded-[3.5rem] border border-slate-800 p-8 text-center cursor-pointer hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:border-cyan-500/50 transition-all group relative overflow-hidden">
+                            <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <span className="text-9xl">{getEmoji(prof)}</span>
+                            </div>
+                            <div className="w-24 h-24 bg-slate-900 rounded-[2rem] flex items-center justify-center text-5xl mx-auto mb-6 shadow-2xl border border-slate-800 group-hover:scale-110 group-hover:border-cyan-500 transition-all duration-500">
+                                {getEmoji(prof)}
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-2 truncate uppercase tracking-tighter italic">{prof}</h3>
+                            <div className="inline-flex items-center gap-2 bg-cyan-500/10 px-5 py-2 rounded-full border border-cyan-500/20">
+                                <span className="text-[10px] font-black uppercase text-cyan-400 tracking-widest">{count} {count === 1 ? 'Perfil' : 'Perfiles'}</span>
+                            </div>
                         </div>
+                    );
+                })}
+            </div>
+        </div>
+    )}
+
+    {/* 2. VISTA DE PERFILES (CUANDO ENTRAS A UNA CARPETA) */}
+    {selectedCategory && (
+        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center justify-between bg-slate-900/40 p-6 rounded-[2.5rem] border border-slate-800/50">
+                <button onClick={() => setSelectedCategory(null)} className="group flex items-center gap-3 text-cyan-500 font-black text-xs uppercase tracking-widest">
+                    <div className="bg-cyan-500/10 p-2 rounded-xl group-hover:bg-cyan-500 group-hover:text-white transition-all">
+                        <LucideIcon name="arrow-left" size={16} />
+                    </div>
+                    Volver
+                </button>
+                <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">
+                    {categorias.find(c => c.id === selectedCategory)?.label || selectedCategory}
+                </h2>            
+                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+            {filteredProfiles.filter(p => (p.profesion || 'Perfil') === selectedCategory || activeTab === 'CATEGORIAS').map(p => {
+                // Aquí elegimos el color según la profesión
+                const profKey = p.profesion?.toUpperCase() || 'DEFAULT';
+                const neonClass = neonColors[profKey] || neonColors["DEFAULT"];
+                const emoji = getEmoji(p.profesion);
+
+                return (
+                    <div key={p.id} onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} 
+                        className={`profile-card group relative bg-slate-900 rounded-[3.5rem] overflow-hidden border-4 cursor-pointer transition-all duration-500 ${neonClass} hover:scale-[1.02]`}>
+                        
+                        <div className="aspect-[4/5] bg-slate-950 relative overflow-hidden">
+                            <img src={p.fotos[0] || 'https://via.placeholder.com/400x500'} className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" />
+                            
+                            {/* Badge de G2 Score */}
+                            <div className="absolute top-6 right-6 w-14 h-14 bg-slate-900/90 backdrop-blur-md rounded-full flex flex-col items-center justify-center border border-white/10">
+                                <span className="text-[9px] font-black text-cyan-400 leading-none">G2</span>
+                                <span className="text-lg font-black text-white">{calcularPromedio(p)}</span>
+                            </div>
+
+                            <div className="absolute bottom-6 left-6 right-6">
+                                <div className="text-bubble p-6 rounded-[2rem] w-full border border-white/10 bg-black/40 backdrop-blur-md">
+                                    <span className="text-cyan-400 text-[8px] font-black uppercase tracking-widest block mb-1">{p.profesion}</span>
+                                    <h3 className="text-2xl font-black text-white italic tracking-tighter leading-none flex items-center gap-2">
+                                        {p.nombre} <span>{emoji}</span>
+                                    </h3>
+                                    <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">{p.ciudad} • {p.nacionalidad}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+})}
+            </div>
+        </div>
+    )}
+
+    {/* 3. VISTA RANKING (SOLO TABLA) */}
+    {activeTab === 'RANKING' && !selectedCategory && (
+        <div className="bg-[#0a0f1e] rounded-[2.5rem] border border-slate-800 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+            <table className="w-full text-left border-collapse">
+                <thead className="bg-slate-900/50 border-b border-slate-800">
+                    <tr>
+                        <th className="px-4 py-6 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">#</th>
+                        <th className="px-4 py-6 text-[9px] font-black text-slate-500 uppercase tracking-widest">Perfil</th>
+                        <th className="px-4 py-6 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Rostro</th>
+                        <th className="px-4 py-6 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Cuerpo</th>
+                        <th className="px-4 py-6 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Actitud</th>
+                        <th className="px-4 py-6 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Ubicación</th>
+                        <th className="px-4 py-6 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Edad</th>
+                        <th className="px-8 py-6 text-right">
+                            <div className="flex flex-col items-end gap-1">
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ordenar por</span>
+                                <select 
+                                    value={sortBy} 
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="bg-slate-900 border border-cyan-500/30 text-cyan-400 text-[10px] font-black uppercase py-1 px-2 rounded-lg outline-none cursor-pointer hover:border-cyan-500 transition-all"
+                                >
+                                    <option value="promedio">G2 SCORE TOTAL (PROMEDIO)</option>
+                                    <optgroup label="Categorías Principales" className="bg-[#0a0f1e] text-slate-500">
+                                        <option value="Rostro">Rostro (Mix)</option>
+                                        <option value="Cuerpo">Cuerpo (Mix)</option>
+                                        <option value="Actitud">Actitud (Mix)</option>
+                                    </optgroup>
+                                    <optgroup label="Atributos Específicos" className="bg-[#0a0f1e] text-slate-500">
+                                        {CARACTERISTICAS.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {sortedProfiles.map((p, idx) => (
+<tr key={p.id} onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} 
+    className="hover:bg-white/5 cursor-pointer border-b border-slate-800/50 last:border-0 transition-colors group">
+    
+    <td className="px-8 py-5">
+        <span className={`text-lg font-black italic ${idx < 3 ? 'text-cyan-400' : 'text-slate-600'}`}>#{idx + 1}</span>
+    </td>
+
+    <td className="px-8 py-5">
+        <div className="flex items-center gap-4">
+            {/* MINIATURA CON NEÓN */}
+            <div className={`w-14 h-14 rounded-xl border-2 p-0.5 transition-all duration-500 ${neonColors[p.profesion?.toUpperCase()] || neonColors["DEFAULT"]}`}>
+                <img src={p.fotos[0]} className="w-full h-full rounded-[inherit] object-cover" alt={p.nombre} />
+            </div>
+            <div>
+                <p className="font-black text-white text-sm uppercase tracking-tighter">{p.nombre} {getEmoji(p.profesion)}</p>
+                <p className="text-[10px] font-bold text-slate-500 uppercase">{p.profesion}</p>
+            </div>
+        </div>
+    </td>
+
+{/* Promedios por Categoría */}
+<td className="px-4 py-5 text-center">
+    <span className="text-xs font-bold text-slate-300">
+        {((p.puntuaciones.Rostro + p.puntuaciones.Ojos + p.puntuaciones.Boca + p.puntuaciones.Cabello) / 4).toFixed(0)}
+    </span>
+</td>
+<td className="px-4 py-5 text-center">
+    <span className="text-xs font-bold text-slate-300">
+        {((p.puntuaciones.Cuerpo + p.puntuaciones.Cola + p.puntuaciones.Pechos + p.puntuaciones.Cintura + p.puntuaciones.Piernas + p.puntuaciones.Estatura) / 6).toFixed(0)}
+    </span>
+</td>
+<td className="px-4 py-5 text-center">
+    <span className="text-xs font-bold text-slate-300">
+        {((p.puntuaciones.Sensualidad + p.puntuaciones.Carisma + p.puntuaciones.Elegancia + p.puntuaciones.Dulzura + p.puntuaciones.Talento) / 5).toFixed(0)}
+    </span>
+</td>
+
+{/* Ubicación (País y Ciudad) */}
+<td className="px-4 py-5 text-center">
+    <p className="text-[10px] font-bold text-slate-300 uppercase leading-none">{p.nacionalidad}</p>
+    <p className="text-[8px] font-black text-cyan-500/70 uppercase tracking-tighter">{p.ciudad}</p>
+</td>
+
+{/* Edad */}
+<td className="px-4 py-5 text-center font-bold text-[10px] text-slate-400">
+    {calcularEdad(p.fechaNacimiento)} AÑOS
+</td>
+
+    <td className="px-8 py-5 text-right">
+        <div className="inline-block bg-slate-900 border border-slate-700 px-4 py-2 rounded-xl group-hover:border-cyan-500/50 transition-all">
+            <span className="text-cyan-400 font-black text-lg leading-none">{calcularPromedio(p)}</span>
+        </div>
+    </td>
+</tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    )}
+
+    {/* 4. VISTA CATEGORÍAS (TUS CARPETAS MANUALES) */}
+    {activeTab === 'CATEGORIAS' && !selectedCategory && (
+        <div className="space-y-10 animate-in fade-in duration-500">
+            <div className="flex justify-between items-end">
+                <div>
+                    <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">Mis Carpetas</h2>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Categorías personalizadas</p>
+                </div>
+                <button onClick={() => setIsCatModalOpen(true)} className="bg-cyan-500 text-black px-8 py-3 rounded-full font-black text-xs uppercase hover:bg-white transition-all">
+                    NUEVA CATEGORÍA
+                </button>
+            </div>
+            {categorias.length === 0 ? (
+                <div className="py-20 border-2 border-dashed border-slate-800 rounded-[3.5rem] text-center">
+                    <p className="text-slate-600 font-black italic uppercase">No hay categorías personalizadas</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+{categorias.map(cat => (
+    <div key={cat.id} onClick={() => setSelectedCategory(cat.id)} className="group relative bg-[#0a0f1e] rounded-[2.5rem] overflow-hidden border border-slate-800 cursor-pointer hover:border-cyan-500 transition-all duration-500 shadow-2xl aspect-[3/4]">
+        
+        {/* BOTONES DE ACCIÓN: EDITAR Y ELIMINAR */}
+        <div className="absolute top-5 right-5 z-50 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <button 
+                onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setCatFormData({...cat}); // Cargamos los datos de la categoría
+                    setIsCatModalOpen(true);   // Abrimos el modal de categorías
+                }} 
+                className="w-8 h-8 flex items-center justify-center bg-slate-900/90 hover:bg-cyan-500 text-white rounded-full border border-white/10 transition-colors shadow-xl"
+            >
+                <LucideIcon name="pencil" size={14} />
+            </button>
+            <button 
+                onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if(window.confirm('¿Seguro que querés borrar esta carpeta?')) {
+                        setCategorias(categorias.filter(c => c.id !== cat.id));
+                    }
+                }} 
+                className="w-8 h-8 flex items-center justify-center bg-slate-900/90 hover:bg-red-600 text-white rounded-full border border-white/10 transition-colors shadow-xl"
+            >
+                <LucideIcon name="x" size={14} />
+            </button>
+        </div>
+
+        {/* Imagen de Portada */}
+        <div className="absolute inset-0">
+            <img 
+                src={cat.coverImg || 'https://via.placeholder.com/400x600?text=Sin+Portada'} 
+                className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent"></div>
+        </div>
+
+        {/* Contenido (Nombre y Contador) */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
+            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-2 drop-shadow-lg">
+                {cat.label}
+            </h3>
+            <div className="inline-flex items-center gap-2 bg-cyan-500/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-cyan-500/30">
+                <span className="text-[10px] font-black uppercase text-cyan-400 tracking-widest">
+                    {perfiles.filter(p => obtenerCategoriasDePerfil(p).includes(cat.id)).length} Perfiles
+                </span>
+            </div>
+        </div>
+    </div>
+))}
+                </div>
+            )}
+        </div>
+    )}
+</div>
                     </main>
 
                     {isModalOpen && (
@@ -530,76 +712,126 @@
                                 </button>
                                 <form onSubmit={saveProfile} className="flex-1 overflow-y-auto p-12 space-y-12">
                                     <div className={`grid grid-cols-1 ${editingId || activeTab === 'CALIFICAR' ? 'lg:grid-cols-2' : ''} gap-16`}>
-                                        <div className="space-y-8">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-cyan-900/50">
-                                                    <LucideIcon name={editingId ? "user" : "user-plus"} />
-                                                </div>
-                                                <h3 className="text-xl font-black italic tracking-tighter text-white">{editingId ? 'Editar Perfil' : 'Información del Perfil'}</h3>
-                                            </div>
-                                            
-                                            <div className="space-y-4">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <input required placeholder="Nombre Artístico" className="col-span-2 w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} />
-                                                    <div className="space-y-1">
-                                                        <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">Nacimiento</label>
-                                                        <input type="date" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.fechaNacimiento} onChange={e => setFormData({...formData, fechaNacimiento: e.target.value})} />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">Estatura (cm)</label>
-                                                        <input placeholder="170" type="number" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.estaturaCm} onChange={e => setFormData({...formData, estaturaCm: e.target.value})} />
-                                                    </div>
-                                                    <input placeholder="Nacionalidad" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.nacionalidad} onChange={e => setFormData({...formData, nacionalidad: e.target.value})} />
-                                                    <input placeholder="Ciudad" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.ciudad} onChange={e => setFormData({...formData, ciudad: e.target.value})} />
-                                                    <input placeholder="Profesión" className="col-span-2 w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.profesion} onChange={e => setFormData({...formData, profesion: e.target.value})} />
-                                                </div>
-                                            </div>
-                                            
-                                            <h3 className="text-[11px] font-black uppercase text-cyan-400 tracking-widest border-l-4 border-cyan-500 pl-4 mt-8">Galería de Fotos</h3>
-                                            <div className="flex gap-4 flex-wrap">
-                                                {formData.fotos.map((f, i) => (
-                                                    <div key={i} className="relative group">
-                                                        <img src={f} className="w-20 h-20 object-cover rounded-2xl border-2 border-slate-800 shadow-sm" />
-                                                        <button type="button" onClick={() => setFormData({...formData, fotos: formData.fotos.filter((_, idx) => idx !== i)})} className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all">
-                                                            <LucideIcon name="x" size={12} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                                <label className="w-20 h-20 border-2 border-dashed border-slate-800 rounded-2xl flex items-center justify-center text-slate-600 cursor-pointer hover:bg-slate-900 hover:text-cyan-400 transition-colors">
-                                                    <LucideIcon name="camera" />
-                                                    <input type="file" hidden multiple onChange={e => {
-                                                        Array.from(e.target.files).forEach(file => {
-                                                            const r = new FileReader();
-                                                            r.onload = () => setFormData(p => ({...p, fotos: [...p.fotos, r.result]}));
-                                                            r.readAsDataURL(file);
-                                                        });
-                                                    }} />
-                                                </label>
-                                            </div>
-                                        </div>
+    <div className="space-y-8">
+        {/* CABECERA Y VISTA PREVIA */}
+        <div className="flex flex-col items-center gap-6">
+            <div className="flex items-center gap-4 self-start">
+                <div className="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-cyan-900/50">
+                    <LucideIcon name={editingId ? "user" : "user-plus"} />
+                </div>
+                <h3 className="text-xl font-black italic tracking-tighter text-white">
+                    {editingId ? 'Editar Perfil' : 'Información del Perfil'}
+                </h3>
+            </div>
 
-                                        {(editingId || activeTab === 'CALIFICAR') && (
-                                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center text-cyan-400 shadow-lg">
-                                                        <LucideIcon name="star" />
-                                                    </div>
-                                                    <h3 className="text-xl font-black italic tracking-tighter text-white">Evaluación G2 Score</h3>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    {CARACTERISTICAS.map(cat => (
-                                                        <div key={cat} className="bg-slate-950/50 p-4 rounded-3xl border border-slate-800 hover:border-cyan-500/30 transition-colors">
-                                                            <div className="flex justify-between text-[10px] font-black text-slate-500 mb-2 uppercase tracking-tighter">
-                                                                <span>{cat}</span>
-                                                                <span className="text-cyan-400">{formData.puntuaciones[cat]}</span>
-                                                            </div>
-                                                            <input type="range" min="0" max="100" className="w-full h-1.5 bg-slate-800 rounded-full appearance-none cursor-pointer" value={formData.puntuaciones[cat]} onChange={e => setFormData({...formData, puntuaciones: {...formData.puntuaciones, [cat]: parseInt(e.target.value)}})} />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
+            {/* CUADRO VISTA PREVIA NEÓN */}
+            <div className="w-48 h-60 rounded-[2.5rem] border-2 border-cyan-500 shadow-[0_0_20px_rgba(34,211,238,0.4)] overflow-hidden bg-slate-900 flex items-center justify-center relative group">
+                {formData.fotos.length > 0 && formData.fotos[0] !== "" ? (
+                    <img src={formData.fotos[0]} className="w-full h-full object-cover" alt="Preview" />
+                ) : (
+                    <div className="text-center p-4">
+                        <LucideIcon name="image" size={32} className="mx-auto text-slate-700 mb-2" />
+                        <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Vista Previa</p>
+                    </div>
+                )}
+            </div>
+        </div>
+        
+        {/* CAMPOS DE TEXTO */}
+        <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+                <input required placeholder="Nombre Artístico" className="col-span-2 w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} />
+                
+                <div className="col-span-2 space-y-1">
+                    <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">URL de la Foto (Avatar)</label>
+                    <input 
+                        placeholder="https://imagen.com/foto.jpg" 
+                        className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold text-xs" 
+                        value={formData.fotos[0] || ''} 
+                        onChange={e => setFormData({...formData, fotos: [e.target.value]})} 
+                    />
+                </div>
+
+                <div className="space-y-1">
+                    <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">Nacimiento</label>
+                    <input type="date" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.fechaNacimiento} onChange={e => setFormData({...formData, fechaNacimiento: e.target.value})} />
+                </div>
+                <div className="space-y-1">
+                    <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">Estatura (cm)</label>
+                    <input placeholder="170" type="number" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.estaturaCm} onChange={e => setFormData({...formData, estaturaCm: e.target.value})} />
+                </div>
+                <input placeholder="Nacionalidad" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.nacionalidad} onChange={e => setFormData({...formData, nacionalidad: e.target.value})} />
+                <input placeholder="Ciudad" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.ciudad} onChange={e => setFormData({...formData, ciudad: e.target.value})} />
+                
+                <div className="col-span-2 space-y-1 group">
+                    <label className="text-[9px] font-black text-cyan-500/60 ml-4 uppercase tracking-widest transition-colors group-focus-within:text-cyan-400">
+                        Profesión
+                    </label>
+                    <select 
+                        required
+                        className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold appearance-none cursor-pointer transition-all duration-300 focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(34,211,238,0.2)] focus:bg-slate-900"
+                        value={formData.profesion}
+                        onChange={e => setFormData({...formData, profesion: e.target.value})}
+                    >
+                        <option value="" className="bg-[#0a0f1e]">Seleccionar...</option>
+                        <option value="Cantante" className="bg-[#0a0f1e]">🎤 Cantante</option>
+                        <option value="Actriz" className="bg-[#0a0f1e]">🎬 Actriz</option>
+                        <option value="Modelo" className="bg-[#0a0f1e]">👠 Modelo</option>
+                        <option value="NSFW" className="bg-[#0a0f1e]">🔥 NSFW</option>
+                        <option value="Influencer" className="bg-[#0a0f1e]">📱 Influencer</option>
+                        <option value="Periodista" className="bg-[#0a0f1e]">👓 Periodista</option>
+                        <option value="Bailarina" className="bg-[#0a0f1e]">💃 Bailarina</option>
+                        <option value="Atleta" className="bg-[#0a0f1e]">🏋️‍♀️ Atleta</option>
+                        <option value="Otro" className="bg-[#0a0f1e]">📖 Otro</option>
+                    </select>
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-cyan-500/50">
+                        <LucideIcon name="chevron-down" size={18} />
+                    </div>    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {(editingId || activeTab === 'CALIFICAR') && (
+        <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center text-cyan-400 shadow-lg">
+                    <LucideIcon name="star" />
+                </div>
+                <h3 className="text-xl font-black italic tracking-tighter text-white">Evaluación G2 Score</h3>
+            </div>
+            <div className="space-y-8">
+                {[
+                    { titulo: "Rostro", items: ['Rostro', 'Ojos', 'Boca', 'Cabello'] },
+                    { titulo: "Cuerpo", items: ['Cuerpo', 'Cola', 'Pechos', 'Cintura', 'Piernas', 'Estatura'] },
+                    { titulo: "Actitud", items: ['Sensualidad', 'Carisma', 'Elegancia', 'Dulzura', 'Talento'] }
+                ].map(grupo => (
+                    <div key={grupo.titulo} className="space-y-3">
+                        <h4 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.2em] border-b border-cyan-500/20 pb-1">
+                            {grupo.titulo}
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                            {grupo.items.map(cat => (
+                                <div key={cat} className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800 hover:border-cyan-500/30 transition-colors">
+                                    <div className="flex justify-between text-[9px] font-black text-slate-500 mb-1 uppercase">
+                                        <span>{cat}</span>
+                                        <span className="text-cyan-400">{formData.puntuaciones[cat] || 0}</span>
                                     </div>
+                                    <input 
+                                        type="range" min="0" max="100" 
+                                        className="w-full h-1 bg-slate-800 rounded-full appearance-none cursor-pointer accent-cyan-500" 
+                                        value={formData.puntuaciones[cat] || 0} 
+                                        onChange={e => setFormData({...formData, puntuaciones: {...formData.puntuaciones, [cat]: parseInt(e.target.value)}})} 
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )}
+</div>
                                     <div className="flex gap-4">
                                         {editingId && (
                                             <button type="button" onClick={() => { if(confirm('¿Borrar perfil?')) { setPerfiles(perfiles.filter(p => p.id !== editingId)); setIsModalOpen(false); }}} className="bg-red-500/10 text-red-500 px-10 py-8 rounded-[3rem] font-black uppercase text-xs tracking-widest hover:bg-red-500 hover:text-white transition-all border border-red-500/20">
@@ -632,16 +864,16 @@
                                             </div>
                                             <div className="space-y-4">
                                                 <input required placeholder="Nombre de la Carpeta" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none font-bold text-lg text-white" value={catFormData.label} onChange={e => setCatFormData({...catFormData, label: e.target.value})} />
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <input placeholder="Emoji (ej. 🌟)" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none font-bold text-center text-2xl" value={catFormData.emoji} onChange={e => setCatFormData({...catFormData, emoji: e.target.value})} />
-                                                    <label className="bg-slate-900/50 border border-slate-800 p-5 rounded-3xl flex items-center justify-center font-black text-[10px] text-cyan-400 cursor-pointer hover:bg-slate-800 text-center">
-                                                        {catFormData.coverImg ? "PORTADA LISTA" : "SUBIR PORTADA"}
-                                                        <input type="file" hidden onChange={e => {
-                                                            const r = new FileReader();
-                                                            r.onload = () => setCatFormData({...catFormData, coverImg: r.result});
-                                                            r.readAsDataURL(e.target.files[0]);
-                                                        }} />
-                                                    </label>
+                                                <div className="w-full">
+                                                    <div className="space-y-1 w-full">
+                                                        <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">URL de Portada</label>
+                                                        <input 
+                                                            placeholder="https://..." 
+                                                            className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold text-xs" 
+                                                            value={catFormData.coverImg} 
+                                                            onChange={e => setCatFormData({...catFormData, coverImg: e.target.value})} 
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -653,17 +885,64 @@
                                             
                                             <div className="p-8 bg-slate-950/50 border border-slate-800 rounded-[2.5rem] space-y-6">
                                                 <div className="grid grid-cols-2 gap-4">
+{/* Filtro Nacionalidades Acumulable */}
                                                     <div className="space-y-1">
-                                                        <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">NACIONALIDAD</label>
-                                                        <input placeholder="Ej: Argentina" className="w-full bg-[#0a0f1e] p-4 rounded-2xl outline-none text-xs font-bold border border-slate-800 text-white" value={catFormData.reglas.nacionalidad} onChange={e => setCatFormData({...catFormData, reglas: {...catFormData.reglas, nacionalidad: e.target.value}})} />
+                                                        <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">NACIONALIDADES</label>
+                                                        <div className="flex flex-wrap gap-1 mb-2 min-h-[20px]">
+                                                            {catFormData.reglas.nacionalidades.map(n => (
+                                                                <span key={n} className="bg-cyan-500/20 text-cyan-400 text-[8px] font-black px-2 py-1 rounded-full border border-cyan-500/30 flex items-center gap-1">
+                                                                    {n} <button type="button" onClick={() => setCatFormData({...catFormData, reglas: {...catFormData.reglas, nacionalidades: catFormData.reglas.nacionalidades.filter(x => x !== n)}})}>×</button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <select className="w-full bg-[#0a0f1e] p-3 rounded-xl text-[10px] font-bold border border-slate-800 text-white outline-none" 
+                                                            onChange={e => {
+                                                                if(e.target.value && !catFormData.reglas.nacionalidades.includes(e.target.value))
+                                                                    setCatFormData({...catFormData, reglas: {...catFormData.reglas, nacionalidades: [...catFormData.reglas.nacionalidades, e.target.value]}})
+                                                            }}>
+                                                            <option value="">Añadir país...</option>
+                                                            {uniqueNacionalidades.filter(n => n !== 'Todas').map(n => <option key={n} value={n}>{n}</option>)}
+                                                        </select>
                                                     </div>
+
+                                                    {/* Filtro Ciudades Acumulable */}
                                                     <div className="space-y-1">
-                                                        <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">CIUDAD</label>
-                                                        <input placeholder="Ej: Madrid" className="w-full bg-[#0a0f1e] p-4 rounded-2xl outline-none text-xs font-bold border border-slate-800 text-white" value={catFormData.reglas.ciudad} onChange={e => setCatFormData({...catFormData, reglas: {...catFormData.reglas, ciudad: e.target.value}})} />
+                                                        <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">CIUDADES</label>
+                                                        <div className="flex flex-wrap gap-1 mb-2 min-h-[20px]">
+                                                            {catFormData.reglas.ciudades.map(c => (
+                                                                <span key={c} className="bg-cyan-500/20 text-cyan-400 text-[8px] font-black px-2 py-1 rounded-full border border-cyan-500/30 flex items-center gap-1">
+                                                                    {c} <button type="button" onClick={() => setCatFormData({...catFormData, reglas: {...catFormData.reglas, ciudades: catFormData.reglas.ciudades.filter(x => x !== c)}})}>×</button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <select className="w-full bg-[#0a0f1e] p-3 rounded-xl text-[10px] font-bold border border-slate-800 text-white outline-none" 
+                                                            onChange={e => {
+                                                                if(e.target.value && !catFormData.reglas.ciudades.includes(e.target.value))
+                                                                    setCatFormData({...catFormData, reglas: {...catFormData.reglas, ciudades: [...catFormData.reglas.ciudades, e.target.value]}})
+                                                            }}>
+                                                            <option value="">Añadir ciudad...</option>
+                                                            {uniqueCiudades.filter(c => c !== 'Todas').map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
                                                     </div>
+
+                                                    {/* Filtro Profesiones Acumulable */}
                                                     <div className="space-y-1">
-                                                        <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">PROFESIÓN</label>
-                                                        <input placeholder="Ej: Modelo" className="w-full bg-[#0a0f1e] p-4 rounded-2xl outline-none text-xs font-bold border border-slate-800 text-white" value={catFormData.reglas.profesion} onChange={e => setCatFormData({...catFormData, reglas: {...catFormData.reglas, profesion: e.target.value}})} />
+                                                        <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">PROFESIONES</label>
+                                                        <div className="flex flex-wrap gap-1 mb-2 min-h-[20px]">
+                                                            {catFormData.reglas.profesiones.map(p => (
+                                                                <span key={p} className="bg-cyan-500/20 text-cyan-400 text-[8px] font-black px-2 py-1 rounded-full border border-cyan-500/30 flex items-center gap-1">
+                                                                    {p} <button type="button" onClick={() => setCatFormData({...catFormData, reglas: {...catFormData.reglas, profesiones: catFormData.reglas.profesiones.filter(x => x !== p)}})}>×</button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <select className="w-full bg-[#0a0f1e] p-3 rounded-xl text-[10px] font-bold border border-slate-800 text-white outline-none" 
+                                                            onChange={e => {
+                                                                if(e.target.value && !catFormData.reglas.profesiones.includes(e.target.value))
+                                                                    setCatFormData({...catFormData, reglas: {...catFormData.reglas, profesiones: [...catFormData.reglas.profesiones, e.target.value]}})
+                                                            }}>
+                                                            <option value="">Añadir profesión...</option>
+                                                            {Object.keys(PROFESIONES_CONFIG).map(p => <option key={p} value={p}>{p}</option>)}
+                                                        </select>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <div className="space-y-1">
@@ -709,4 +988,3 @@
     </script>
 </body>
 </html>
-
