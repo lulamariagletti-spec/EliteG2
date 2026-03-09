@@ -134,7 +134,28 @@
                 ></i>
             );
         };
+// Función para calcular la edad exacta a partir de la fecha de nacimiento
+const calcularEdad = (fecha) => {
+    if (!fecha) return '?';
+    const hoy = new Date();
+    const cumple = new Date(fecha);
+    let edad = hoy.getFullYear() - cumple.getFullYear();
+    const mes = hoy.getMonth() - cumple.getMonth();
+    
+    // Ajuste si aún no ha cumplido años este año
+    if (mes < 0 || (mes === 0 && hoy.getDate() < cumple.getDate())) {
+        edad--;
+    }
+    return edad;
+};
 
+// También te falta calcularPromedio, agrégala por si acaso:
+const calcularPromedio = (p) => {
+    const scores = Object.values(p.puntuaciones || {});
+    if (scores.length === 0) return 0;
+    const suma = scores.reduce((a, b) => a + (parseFloat(b) || 0), 0);
+    return (suma / scores.length).toFixed(1);
+};
         const App = () => {
             const [perfiles, setPerfiles] = useState([]);
                 const neonColors = {
@@ -1054,3 +1075,4 @@ useEffect(() => {
     </script>
 </body>
 </html>
+
