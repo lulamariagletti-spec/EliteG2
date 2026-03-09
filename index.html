@@ -134,28 +134,7 @@
                 ></i>
             );
         };
-// Función para calcular la edad exacta a partir de la fecha de nacimiento
-const calcularEdad = (fecha) => {
-    if (!fecha) return '?';
-    const hoy = new Date();
-    const cumple = new Date(fecha);
-    let edad = hoy.getFullYear() - cumple.getFullYear();
-    const mes = hoy.getMonth() - cumple.getMonth();
-    
-    // Ajuste si aún no ha cumplido años este año
-    if (mes < 0 || (mes === 0 && hoy.getDate() < cumple.getDate())) {
-        edad--;
-    }
-    return edad;
-};
 
-// También te falta calcularPromedio, agrégala por si acaso:
-const calcularPromedio = (p) => {
-    const scores = Object.values(p.puntuaciones || {});
-    if (scores.length === 0) return 0;
-    const suma = scores.reduce((a, b) => a + (parseFloat(b) || 0), 0);
-    return (suma / scores.length).toFixed(1);
-};
         const App = () => {
             const [perfiles, setPerfiles] = useState([]);
                 const neonColors = {
@@ -230,44 +209,38 @@ const calcularPromedio = (p) => {
             }, [activeTab, isModalOpen, isCatModalOpen, perfiles, searchQuery, selectedCategory, filters, categorias]);
 
 useEffect(() => {
-            const sincronizarConNube = () => {
-                if (window.db) {
-                    const database = window.db;
-                    console.log("📡 Sincronizando datos con la nube...");
-
-                    // Escuchar cambios en Perfiles
-                    database.ref('perfiles').on('value', (snapshot) => {
-                        const data = snapshot.val();
-                        if (data) {
-                            // Convertimos el objeto de Firebase en una lista para React
-                            const lista = Object.keys(data).map(key => ({
-                                ...data[key],
-                                id: key
-                            }));
-                            setPerfiles(lista);
-                        } else {
-                            setPerfiles([]);
-                        }
-                    });
-
-                    // Escuchar cambios en Categorías
-                    database.ref('categorias').on('value', (snapshot) => {
-                        const data = snapshot.val();
-                        if (data) {
-                            const listaCat = Object.keys(data).map(key => ({
-                                ...data[key],
-                                id: key
-                            }));
-                            setCategorias(listaCat);
-                        } else {
-                            setCategorias([]);
-                        }
-                    });
+            console.log("Conectando a Firebase...");
+            const database = window.db;
+            
+            // Escuchar Perfiles
+            const perfilesRef = database.ref('perfiles');
+            perfilesRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                console.log("Datos de perfiles recibidos:", data);
+                if (data) {
+                    // Convertimos el objeto de Firebase en Array
+                    const lista = Object.keys(data).map(key => ({
+                        ...data[key],
+                        id: key // Usamos la clave de Firebase como ID
+                    }));
+                    setPerfiles(lista);
                 } else {
-                    setTimeout(sincronizarConNube, 100);
+                    setPerfiles([]);
                 }
-            };
-            sincronizarConNube();
+            });
+
+            // Escuchar Categorías
+            const categoriasRef = database.ref('categorias');
+            categoriasRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const listaCat = Object.keys(data).map(key => ({
+                        ...data[key],
+                        id: key
+                    }));
+                    setCategorias(listaCat);
+                }
+            });
         }, []);
             const obtenerCategoriasDePerfil = (p) => {
                 const cats = [];
@@ -303,58 +276,53 @@ useEffect(() => {
             const uniqueProfesiones = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.profesion).filter(Boolean))], [perfiles]);
             const uniqueCiudades = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.ciudad).filter(Boolean))], [perfiles]);
 
-            const saveProfile = (e) => {
+const saveProfile = (e) => {
                 e.preventDefault();
-                if (!window.db) {
-                    alert("¡Ups! Todavía no hay conexión con la base de datos. Esperá un toque.");
+                const database = window.db;
+                if (!database) {
+                    alert("Error: No hay conexión con la base de datos");
                     return;
                 }
 
-                const idParaUsar = editingId || Date.now();
-                const datosAEnviar = { ...formData, id: idParaUsar };
-
-                // Referencia a la ubicación del perfil en Firebase
-                const profileRef = window.db.ref('perfiles/' + idParaUsar);
-
-                profileRef.set(datosAEnviar)
-                    .then(() => {
-                        console.log("✅ Datos guardados en la nube");
-                        setIsModalOpen(false);
-                        setEditingId(null);
-                    })
-                    .catch((error) => {
-                        console.error("❌ Error al guardar:", error);
-                        alert("No pude guardar los datos. Revisá la consola.");
-                    });
-            };
-
-const saveCategory = (e) => {
-                e.preventDefault();
-                if (!window.db) {
-                    alert("¡Espera! La base de datos no responde.");
-                    return;
+                // Si estamos editando, usamos el ID existente. Si es nuevo, Firebase genera uno.
+                if (editingId) {
+                    database.ref('perfiles/' + editingId).set(formData)
+                        .then(() => {
+                            setIsModalOpen(false);
+                            setEditingId(null);
+                        })
+                        .catch(error => console.error("Error al actualizar:", error));
+                } else {
+                    const nuevoRef = database.ref('perfiles').push();
+                    nuevoRef.set(formData)
+                        .then(() => {
+                            setIsModalOpen(false);
+                            setEditingId(null);
+                        })
+                        .catch(error => console.error("Error al guardar:", error));
                 }
-
-                // Si estamos editando usamos su ID, si no, creamos uno nuevo
-                const idCat = catFormData.id || 'cat_' + Date.now();
-                const categoryData = { ...catFormData, id: idCat, type: 'custom' };
-
-                // Guardamos en la rama 'categorias' de Firebase
-                window.db.ref('categorias/' + idCat).set(categoryData)
-                    .then(() => {
-                        console.log("✅ Categoría guardada en la nube");
-                        setIsCatModalOpen(false);
-                        // Limpiamos el formulario para la próxima
-                        setCatFormData({ 
-                            label: '', emoji: '📁', coverImg: '', 
-                            reglas: { nacionalidades: [], profesiones: [], ciudades: [], edadMin: '', edadMax: '', caracteristica: 'Rostro', operador: 'Superior a', umbral: '' }
-                        });
-                    })
-                    .catch((error) => {
-                        console.error("❌ Error al guardar categoría:", error);
-                    });
             };
-            };
+
+            const saveCategory = (e) => {
+                e.preventDefault();
+                const newCat = { ...catFormData, id: 'cat_' + Date.now(), type: 'custom' };
+                setCategorias([...categorias, newCat]);
+                setIsCatModalOpen(false);
+                setCatFormData({ 
+                    label: '', 
+                    emoji: '📁', 
+                    coverImg: '', 
+                    reglas: { 
+                        nacionalidades: [], 
+                        profesiones: [], 
+                        ciudades: [], 
+                        edadMin: '', 
+                        edadMax: '', 
+                        caracteristica: 'Rostro', 
+                        operador: 'Superior a', 
+                        umbral: '' 
+                    }
+                });            };
 
             const filteredProfiles = useMemo(() => {
                 let base = perfiles.filter(p => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -1088,6 +1056,7 @@ const saveCategory = (e) => {
                     )}
                 </div>
             );
+        };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
