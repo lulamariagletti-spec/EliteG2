@@ -305,36 +305,56 @@ useEffect(() => {
 
             const saveProfile = (e) => {
                 e.preventDefault();
-                const newProfile = { ...formData, id: editingId || Date.now() };
-                if (editingId) {
-                    setPerfiles(perfiles.map(p => p.id === editingId ? newProfile : p));
-                } else {
-                    setPerfiles([...perfiles, newProfile]);
+                if (!window.db) {
+                    alert("¡Ups! Todavía no hay conexión con la base de datos. Esperá un toque.");
+                    return;
                 }
-                setIsModalOpen(false);
-                setEditingId(null);
+
+                const idParaUsar = editingId || Date.now();
+                const datosAEnviar = { ...formData, id: idParaUsar };
+
+                // Referencia a la ubicación del perfil en Firebase
+                const profileRef = window.db.ref('perfiles/' + idParaUsar);
+
+                profileRef.set(datosAEnviar)
+                    .then(() => {
+                        console.log("✅ Datos guardados en la nube");
+                        setIsModalOpen(false);
+                        setEditingId(null);
+                    })
+                    .catch((error) => {
+                        console.error("❌ Error al guardar:", error);
+                        alert("No pude guardar los datos. Revisá la consola.");
+                    });
             };
 
-            const saveCategory = (e) => {
+const saveCategory = (e) => {
                 e.preventDefault();
-                const newCat = { ...catFormData, id: 'cat_' + Date.now(), type: 'custom' };
-                setCategorias([...categorias, newCat]);
-                setIsCatModalOpen(false);
-                setCatFormData({ 
-                    label: '', 
-                    emoji: '📁', 
-                    coverImg: '', 
-                    reglas: { 
-                        nacionalidades: [], 
-                        profesiones: [], 
-                        ciudades: [], 
-                        edadMin: '', 
-                        edadMax: '', 
-                        caracteristica: 'Rostro', 
-                        operador: 'Superior a', 
-                        umbral: '' 
-                    }
-                });            };
+                if (!window.db) {
+                    alert("¡Espera! La base de datos no responde.");
+                    return;
+                }
+
+                // Si estamos editando usamos su ID, si no, creamos uno nuevo
+                const idCat = catFormData.id || 'cat_' + Date.now();
+                const categoryData = { ...catFormData, id: idCat, type: 'custom' };
+
+                // Guardamos en la rama 'categorias' de Firebase
+                window.db.ref('categorias/' + idCat).set(categoryData)
+                    .then(() => {
+                        console.log("✅ Categoría guardada en la nube");
+                        setIsCatModalOpen(false);
+                        // Limpiamos el formulario para la próxima
+                        setCatFormData({ 
+                            label: '', emoji: '📁', coverImg: '', 
+                            reglas: { nacionalidades: [], profesiones: [], ciudades: [], edadMin: '', edadMax: '', caracteristica: 'Rostro', operador: 'Superior a', umbral: '' }
+                        });
+                    })
+                    .catch((error) => {
+                        console.error("❌ Error al guardar categoría:", error);
+                    });
+            };
+            };
 
             const filteredProfiles = useMemo(() => {
                 let base = perfiles.filter(p => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -1068,11 +1088,9 @@ useEffect(() => {
                     )}
                 </div>
             );
-        };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
 </body>
 </html>
-
