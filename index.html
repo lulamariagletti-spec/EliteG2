@@ -137,6 +137,28 @@
 
         const App = () => {
             const [perfiles, setPerfiles] = useState([]);
+                       // Función para calcular el promedio total del G2 Score
+            const calcularPromedio = (p) => {
+                if (!p || !p.puntuaciones) return "0";
+                const vals = Object.values(p.puntuaciones);
+                if (vals.length === 0) return "0";
+                const suma = vals.reduce((a, b) => a + b, 0);
+                const promedio = suma / vals.length;
+                return (promedio / 10).toFixed(1); // Lo dividimos por 10 para que sea escala del 1 al 10
+            };
+
+            // Función para calcular la edad basándose en la fecha de nacimiento
+            const calcularEdad = (fecha) => {
+                if (!fecha) return "?";
+                const hoy = new Date();
+                const cumple = new Date(fecha);
+                let edad = hoy.getFullYear() - cumple.getFullYear();
+                const m = hoy.getMonth() - cumple.getMonth();
+                if (m < 0 || (m === 0 && hoy.getDate() < cumple.getDate())) {
+                    edad--;
+                }
+                return edad;
+            };
                 const neonColors = {
                     "CANTANTE": "border-cyan-400 shadow-[0_0_25px_rgba(34,211,238,0.8),inset_0_0_10px_rgba(34,211,238,0.4)]",
                     "NSFW": "border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.8),inset_0_0_10px_rgba(239,68,68,0.4)]",
@@ -1063,3 +1085,4 @@ const saveProfile = (e) => {
     </script>
 </body>
 </html>
+
