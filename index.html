@@ -199,16 +199,41 @@
             }, [activeTab, isModalOpen, isCatModalOpen, perfiles, searchQuery, selectedCategory, filters, categorias]);
 
             useEffect(() => {
-                const savedProfiles = localStorage.getItem(STORAGE_KEY);
-                const savedCats = localStorage.getItem(CAT_STORAGE_KEY);
-                if (savedProfiles) setPerfiles(JSON.parse(savedProfiles));
-                if (savedCats) setCategorias(JSON.parse(savedCats));
-            }, []);
+                // Escuchar Perfiles en tiempo real desde Firebase
+                const perfilesRef = db.ref('perfiles');
+                perfilesRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const listaPerfiles = Object.keys(data).map(key => ({
+                            ...data[key],
+                            firebaseId: key // Guardamos la llave de Firebase por si necesitamos editar
+                        }));
+                        setPerfiles(listaPerfiles);
+                    } else {
+                        setPerfiles([]);
+                    }
+                });
 
-            useEffect(() => {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(perfiles));
-                localStorage.setItem(CAT_STORAGE_KEY, JSON.stringify(categorias));
-            }, [perfiles, categorias]);
+                // Escuchar Categorías en tiempo real desde Firebase
+                const categoriasRef = db.ref('categorias');
+                categoriasRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const listaCats = Object.keys(data).map(key => ({
+                            ...data[key],
+                            firebaseId: key
+                        }));
+                        setCategorias(listaCats);
+                    } else {
+                        setCategorias(INITIAL_CATEGORIES);
+                    }
+                });
+
+                return () => {
+                    perfilesRef.off();
+                    categoriasRef.off();
+                };
+            }, []);
 
             const calcularEdad = (fecha) => {
                 if (!fecha) return '?';
@@ -271,39 +296,51 @@
             const uniqueProfesiones = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.profesion).filter(Boolean))], [perfiles]);
             const uniqueCiudades = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.ciudad).filter(Boolean))], [perfiles]);
 
-            const saveProfile = (e) => {
+const saveProfile = (e) => {
                 e.preventDefault();
-                const newProfile = { ...formData, id: editingId || Date.now() };
+                const profileData = { ...formData };
+                
                 if (editingId) {
-                    setPerfiles(perfiles.map(p => p.id === editingId ? newProfile : p));
+                    // Si estamos editando, buscamos el lugar exacto y lo actualizamos
+                    db.ref(`perfiles/${editingId}`).set(profileData)
+                        .then(() => {
+                            setIsModalOpen(false);
+                            setEditingId(null);
+                        })
+                        .catch(err => console.error("Error al excitar la base de datos:", err));
                 } else {
-                    setPerfiles([...perfiles, newProfile]);
+                    // Si es nuevo, lo empujamos con fuerza a la colección
+                    db.ref('perfiles').push(profileData)
+                        .then(() => {
+                            setIsModalOpen(false);
+                            setFormData({
+                                nombre: '', alias: '', edad: '', ubicacion: '',
+                                rating: 5, categoria: 'Nuevas', fotos: [], notas: ''
+                            });
+                        })
+                        .catch(err => console.error("No pudo entrar el perfil:", err));
                 }
-                setIsModalOpen(false);
-                setEditingId(null);
             };
 
             const saveCategory = (e) => {
                 e.preventDefault();
-                const newCat = { ...catFormData, id: 'cat_' + Date.now(), type: 'custom' };
-                setCategorias([...categorias, newCat]);
-                setIsCatModalOpen(false);
-                setCatFormData({ 
-                    label: '', 
-                    emoji: '📁', 
-                    coverImg: '', 
-                    reglas: { 
-                        nacionalidades: [], 
-                        profesiones: [], 
-                        ciudades: [], 
-                        edadMin: '', 
-                        edadMax: '', 
-                        caracteristica: 'Rostro', 
-                        operador: 'Superior a', 
-                        umbral: '' 
-                    }
-                });            };
-
+                const newCat = { ...catFormData, type: 'custom' };
+                
+                // Guardamos la nueva categoría en su propio rincón
+                db.ref('categorias').push(newCat)
+                    .then(() => {
+                        setIsCatModalOpen(false);
+                        setCatFormData({ 
+                            label: '', emoji: '📁', coverImg: '', 
+                            reglas: { 
+                                nacionalidades: [], profesiones: [], ciudades: [], 
+                                edadMin: '', edadMax: '', caracteristica: 'Rostro', 
+                                operador: 'Superior a', umbral: '' 
+                            }
+                        });
+                    })
+                    .catch(err => console.error("La categoría no quiso entrar:", err));
+            };
             const filteredProfiles = useMemo(() => {
                 let base = perfiles.filter(p => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()));
                 
