@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,8 +9,6 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         
@@ -73,14 +70,14 @@
             background-size: 1em;
         }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 <body class="text-slate-200">
     <div id="root"></div>
 
-<script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-
-        // AQUÍ DEBE IR TU CONFIGURACIÓN DE FIREBASE
+    <script type="text/babel">
+        // Configuración de tu proyecto de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAcW679YdIT03pyq8IgKKnR8oyO4_fvpFs",
             authDomain: "g2elite-a3b85.firebaseapp.com",
@@ -90,23 +87,16 @@
             messagingSenderId: "951346482286",
             appId: "1:951346482286:web:6001135252de2a4d982a7f",
         };
-// Configuración y arranque seguro de la Nube
-        let db;
-        const inicializarFirebase = () => {
-            if (typeof firebase !== 'undefined') {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
-                db = firebase.database();
-                window.db = db; // Guardamos la conexión globalmente
-                console.log("✅ Conexión con Firebase establecida");
-            } else {
-                console.log("⏳ Esperando librería de Firebase...");
-                setTimeout(inicializarFirebase, 500);
-            }
-        };
-        inicializarFirebase();
 
+        // Inicializar Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+        const { useState, useEffect, useMemo } = React;
+
+        const STORAGE_KEY = 'g2_elite_database_v4';
+        const CAT_STORAGE_KEY = 'g2_elite_categories_v4';
         const CARACTERISTICAS = [
             'Rostro', 'Ojos', 'Boca', 'Cabello',
             'Cuerpo', 'Cola', 'Pechos', 'Cintura', 'Piernas', 'Estatura',
@@ -137,28 +127,6 @@
 
         const App = () => {
             const [perfiles, setPerfiles] = useState([]);
-                       // Función para calcular el promedio total del G2 Score
-            const calcularPromedio = (p) => {
-                if (!p || !p.puntuaciones) return "0";
-                const vals = Object.values(p.puntuaciones);
-                if (vals.length === 0) return "0";
-                const suma = vals.reduce((a, b) => a + b, 0);
-                const promedio = suma / vals.length;
-                return (promedio / 10).toFixed(1); // Lo dividimos por 10 para que sea escala del 1 al 10
-            };
-
-            // Función para calcular la edad basándose en la fecha de nacimiento
-            const calcularEdad = (fecha) => {
-                if (!fecha) return "?";
-                const hoy = new Date();
-                const cumple = new Date(fecha);
-                let edad = hoy.getFullYear() - cumple.getFullYear();
-                const m = hoy.getMonth() - cumple.getMonth();
-                if (m < 0 || (m === 0 && hoy.getDate() < cumple.getDate())) {
-                    edad--;
-                }
-                return edad;
-            };
                 const neonColors = {
                     "CANTANTE": "border-cyan-400 shadow-[0_0_25px_rgba(34,211,238,0.8),inset_0_0_10px_rgba(34,211,238,0.4)]",
                     "NSFW": "border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.8),inset_0_0_10px_rgba(239,68,68,0.4)]",
@@ -230,40 +198,45 @@
                 }
             }, [activeTab, isModalOpen, isCatModalOpen, perfiles, searchQuery, selectedCategory, filters, categorias]);
 
-useEffect(() => {
-            console.log("Conectando a Firebase...");
-            const database = window.db;
-            
-            // Escuchar Perfiles
-            const perfilesRef = database.ref('perfiles');
-            perfilesRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                console.log("Datos de perfiles recibidos:", data);
-                if (data) {
-                    // Convertimos el objeto de Firebase en Array
-                    const lista = Object.keys(data).map(key => ({
-                        ...data[key],
-                        id: key // Usamos la clave de Firebase como ID
-                    }));
-                    setPerfiles(lista);
-                } else {
-                    setPerfiles([]);
-                }
-            });
+            useEffect(() => {
+                const savedProfiles = localStorage.getItem(STORAGE_KEY);
+                const savedCats = localStorage.getItem(CAT_STORAGE_KEY);
+                if (savedProfiles) setPerfiles(JSON.parse(savedProfiles));
+                if (savedCats) setCategorias(JSON.parse(savedCats));
+            }, []);
 
-            // Escuchar Categorías
-            const categoriasRef = database.ref('categorias');
-            categoriasRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const listaCat = Object.keys(data).map(key => ({
-                        ...data[key],
-                        id: key
-                    }));
-                    setCategorias(listaCat);
-                }
-            });
-        }, []);
+            useEffect(() => {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(perfiles));
+                localStorage.setItem(CAT_STORAGE_KEY, JSON.stringify(categorias));
+            }, [perfiles, categorias]);
+
+            const calcularEdad = (fecha) => {
+                if (!fecha) return '?';
+                const hoy = new Date();
+                const cumple = new Date(fecha);
+                let edad = hoy.getFullYear() - cumple.getFullYear();
+                if (hoy.getMonth() < cumple.getMonth() || (hoy.getMonth() === cumple.getMonth() && hoy.getDate() < cumple.getDate())) edad--;
+                return edad;
+            };
+
+            const calcularPromedio = (p) => {
+                const s = p.puntuaciones;
+                
+                // Promedio Rostro (4 ítems)
+                const promRostro = (s.Rostro + s.Ojos + s.Boca + s.Cabello) / 4;
+                
+                // Promedio Cuerpo (6 ítems)
+                const promCuerpo = (s.Cuerpo + s.Cola + s.Pechos + s.Cintura + s.Piernas + s.Estatura) / 6;
+                
+                // Promedio Actitud (5 ítems)
+                const promActitud = (s.Sensualidad + s.Carisma + s.Elegancia + s.Dulzura + s.Talento) / 5;
+                
+                // El Score Total es el promedio de las 3 categorías principales
+                const scoreTotal = (promRostro + promCuerpo + promActitud) / 3;
+                
+                return scoreTotal.toFixed(0);
+            };
+
             const obtenerCategoriasDePerfil = (p) => {
                 const cats = [];
                 const nac = (p.nacionalidad || '').toLowerCase();
@@ -298,31 +271,16 @@ useEffect(() => {
             const uniqueProfesiones = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.profesion).filter(Boolean))], [perfiles]);
             const uniqueCiudades = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.ciudad).filter(Boolean))], [perfiles]);
 
-const saveProfile = (e) => {
+            const saveProfile = (e) => {
                 e.preventDefault();
-                const database = window.db;
-                if (!database) {
-                    alert("Error: No hay conexión con la base de datos");
-                    return;
-                }
-
-                // Si estamos editando, usamos el ID existente. Si es nuevo, Firebase genera uno.
+                const newProfile = { ...formData, id: editingId || Date.now() };
                 if (editingId) {
-                    database.ref('perfiles/' + editingId).set(formData)
-                        .then(() => {
-                            setIsModalOpen(false);
-                            setEditingId(null);
-                        })
-                        .catch(error => console.error("Error al actualizar:", error));
+                    setPerfiles(perfiles.map(p => p.id === editingId ? newProfile : p));
                 } else {
-                    const nuevoRef = database.ref('perfiles').push();
-                    nuevoRef.set(formData)
-                        .then(() => {
-                            setIsModalOpen(false);
-                            setEditingId(null);
-                        })
-                        .catch(error => console.error("Error al guardar:", error));
+                    setPerfiles([...perfiles, newProfile]);
                 }
+                setIsModalOpen(false);
+                setEditingId(null);
             };
 
             const saveCategory = (e) => {
@@ -1085,4 +1043,3 @@ const saveProfile = (e) => {
     </script>
 </body>
 </html>
-
