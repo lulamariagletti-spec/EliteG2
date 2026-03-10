@@ -130,12 +130,16 @@
         const App = () => {
             const [perfiles, setPerfiles] = useState([]);
                 const neonColors = {
-                    "CANTANTE": "border-cyan-400 shadow-[0_0_25px_rgba(34,211,238,0.8),inset_0_0_10px_rgba(34,211,238,0.4)]",
-                    "NSFW": "border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.8),inset_0_0_10px_rgba(239,68,68,0.4)]",
-                    "ACTRIZ": "border-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.8),inset_0_0_10px_rgba(250,204,21,0.4)]",
-                    "MODELO": "border-purple-500 shadow-[0_0_25px_rgba(168,85,247,0.8),inset_0_0_10px_rgba(168,85,247,0.4)]",
-                    "INFLUENCER": "border-pink-500 shadow-[0_0_25px_rgba(236,72,153,0.8),inset_0_0_10px_rgba(236,72,153,0.4)]",
-                    "DEFAULT": "border-slate-700 shadow-none"
+  "CANTANTE": { color: "#22d3ee", sombra: "rgba(34,211,238,0.8)" },    // Cyan
+        "NSFW": { color: "#ef4444", sombra: "rgba(239,68,68,0.8)" },        // Rojo Fuego
+        "ACTRIZ": { color: "#facc15", sombra: "rgba(250,204,21,0.8)" },      // Dorado/Amarillo
+        "MODELO": { color: "#a855f7", sombra: "rgba(168,85,247,0.8)" },      // Violeta
+        "BAILARINA": { color: "#6366f1", sombra: "rgba(99,102,241,0.8)" },    // Indigo
+        "INFLUENCER": { color: "#ec4899", sombra: "rgba(236,72,153,0.8)" },   // Rosa
+        "PERIODISTA": { color: "#0ea5e9", sombra: "rgba(14,165,233,0.8)" },   // Celeste
+        "ATLETA": { color: "#f97316", sombra: "rgba(249,115,22,0.8)" },       // Naranja
+        "OTRO": { color: "#94a3b8", sombra: "rgba(148,163,184,0.8)" },       // Gris Plata
+        "DEFAULT": { color: "#334155", sombra: "transparent" }
                 };
             const [minEdad, setMinEdad] = useState(18);
             const [maxEdad, setMaxEdad] = useState(60);
@@ -156,6 +160,7 @@
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [isCatModalOpen, setIsCatModalOpen] = useState(false);
             const [showUrlModal, setShowUrlModal] = useState(false); 
+            const [photos, setPhotos] = React.useState([]);
             const [images, setImages] = React.useState([]);
             const [imageUrl, setImageUrl] = React.useState('');
             const [showGallery, setShowGallery] = useState(false);
@@ -227,7 +232,7 @@
             useEffect(() => {
                 const handleMessage = (event) => {
                     if (event.data.type === 'ADD_IMAGE' && event.data.url) {
-                        const profileId = editingId; // Usamos el ID del perfil que tenés abierto
+                        const profileId = event.data.id || editingId; // Usamos el ID del perfil que tenés abierto
                         if (!profileId) return;
 
                         const galleryRef = db.ref(`perfiles/${profileId}/galeria/fotos`);
@@ -679,6 +684,7 @@ const saveProfile = (e) => {
                                     <div className="flex justify-between items-center mt-1">
                                         <span className="text-cyan-400 text-[7px] font-black uppercase tracking-widest">{p.profesion}</span>
                                         <p className="text-[7px] font-bold text-slate-400 uppercase">{p.ciudad}</p>
+                                        
                                     </div>
                                 </div>
                             </div>
@@ -891,7 +897,45 @@ const saveProfile = (e) => {
         nuevaVentana.document.write(`
             <html>
             <head>
-                <title>Galería de ${formData.nombre}</title>
+                <h1>Galería de ${formData.nombre}</h1>
+<div class="grid">
+    ${formData.galeria && formData.galeria.fotos ? formData.galeria.fotos.map(foto => {
+    // El arcoíris del placer: Colores según profesión
+    const config = {
+        "CANTANTE": { color: "#22d3ee", sombra: "rgba(34,211,238,0.8)" },    // Cyan
+        "NSFW": { color: "#ef4444", sombra: "rgba(239,68,68,0.8)" },        // Rojo Fuego
+        "ACTRIZ": { color: "#facc15", sombra: "rgba(250,204,21,0.8)" },      // Dorado/Amarillo
+        "MODELO": { color: "#a855f7", sombra: "rgba(168,85,247,0.8)" },      // Violeta
+        "BAILARINA": { color: "#6366f1", sombra: "rgba(99,102,241,0.8)" },    // Indigo
+        "INFLUENCER": { color: "#ec4899", sombra: "rgba(236,72,153,0.8)" },   // Rosa
+        "PERIODISTA": { color: "#0ea5e9", sombra: "rgba(14,165,233,0.8)" },   // Celeste
+        "ATLETA": { color: "#f97316", sombra: "rgba(249,115,22,0.8)" },       // Naranja
+        "OTRO": { color: "#94a3b8", sombra: "rgba(148,163,184,0.8)" },       // Gris Plata
+        "DEFAULT": { color: "#334155", sombra: "transparent" }
+    };
+
+    // Buscamos el estilo o usamos el default si no la encontrás
+    const estilo = config[formData.profesion?.toUpperCase()] || config["DEFAULT"];
+    
+    return `
+        <div style="
+            aspect-ratio: 1/1; 
+            border-radius: 15px; 
+            overflow: hidden; 
+            border: 2px solid ${estilo.color}; 
+            box-shadow: 0 0 15px ${estilo.sombra}; 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            background: #0f172a;
+        "
+        onmouseover="this.style.transform='scale(1.08)'; this.style.boxShadow='0 0 35px ${estilo.color}, inset 0 0 15px ${estilo.sombra}'; this.style.zIndex='10';"
+        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 15px ${estilo.sombra}'; this.style.zIndex='1';"
+        >
+            <img src="${foto}" style="width: 100%; height: 100%; object-fit: cover;" />
+        </div>
+    `;
+}).join('') : '<p style="text-align:center; grid-column: 1/-1; color: #64748b;">No hay archivos cargados, cielo.</p>'}
                 <style>
                     body { 
                         background-color: #020617; 
@@ -966,15 +1010,14 @@ const saveProfile = (e) => {
                 <div id="miModal" class="modal-url">
                     <h2 style="margin:0; font-size: 14px; color: #94a3b8;">PEGAR URL DEL ARCHIVO</h2>
                     <input type="text" id="nuevaFotoUrl" placeholder="https://ejemplo.com/foto.jpg">
-                    <button onclick="window.opener.postMessage({type: 'ADD_IMAGE', url: document.getElementById('nuevaFotoUrl').value}, '*'); document.getElementById('miModal').style.display='none'; document.getElementById('nuevaFotoUrl').value='';" 
+                    <button onclick="window.opener.postMessage({type: 'ADD_IMAGE', url: document.getElementById('nuevaFotoUrl').value, id: '${editingId}'}, '*'); document.getElementById('miModal').style.display='none'; document.getElementById('nuevaFotoUrl').value='';" 
                         style="margin-top: 15px; width: 100%; padding: 10px; background: #06b6d4; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                         Guardar
                     </button>
                 </div>
-
-                <h1>Galería de ${formData.nombre}</h1>
                 <div class="grid">
                     </div>
+                    
             </body>
             </html>
         `);
