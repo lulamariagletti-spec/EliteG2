@@ -204,6 +204,16 @@
                         .catch(err => console.error("No quiso entrar:", err));
                 });
             };
+            const handleDelete = async (id, e) => {
+                e.stopPropagation(); // Esto es para que no se abra la foto cuando hacés click en la cruz
+                if(confirm('¿Estás seguro de que querés eliminar esto, corazón?')) {
+                    try {
+                        await db.collection('galeria').doc(id).delete();
+                    } catch (error) {
+                        console.error("Error al borrar de Firebase:", error);
+                    }
+                }
+            };
 
             const [catFormData, setCatFormData] = useState({
                 label: '',
@@ -230,19 +240,44 @@
             }, [activeTab, isModalOpen, isCatModalOpen, perfiles, searchQuery, selectedCategory, filters, categorias]);
 
             useEffect(() => {
-                const handleMessage = (event) => {
-                    if (event.data.type === 'ADD_IMAGE' && event.data.url) {
-                        const profileId = event.data.id || editingId; // Usamos el ID del perfil que tenés abierto
-                        if (!profileId) return;
-
-                        const galleryRef = db.ref(`perfiles/${profileId}/galeria/fotos`);
-                        galleryRef.once('value', (snapshot) => {
-                            const currentPhotos = snapshot.val() || [];
-                            const updatedPhotos = [...currentPhotos, event.data.url];
-                            galleryRef.set(updatedPhotos)
-                                .then(() => console.log("¡La foto entró enterita!"))
-                                .catch(err => console.error("No quiso entrar:", err));
-                        });
+                const handleMessage = async (event) => {
+                    if (event.data.type === 'ADD_IMAGE') {
+                        const { url, id } = event.data;
+                        const docRef = db.collection('galeria').doc(id);
+                        const doc = await docRef.get();
+                        if (doc.exists) {
+                            const fotosActuales = doc.data().galeria?.fotos || [];
+                            const nuevasFotos = [...fotosActuales, url];
+                            await docRef.update({ 'galeria.fotos': nuevasFotos });
+                            // Actualizamos el estado para que se vea el cambio al toque
+                            setEditFormData(prev => ({
+                                ...prev,
+                                galeria: { ...prev.galeria, fotos: nuevasFotos }
+                            }));
+                        }
+                    }
+                    
+                    if (event.data.type === 'DELETE_IMAGE') {
+                        const { index, id } = event.data;
+                        const docRef = db.collection('galeria').doc(id);
+                        const doc = await docRef.get();
+                        
+                        if (doc.exists) {
+                            const fotosActuales = doc.data().galeria?.fotos || [];
+                            // Filtramos el array: sacamos la foto por su posición
+                            const nuevasFotos = fotosActuales.filter((_, i) => i !== index);
+                            
+                            // 1. Lo borramos de la base de datos (Firebase)
+                            await docRef.update({ 'galeria.fotos': nuevasFotos });
+                            
+                            // 2. Lo borramos del estado local para que la interfaz se entere
+                            setEditFormData(prev => ({
+                                ...prev,
+                                galeria: { ...prev.galeria, fotos: nuevasFotos }
+                            }));
+                            
+                            console.log("¡Borrada de todos lados, como tu ex!");
+                        }
                     }
                 };
                 window.addEventListener('message', handleMessage);
@@ -482,10 +517,6 @@ const saveProfile = (e) => {
                     }).sort((a, b) => parseFloat(calcularPromedio(b)) - parseFloat(calcularPromedio(a)));
                 }
 
-                if (activeTab === 'CALIFICAR') {
-                    return base.filter(p => Object.values(p.puntuaciones).every(v => v === 0));
-                }
-
                 if (activeTab === 'CATEGORIAS' && selectedCategory) {
                     return base.filter(p => obtenerCategoriasDePerfil(p).includes(selectedCategory));
                 }
@@ -510,7 +541,6 @@ const saveProfile = (e) => {
                             {[
                                 { id: 'EXPLORAR', icon: 'layout-grid', label: 'Explorar' },
                                 { id: 'RANKING', icon: 'trending-up', label: 'Ranking' },
-                                { id: 'CALIFICAR', icon: 'award', label: 'Calificar' },
                                 { id: 'CATEGORIAS', icon: 'folder-heart', label: 'Categorías' }
                             ].map(item => (
                                 <button 
@@ -873,9 +903,12 @@ const saveProfile = (e) => {
                     {isModalOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm">
                             <div className={`bg-[#0a0f1e] w-full ${editingId || activeTab === 'CALIFICAR' ? 'max-w-5xl' : 'max-w-2xl'} rounded-[4rem] overflow-hidden shadow-2xl border border-slate-800 max-h-[90vh] flex flex-col relative animate-in zoom-in-95 duration-300`}>
-                                <button onClick={handleAddGalleryItem} className="flex-1 bg-white/10 py-4 rounded-xl font-bold hover:bg-white/20 transition-all text-xs">                                    
-                                    <LucideIcon name="x" size={24} />
-                                </button>
+                               <button 
+    onClick={() => setIsModalOpen(false)} 
+    className="p-2 hover:bg-slate-800 rounded-full transition-colors"
+>
+    <LucideIcon name="x" size={20} className="text-slate-400" />
+</button>
                                 <form onSubmit={saveProfile} className="flex-1 overflow-y-auto p-12 space-y-12">
                                     
                                     <div className={`grid grid-cols-1 ${editingId || activeTab === 'CALIFICAR' ? 'lg:grid-cols-2' : ''} gap-16`}>
@@ -883,6 +916,7 @@ const saveProfile = (e) => {
         {/* CABECERA Y VISTA PREVIA */}
         <div className="flex flex-col items-center gap-6">
             <div className="flex items-center gap-4 self-start">
+                
                 <div className="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-cyan-900/50">
                     <LucideIcon name={editingId ? "user" : "user-plus"} />
                 </div>
@@ -890,6 +924,7 @@ const saveProfile = (e) => {
                     {editingId ? 'Editar Perfil' : 'Información del Perfil'}
                 </h3>
                 {editingId && (
+                    
 <button 
     type="button"
     onClick={() => {
@@ -932,7 +967,29 @@ const saveProfile = (e) => {
         onmouseover="this.style.transform='scale(1.08)'; this.style.boxShadow='0 0 35px ${estilo.color}, inset 0 0 15px ${estilo.sombra}'; this.style.zIndex='10';"
         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 15px ${estilo.sombra}'; this.style.zIndex='1';"
         >
-            <img src="${foto}" style="width: 100%; height: 100%; object-fit: cover;" />
+           <button 
+    onclick="window.opener.postMessage({type: 'DELETE_IMAGE', index: ${formData.galeria.fotos.indexOf(foto)}, id: '${editingId}'}, '*'); this.parentElement.remove();"
+    style="
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        z-index: 20;
+        background: #ef4444;
+        color: white;
+        border: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    "
+>✕</button>
+<img src="${foto}" style="width: 100%; height: 100%; object-fit: cover;" />
         </div>
     `;
 }).join('') : '<p style="text-align:center; grid-column: 1/-1; color: #64748b;">No hay archivos cargados, cielo.</p>'}
@@ -1106,6 +1163,7 @@ const saveProfile = (e) => {
                 </div>
                 <h3 className="text-xl font-black italic tracking-tighter text-white">Evaluación G2 Score</h3>
             </div>
+    
             <div className="space-y-8">
                 {[
                     { titulo: "Rostro", items: ['Rostro', 'Ojos', 'Boca', 'Cabello'] },
@@ -1156,9 +1214,13 @@ const saveProfile = (e) => {
                     {isCatModalOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm">
                             <div className="bg-[#0a0f1e] w-full max-w-5xl rounded-[4rem] overflow-hidden shadow-2xl border border-slate-800 max-h-[90vh] flex flex-col relative animate-in zoom-in-95 duration-300">
-                                <button onClick={() => setIsCatModalOpen(false)} className="absolute top-8 right-8 bg-slate-900 p-4 rounded-full text-slate-500 hover:text-cyan-400 transition-all z-50">
-                                    <LucideIcon name="x" size={24} />
-                                </button>
+                                <button 
+    type="button"
+    onClick={() => setIsCatModalOpen(false)} 
+    className="p-4 hover:bg-slate-800 rounded-full transition-all"
+>
+    <LucideIcon name="x" size={24} className="text-slate-400" />
+</button>
                                 <form onSubmit={saveCategory} className="flex-1 overflow-y-auto p-12 space-y-12">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                                         <div className="space-y-8">
