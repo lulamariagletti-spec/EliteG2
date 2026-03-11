@@ -71,6 +71,52 @@
             background-position: right 1rem center;
             background-size: 1em;
         }
+        /* La lencería de gala para tu podio */
+        .podium-1 {
+            background: linear-gradient(90deg, 
+                rgba(255, 215, 0, 0.25) 0%, 
+                rgba(255, 215, 0, 0.1) 50%, 
+                rgba(255, 215, 0, 0.2) 100%) !important;
+            border-left: 8px solid #ffd700 !important;
+            box-shadow: inset 0 0 40px rgba(255, 215, 0, 0.15);
+        }
+        .podium-2 {
+            background: linear-gradient(90deg, 
+                rgba(192, 192, 192, 0.2) 0%, 
+                rgba(192, 192, 192, 0.08) 50%, 
+                rgba(192, 192, 192, 0.15) 100%) !important;
+            border-left: 6px solid #c0c0c0 !important;
+            box-shadow: inset 0 0 30px rgba(192, 192, 192, 0.1);
+        }
+        .podium-3 {
+            background: linear-gradient(90deg, 
+                rgba(205, 127, 50, 0.18) 0%, 
+                rgba(205, 127, 50, 0.06) 50%, 
+                rgba(205, 127, 50, 0.12) 100%) !important;
+            border-left: 5px solid #cd7f32 !important;
+            box-shadow: inset 0 0 25px rgba(205, 127, 50, 0.08);
+        }
+        /* Quitamos el límite de ancho para que el brillo no se corte */
+        tr.podium-1 td, tr.podium-2 td, tr.podium-3 td {
+            background: transparent !important;
+        }
+
+        /* Estilo para la barrita de scroll (el slider) para que no sea fea */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #22d3ee;
+            border-radius: 10px;
+        }
+
+        /* Colores específicos para los números del ranking */
+        .text-gold { color: #ffd700 !important; filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6)); }
+        .text-silver { color: #c0c0c0 !important; filter: drop-shadow(0 0 6px rgba(192, 192, 192, 0.5)); }
+        .text-bronze { color: #cd7f32 !important; filter: drop-shadow(0 0 6px rgba(205, 127, 50, 0.5)); }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -128,17 +174,18 @@
         };
 
         const App = () => {
+            const [carpetaAbierta, setCarpetaAbierta] = React.useState(null);
             const [perfiles, setPerfiles] = useState([]);
                 const neonColors = {
-  "CANTANTE": { color: "#22d3ee", sombra: "rgba(34,211,238,0.8)" },    // Cyan
-        "NSFW": { color: "#ef4444", sombra: "rgba(239,68,68,0.8)" },        // Rojo Fuego
-        "ACTRIZ": { color: "#facc15", sombra: "rgba(250,204,21,0.8)" },      // Dorado/Amarillo
-        "MODELO": { color: "#a855f7", sombra: "rgba(168,85,247,0.8)" },      // Violeta
-        "BAILARINA": { color: "#6366f1", sombra: "rgba(99,102,241,0.8)" },    // Indigo
-        "INFLUENCER": { color: "#ec4899", sombra: "rgba(236,72,153,0.8)" },   // Rosa
-        "PERIODISTA": { color: "#0ea5e9", sombra: "rgba(14,165,233,0.8)" },   // Celeste
-        "ATLETA": { color: "#f97316", sombra: "rgba(249,115,22,0.8)" },       // Naranja
-        "OTRO": { color: "#94a3b8", sombra: "rgba(148,163,184,0.8)" },       // Gris Plata
+        "CANTANTE": { color: "#0ea5e9", sombra: "rgba(14,165,233,0.8)" },    // Celeste
+        "NSFW":  { color: "#ef4444", sombra: "rgba(239,68,68,0.8)" },      // Rojo
+        "ACTRIZ":{ color: "#22c55e", sombra: "rgba(34,197,94,0.8)" },        // Verde
+        "MODELO": { color: "#f97316", sombra: "rgba(249,115,22,0.8)" },      // Naranja
+        "BAILARINA": { color: "#a855f7", sombra: "rgba(168,85,247,0.8)" },    // Morado
+        "INFLUENCER":{ color: "#ec4899", sombra: "rgba(236,72,153,0.8)" },      // Rosada
+        "PERIODISTA": { color: "#facc15", sombra: "rgba(250,204,21,0.8)" },  // Amarillo
+        "ATLETA":  { color: "#78350f", sombra: "rgba(120,53,15,0.8)" },         // Marron
+        "OTRO":{ color: "#ffffff", sombra: "rgba(255,255,255,0.8)" }, // Blanco
         "DEFAULT": { color: "#334155", sombra: "transparent" }
                 };
             const [minEdad, setMinEdad] = useState(18);
@@ -152,7 +199,10 @@
                     if (lowP.includes('actriz')) return '🎬';
                     if (lowP.includes('modelo')) return '📸';
                     if (lowP.includes('influencer')) return '📱';
-                    return '💎';
+                    if (lowP.includes('periodista')) return '👓';
+                    if (lowP.includes('otro')) return '📖';
+                    if (lowP.includes('bailarina')) return '💃';
+                    if (lowP.includes('atleta')) return '🏋️‍♀️';
                 };
             const [categorias, setCategorias] = useState(INITIAL_CATEGORIES);
             const [activeTab, setActiveTab] = useState('EXPLORAR');
@@ -165,7 +215,7 @@
             const [imageUrl, setImageUrl] = React.useState('');
             const [showGallery, setShowGallery] = useState(false);
             const [editingId, setEditingId] = useState(null);
-            const [selectedCategory, setSelectedCategory] = useState(null);
+            const [selectedCategory, setSelectedCategory] = React.useState(null);
             const [sortBy, setSortBy] = useState('promedio');
             
             const [filters, setFilters] = useState({
@@ -177,7 +227,31 @@
                 scoreOp: 'Superior a',
                 scoreVal: ''
             });
-
+const handleSaveCategoria = async (e) => {
+    e.preventDefault();
+    try {
+        // Si catFormData tiene firebaseId, es una EDICIÓN
+        if (catFormData.firebaseId) {
+            const catRef = db.collection('categorias').doc(catFormData.firebaseId);
+            await catRef.update({
+                label: catFormData.label,
+                reglas: catFormData.reglas,
+                updatedAt: new Date()
+            });
+            console.log("Carpeta actualizada, bombón");
+        } else {
+            // Si no tiene ID, es una NUEVA (aquí va tu código de siempre)
+            await db.collection('categorias').add({
+                ...catFormData,
+                createdAt: new Date()
+            });
+        }
+        setIsCatModalOpen(false);
+        resetCatForm(); // Limpiá el formulario después de guardar
+    } catch (error) {
+        console.error("Error al guardar:", error);
+    }
+};
         const [formData, setFormData] = useState({
                 nombre: '', nacionalidad: '', ciudad: '', profesion: '', fechaNacimiento: '', estaturaCm: '', fotos: [],
                 galeria: { fotos: [], gifs: [], videos: [] },
@@ -240,46 +314,48 @@
             }, [activeTab, isModalOpen, isCatModalOpen, perfiles, searchQuery, selectedCategory, filters, categorias]);
 
             useEffect(() => {
-                const handleMessage = async (event) => {
-                    if (event.data.type === 'ADD_IMAGE') {
-                        const { url, id } = event.data;
-                        const docRef = db.collection('galeria').doc(id);
-                        const doc = await docRef.get();
-                        if (doc.exists) {
-                            const fotosActuales = doc.data().galeria?.fotos || [];
-                            const nuevasFotos = [...fotosActuales, url];
-                            await docRef.update({ 'galeria.fotos': nuevasFotos });
-                            // Actualizamos el estado para que se vea el cambio al toque
-                            setEditFormData(prev => ({
-                                ...prev,
-                                galeria: { ...prev.galeria, fotos: nuevasFotos }
-                            }));
-                        }
-                    }
-                    
-                    if (event.data.type === 'DELETE_IMAGE') {
-                        const { index, id } = event.data;
-                        const docRef = db.collection('galeria').doc(id);
-                        const doc = await docRef.get();
-                        
-                        if (doc.exists) {
-                            const fotosActuales = doc.data().galeria?.fotos || [];
-                            // Filtramos el array: sacamos la foto por su posición
-                            const nuevasFotos = fotosActuales.filter((_, i) => i !== index);
-                            
-                            // 1. Lo borramos de la base de datos (Firebase)
-                            await docRef.update({ 'galeria.fotos': nuevasFotos });
-                            
-                            // 2. Lo borramos del estado local para que la interfaz se entere
-                            setEditFormData(prev => ({
-                                ...prev,
-                                galeria: { ...prev.galeria, fotos: nuevasFotos }
-                            }));
-                            
-                            console.log("¡Borrada de todos lados, como tu ex!");
-                        }
-                    }
-                };
+                
+   const handleMessage = async (event) => {
+    // 1. Esto es para AGREGAR fotos (ya funciona, pero lo dejamos prolijo)
+    if (event.data.type === 'ADD_IMAGE') {
+        const { url, id } = event.data;
+        const docRef = db.collection('chicas').doc(id); // <--- CAMBIADO A 'chicas'
+        const doc = await docRef.get();
+        if (doc.exists) {
+            const fotosActuales = doc.data().galeria?.fotos || [];
+            const nuevasFotos = [...fotosActuales, url];
+            await docRef.update({ 'galeria.fotos': nuevasFotos });
+            setEditFormData(prev => ({
+                ...prev,
+                galeria: { ...prev.galeria, fotos: nuevasFotos }
+            }));
+        }
+    }
+    
+    // 2. Esto es para BORRAR fotos (el que nos está haciendo renegar)
+    if (event.data.type === 'DELETE_IMAGE') {
+        const { index, id } = event.data;
+        const docRef = db.collection('chicas').doc(id); // <--- CAMBIADO A 'chicas'
+        const doc = await docRef.get();
+        
+        if (doc.exists) {
+            const fotosActuales = doc.data().galeria?.fotos || [];
+            // Filtramos el array para sacar la foto que seleccionaste
+            const nuevasFotos = fotosActuales.filter((_, i) => i !== index);
+            
+            // Guardamos en Firebase
+            await docRef.update({ 'galeria.fotos': nuevasFotos });
+            
+            // Actualizamos la pantalla al toque
+            setEditFormData(prev => ({
+                ...prev,
+                galeria: { ...prev.galeria, fotos: nuevasFotos }
+            }));
+            
+            console.log
+        }
+    }
+};
                 window.addEventListener('message', handleMessage);
                 const perfilesRef = db.ref('perfiles');
                 perfilesRef.on('value', (snapshot) => {
@@ -354,7 +430,7 @@
                     const r = c.reglas;
                     let matches = true;
                     
-                    // Filtros acumulables (si la lista tiene algo, el perfil debe estar en ella)
+                    // Filtros de texto (nacionalidad, profesión, ciudad)
                     if (r.nacionalidades?.length > 0 && !r.nacionalidades.some(n => nac === n.toLowerCase())) matches = false;
                     if (r.profesiones?.length > 0 && !r.profesiones.some(p => prof === p.toLowerCase())) matches = false;
                     if (r.ciudades?.length > 0 && !r.ciudades.some(ciu_regla => ciu === ciu_regla.toLowerCase())) matches = false;
@@ -362,15 +438,20 @@
                     // Filtros de edad
                     if (r.edadMin && (edad === '?' || edad < parseInt(r.edadMin))) matches = false;
                     if (r.edadMax && (edad === '?' || edad > parseInt(r.edadMax))) matches = false;
+                    
+                    // Filtro de puntuación (ej: Rostro > 8)
                     if (r.caracteristica && r.umbral) {
                         const score = p.puntuaciones[r.caracteristica];
                         const umbral = parseInt(r.umbral);
                         if (r.operador === 'Superior a' && score <= umbral) matches = false;
                         if (r.operador === 'Inferior a' && score >= umbral) matches = false;
                     }
-                    if (matches) cats.push(c.id);
+
+                    // USAMOS firebaseId PORQUE ES EL QUE VIENE DE LA BASE DE DATOS
+                    if (matches) cats.push(c.firebaseId);
                 });
                 return cats;
+            
                 const handleAddGalleryItem = (url) => {
                 if (!url || !editingId) return;
                 
@@ -441,7 +522,7 @@ const saveProfile = (e) => {
                 
                 // Si no hay URL en el input que usás, no hacemos nada
                 if (!urlInput) {
-                    alert("¡Cielo, poné una URL primero!");
+                    alert("poné una URL primero!");
                     return;
                 }
 
@@ -633,95 +714,135 @@ const saveProfile = (e) => {
                         </header>
 
                         <div className="flex-1 overflow-y-auto p-12">
-    {/* 1. VISTA EXPLORAR (SOLO CARPETAS) */}
-    {activeTab === 'EXPLORAR' && !selectedCategory && (
-        <div className="space-y-10 animate-in fade-in duration-500">
-            <div>
-                <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Explorar </h2>
-                <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest mt-1">Organización automática por profesión</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {[...new Set(perfiles.map(p => p.profesion || 'Perfil'))].map(prof => {
-                    const count = perfiles.filter(p => (p.profesion || 'Perfil') === prof).length;
-                    const getEmoji = (p) => {
-                    const lowP = p.toLowerCase();
-                    if(lowP.includes('cantante')) return '🎤';
-                    if(lowP.includes('modelo')) return '📸';
-                    if(lowP.includes('actriz') || lowP.includes('actor')) return '🎬'; // <-- Aquí el de cine
-                    if(lowP.includes('nsfw')) return '🔥'; // <-- Aquí el fueguito
-                    if(lowP.includes('influencer')) return '📱';
-                    if(lowP.includes('atleta')) return '🏋️‍♀️';
-                    if(lowP.includes('bailarina')) return '💃';
-                    return '💼'; // Emoji por defecto si no encuentra la profesión
-                };
-
-                    return (
-                        <div key={prof} onClick={() => setSelectedCategory(prof)} className="bg-[#0a0f1e] rounded-[3.5rem] border border-slate-800 p-8 text-center cursor-pointer hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:border-cyan-500/50 transition-all group relative overflow-hidden">
-                            <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <span className="text-9xl">{getEmoji(prof)}</span>
+                            
+   {/* 1. VISTA EXPLORAR (CARPETAS POR PROFESIÓN) */}
+                    {activeTab === 'EXPLORAR' && !selectedCategory && (
+                        <div className="space-y-10 animate-in fade-in duration-500">
+                            <div>
+                                <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Explorar</h2>
+                                <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest mt-1">Organización automática por profesión</p>
                             </div>
-                            <div className="w-24 h-24 bg-slate-900 rounded-[2rem] flex items-center justify-center text-5xl mx-auto mb-6 shadow-2xl border border-slate-800 group-hover:scale-110 group-hover:border-cyan-500 transition-all duration-500">
-                                {getEmoji(prof)}
-                            </div>
-                            <h3 className="text-2xl font-black text-white mb-2 truncate uppercase tracking-tighter italic">{prof}</h3>
-                            <div className="inline-flex items-center gap-2 bg-cyan-500/10 px-5 py-2 rounded-full border border-cyan-500/20">
-                                <span className="text-[10px] font-black uppercase text-cyan-400 tracking-widest">{count} {count === 1 ? 'Perfil' : 'Perfiles'}</span>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                                {[...new Set(perfiles.map(p => p.profesion || 'Perfil'))].map(prof => {
+                                    const count = perfiles.filter(p => (p.profesion || 'Perfil') === prof).length;
+                                    const getEmoji = (p) => {
+                                        const lowP = (p || '').toLowerCase();
+                                        if(lowP.includes('cantante')) return '🎤';
+                                        if(lowP.includes('modelo')) return '📸';
+                                        if(lowP.includes('actriz') || lowP.includes('actor')) return '🎬'; 
+                                        if(lowP.includes('nsfw')) return '🔥';
+                                        if(lowP.includes('influencer')) return '📱';
+                                        if(lowP.includes('atleta')) return '🏋️‍♀️';
+                                        if(lowP.includes('bailarina')) return '💃';
+                                        if(lowP.includes('periodista')) return '👓';
+                                        if(lowP.includes('otro')) return '📖';
+                                        return '💼'; 
+                                    };
+
+                                    return (
+                                        <div 
+                                            key={prof} 
+                                            onClick={() => setSelectedCategory(prof)}
+                                            className="bg-[#0a0f1e] rounded-[3.5rem] border border-slate-800 p-8 text-center cursor-pointer hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:border-cyan-500/50 transition-all group relative overflow-hidden active:scale-95"
+                                        >
+                                            <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                                <span className="text-9xl">{getEmoji(prof)}</span>
+                                            </div>
+                                            <div className="w-24 h-24 bg-slate-900 rounded-[2rem] flex items-center justify-center text-5xl mx-auto mb-6 shadow-2xl border border-slate-800 group-hover:scale-110 group-hover:border-cyan-500 transition-all duration-500">
+                                                {getEmoji(prof)}
+                                            </div>
+                                            <h3 className="text-2xl font-black text-white mb-2 truncate uppercase tracking-tighter italic">{prof}</h3>
+                                            <div className="inline-flex items-center gap-2 bg-cyan-500/10 px-5 py-2 rounded-full border border-cyan-500/20">
+                                                <span className="text-[10px] font-black uppercase text-cyan-400 tracking-widest">{count} {count === 1 ? 'Perfil' : 'Perfiles'}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
-                    );
-                })}
-            </div>
-        </div>
-    )}
+                    )}
 
     {/* 2. VISTA DE PERFILES (CUANDO ENTRAS A UNA CARPETA) */}
     {selectedCategory && (
         <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between bg-slate-900/40 p-6 rounded-[2.5rem] border border-slate-800/50">
-                <button onClick={() => setSelectedCategory(null)} className="group flex items-center gap-3 text-cyan-500 font-black text-xs uppercase tracking-widest">
+                <button 
+                    onClick={() => setSelectedCategory(null)} 
+                    className="group flex items-center gap-3 text-cyan-500 font-black text-xs uppercase tracking-widest"
+                >
                     <div className="bg-cyan-500/10 p-2 rounded-xl group-hover:bg-cyan-500 group-hover:text-white transition-all">
-                        <LucideIcon name="arrow-left" size={16} />
+                        <i data-lucide="arrow-left" className="w-4 h-4"></i>
                     </div>
                     Volver
                 </button>
-                <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">
-                    {categorias.find(c => c.id === selectedCategory)?.label || selectedCategory}
-                </h2>            
-                </div>
+                <h2 className="text-6xl font-black italic text-white uppercase tracking-tighter leading-none">
+    {/* Si estamos en la pestaña de categorías, buscamos el nombre lindo. Si no, mostramos la profesión directamente */}
+    {activeTab === 'CATEGORIAS' 
+        ? (categorias.find(c => c.firebaseId === selectedCategory)?.label || "Carpeta Inteligente")
+        : selectedCategory
+    }
+</h2>           
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
-            {filteredProfiles.filter(p => (p.profesion || 'Perfil') === selectedCategory || activeTab === 'CATEGORIAS').map(p => {
-                // Aquí elegimos el color según la profesión
-                const profKey = p.profesion?.toUpperCase() || 'DEFAULT';
-                const neonClass = neonColors[profKey] || neonColors["DEFAULT"];
-                const emoji = getEmoji(p.profesion);
+    {(perfiles || []).filter(p => {
+        if (!p) return false;
+        // Si estamos en la pestaña de Categorías Inteligentes:
+        if (activeTab === 'CATEGORIAS') {
+            const misCategorias = obtenerCategoriasDePerfil(p);
+            return misCategorias.includes(selectedCategory);
+        }
+        // Si estamos en Explorar (por profesión):
+        return String(p.profesion || 'Perfil').trim().toLowerCase() === String(selectedCategory).trim().toLowerCase();
+    }).map(p => {
+                    const profKey = p.profesion?.toUpperCase() || 'DEFAULT';
+                    const neonClass = (typeof neonColors !== 'undefined' && neonColors[profKey]) ? neonColors[profKey] : { color: '#06b6d4', sombra: 'rgba(6,182,212,0.5)' };
+                    const emoji = (typeof getEmoji === 'function') ? getEmoji(p.profesion) : '👤';
 
-                return (
-                    <div key={p.firebaseId} onClick={() => { setFormData(p); setEditingId(p.firebaseId); setIsModalOpen(true); }}                        className={`profile-card group relative bg-slate-900 rounded-[3.5rem] overflow-hidden border-4 cursor-pointer transition-all duration-500 ${neonClass} hover:scale-[1.02]`}>
-                        <div className="aspect-[4/5] bg-slate-950 relative overflow-hidden">
-                            <img src={p.fotos[0] || 'https://via.placeholder.com/400x500'} className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" />
-                            
-                            {/* Badge de G2 Score */}
-                            <div className="absolute top-6 right-6 w-14 h-14 bg-slate-900/90 backdrop-blur-md rounded-full flex flex-col items-center justify-center border border-white/10">
-                                <span className="text-[9px] font-black text-cyan-400 leading-none">G2</span>
-                                <span className="text-lg font-black text-white">{calcularPromedio(p)}</span>
-                            </div>
+                    return (
+                        <div 
+                            key={p.firebaseId || Math.random()} 
+                            onClick={() => { 
+                                if (typeof setFormData === 'function') setFormData(p); 
+                                if (typeof setEditingId === 'function') setEditingId(p.firebaseId); 
+                                if (typeof setIsModalOpen === 'function') setIsModalOpen(true); 
+                            }}
+                            className="profile-card group relative bg-slate-900 rounded-[3.5rem] overflow-hidden border-4 cursor-pointer transition-all duration-500 hover:scale-[1.02]"
+                            style={{ borderColor: neonClass.color, boxShadow: `0 0 20px ${neonClass.sombra}` }}
+                        >
+                            <div className="aspect-[4/5] bg-slate-950 relative overflow-hidden">
+                                <img 
+                                    src={(p.fotos && p.fotos.length > 0) ? p.fotos[0] : 'https://via.placeholder.com/400x500'} 
+                                    className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" 
+                                />
+                                
+                                <div className="absolute top-6 right-6 w-14 h-14 bg-slate-900/90 backdrop-blur-md rounded-full flex flex-col items-center justify-center border border-white/10">
+                                    <span className="text-[9px] font-black text-cyan-400 leading-none">G2</span>
+                                    <span className="text-lg font-black text-white">
+                                        {typeof calcularPromedio === 'function' ? calcularPromedio(p) : '8.5'}
+                                    </span>
+                                </div>
 
-                            <div className="absolute bottom-4 left-4 right-4">
-                                <div className="text-bubble w-full">
-                                    <h3 className="text-lg font-black text-white italic tracking-tighter leading-none flex items-center gap-2">
-                                        {p.nombre} <span className="text-cyan-400 text-sm not-italic">({calcularEdad(p.fechaNacimiento)})</span> <span className="text-sm">{emoji}</span>                                    </h3>
-                                    <div className="flex justify-between items-center mt-1">
-                                        <span className="text-cyan-400 text-[7px] font-black uppercase tracking-widest">{p.profesion}</span>
-                                        <p className="text-[7px] font-bold text-slate-400 uppercase">{p.ciudad}</p>
-                                        
+                                <div className="absolute bottom-4 left-4 right-4">
+                                    <div className="text-bubble w-full bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                                        <h3 className="text-lg font-black text-white italic tracking-tighter leading-none flex items-center gap-2">
+                                            {p.nombre} 
+                                            <span className="text-cyan-400 text-sm not-italic">
+                                                ({typeof calcularEdad === 'function' ? calcularEdad(p.fechaNacimiento) : '??'})
+                                            </span> 
+                                            <span className="text-sm">{emoji}</span>
+                                        </h3>
+                                        <div className="flex justify-between items-center mt-1">
+                                            <span className="text-cyan-400 text-[7px] font-black uppercase tracking-widest">{p.profesion}</span>
+                                            <p className="text-[7px] font-bold text-slate-400 uppercase">{p.nacionalidad}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                );
-})}
+                    );
+                })}
             </div>
         </div>
     )}
@@ -766,17 +887,21 @@ const saveProfile = (e) => {
                 <tbody>
                     {sortedProfiles.map((p, idx) => (
 <tr key={p.id} onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} 
-    className="hover:bg-white/5 cursor-pointer border-b border-slate-800/50 last:border-0 transition-colors group">
+    className={`cursor-pointer border-b border-slate-800/50 last:border-0 transition-all duration-300 group ${idx === 0 ? 'podium-1' : idx === 1 ? 'podium-2' : idx === 2 ? 'podium-3' : 'hover:bg-white/5'}`}>
     
     <td className="px-8 py-5">
-        <span className={`text-lg font-black italic ${idx < 3 ? 'text-cyan-400' : 'text-slate-600'}`}>#{idx + 1}</span>
+        <span className={`font-black italic ${idx === 0 ? 'text-gold text-4xl' : idx === 1 ? 'text-silver text-3xl' : idx === 2 ? 'text-bronze text-2xl' : 'text-slate-600 text-lg'}`}>#{idx + 1}</span>
     </td>
 
     <td className="px-8 py-5">
         <div className="flex items-center gap-4">
             {/* MINIATURA CON NEÓN */}
-            <div className={`w-14 h-14 rounded-xl border-2 p-0.5 transition-all duration-500 ${neonColors[p.profesion?.toUpperCase()] || neonColors["DEFAULT"]}`}>
-                <img src={p.fotos[0]} className="w-full h-full rounded-[inherit] object-cover" alt={p.nombre} />
+            <div className="w-14 h-14 rounded-xl border-2 p-0.5 transition-all duration-500"
+     style={{
+         borderColor: (neonColors[p.profesion?.toUpperCase()] || neonColors["DEFAULT"]).color,
+         boxShadow: `0 0 10px ${(neonColors[p.profesion?.toUpperCase()] || neonColors["DEFAULT"]).sombra}`
+     }}>
+                <img src={p.fotos?.[0] || 'https://via.placeholder.com/400x500'} className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" />
             </div>
             <div>
                 <p className="font-black text-white text-sm uppercase tracking-tighter">{p.nombre} {getEmoji(p.profesion)}</p>
@@ -814,8 +939,10 @@ const saveProfile = (e) => {
 </td>
 
     <td className="px-8 py-5 text-right">
-        <div className="inline-block bg-slate-900 border border-slate-700 px-4 py-2 rounded-xl group-hover:border-cyan-500/50 transition-all">
-            <span className="text-cyan-400 font-black text-lg leading-none">{calcularPromedio(p)}</span>
+        <div className={`inline-block bg-slate-900 border px-4 py-2 rounded-xl transition-all duration-300 ${idx === 0 ? 'border-[#ffd700]/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : idx === 1 ? 'border-[#c0c0c0]/50 shadow-[0_0_15px_rgba(192,192,192,0.3)]' : idx === 2 ? 'border-[#cd7f32]/50 shadow-[0_0_15px_rgba(205,127,50,0.3)]' : 'border-slate-700 group-hover:border-cyan-500/50'}`}>
+            <span className={`font-black leading-none ${idx === 0 ? 'text-gold' : idx === 1 ? 'text-silver' : idx === 2 ? 'text-bronze' : 'text-cyan-400 text-lg'}`}>
+                {calcularPromedio(p)}
+            </span>
         </div>
     </td>
 </tr>
@@ -844,25 +971,33 @@ const saveProfile = (e) => {
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
 {categorias.map(cat => (
-    <div key={cat.id} onClick={() => setSelectedCategory(cat.id)} className="group relative bg-[#0a0f1e] rounded-[2.5rem] overflow-hidden border border-slate-800 cursor-pointer hover:border-cyan-500 transition-all duration-500 shadow-2xl aspect-[3/4]">
-        
+<div key={cat.firebaseId} onClick={() => setSelectedCategory(cat.firebaseId)} className="group relative bg-[#0a0f1e] rounded-[2.5rem] overflow-hidden border border-slate-800 cursor-pointer hover:border-cyan-500 transition-all duration-500 shadow-2xl aspect-[3/4]">        
         {/* BOTONES DE ACCIÓN: EDITAR Y ELIMINAR */}
         <div className="absolute top-5 right-5 z-50 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
             <button 
-                onClick={(e) => { 
-                    e.stopPropagation(); 
-                    setCatFormData({...cat}); // Cargamos los datos de la categoría
-                    setIsCatModalOpen(true);   // Abrimos el modal de categorías
-                }} 
-                className="w-8 h-8 flex items-center justify-center bg-slate-900/90 hover:bg-cyan-500 text-white rounded-full border border-white/10 transition-colors shadow-xl"
-            >
-                <LucideIcon name="pencil" size={14} />
-            </button>
+    onClick={(e) => { 
+        e.stopPropagation(); 
+        // Preparamos los datos asegurándonos de que las listas existan (si no, ponemos [])
+        setCatFormData({
+            ...cat,
+            reglas: {
+                ...cat.reglas,
+                nacionalidades: cat.reglas?.nacionalidades || [],
+                profesiones: cat.reglas?.profesiones || [],
+                ciudades: cat.reglas?.ciudades || []
+            }
+        });
+        setIsCatModalOpen(true); // Abrimos el modal
+    }} 
+    className="w-8 h-8 flex items-center justify-center bg-slate-900/90 hover:bg-cyan-500 text-white rounded-full border border-white/10 transition-colors shadow-xl"
+>
+    <LucideIcon name="pencil" size={14} />
+</button>
             <button 
                 onClick={(e) => { 
                     e.stopPropagation(); 
                     if(window.confirm('¿Seguro que querés borrar esta carpeta?')) {
-                        setCategorias(categorias.filter(c => c.id !== cat.id));
+                        setCategorias(categorias.filter(c => c.id !== cat.firebaseId));
                     }
                 }} 
                 className="w-8 h-8 flex items-center justify-center bg-slate-900/90 hover:bg-red-600 text-white rounded-full border border-white/10 transition-colors shadow-xl"
@@ -887,7 +1022,7 @@ const saveProfile = (e) => {
             </h3>
             <div className="inline-flex items-center gap-2 bg-cyan-500/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-cyan-500/30">
                 <span className="text-[10px] font-black uppercase text-cyan-400 tracking-widest">
-                    {perfiles.filter(p => obtenerCategoriasDePerfil(p).includes(cat.id)).length} Perfiles
+                    {perfiles.filter(p => obtenerCategoriasDePerfil(p).includes(cat.firebaseId)).length} Perfiles
                 </span>
             </div>
         </div>
@@ -937,15 +1072,15 @@ const saveProfile = (e) => {
     ${formData.galeria && formData.galeria.fotos ? formData.galeria.fotos.map(foto => {
     // El arcoíris del placer: Colores según profesión
     const config = {
-        "CANTANTE": { color: "#22d3ee", sombra: "rgba(34,211,238,0.8)" },    // Cyan
-        "NSFW": { color: "#ef4444", sombra: "rgba(239,68,68,0.8)" },        // Rojo Fuego
-        "ACTRIZ": { color: "#facc15", sombra: "rgba(250,204,21,0.8)" },      // Dorado/Amarillo
-        "MODELO": { color: "#a855f7", sombra: "rgba(168,85,247,0.8)" },      // Violeta
-        "BAILARINA": { color: "#6366f1", sombra: "rgba(99,102,241,0.8)" },    // Indigo
-        "INFLUENCER": { color: "#ec4899", sombra: "rgba(236,72,153,0.8)" },   // Rosa
-        "PERIODISTA": { color: "#0ea5e9", sombra: "rgba(14,165,233,0.8)" },   // Celeste
-        "ATLETA": { color: "#f97316", sombra: "rgba(249,115,22,0.8)" },       // Naranja
-        "OTRO": { color: "#94a3b8", sombra: "rgba(148,163,184,0.8)" },       // Gris Plata
+        "CANTANTE": { color: "#0ea5e9", sombra: "rgba(14,165,233,0.8)" },    // Celeste
+        "NSFW":  { color: "#ef4444", sombra: "rgba(239,68,68,0.8)" },      // Rojo
+        "ACTRIZ":{ color: "#22c55e", sombra: "rgba(34,197,94,0.8)" },        // Verde
+        "MODELO": { color: "#f97316", sombra: "rgba(249,115,22,0.8)" },      // Naranja
+        "BAILARINA": { color: "#a855f7", sombra: "rgba(168,85,247,0.8)" },    // Morado
+        "INFLUENCER":{ color: "#ec4899", sombra: "rgba(236,72,153,0.8)" },      // Rosada
+        "PERIODISTA": { color: "#facc15", sombra: "rgba(250,204,21,0.8)" },  // Amarillo
+        "ATLETA":  { color: "#78350f", sombra: "rgba(120,53,15,0.8)" },         // Marron
+        "OTRO":{ color: "#ffffff", sombra: "rgba(255,255,255,0.8)" }, // Blanco
         "DEFAULT": { color: "#334155", sombra: "transparent" }
     };
 
@@ -992,7 +1127,7 @@ const saveProfile = (e) => {
 <img src="${foto}" style="width: 100%; height: 100%; object-fit: cover;" />
         </div>
     `;
-}).join('') : '<p style="text-align:center; grid-column: 1/-1; color: #64748b;">No hay archivos cargados, cielo.</p>'}
+}).join('') : '<p style="text-align:center; grid-column: 1/-1; color: #64748b;">No hay archivos cargados.</p>'}
                 <style>
                     body { 
                         background-color: #020617; 
@@ -1356,3 +1491,5 @@ const saveProfile = (e) => {
     </script>
 </body>
 </html>
+
+
