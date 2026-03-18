@@ -1009,6 +1009,7 @@ const saveProfile = (e) => {
         const nuevaVentana = window.open('', '_blank');
         const fotosGaleria = formData.galeria?.fotos || [];
         nuevaVentana.document.write(`
+            <!DOCTYPE html>
             <html>
             <head>
                 <title>Galería de ${formData.nombre}</title>
