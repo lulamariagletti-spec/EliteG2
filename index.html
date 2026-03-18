@@ -227,31 +227,22 @@
                 scoreOp: 'Superior a',
                 scoreVal: ''
             });
-const handleSaveCategoria = async (e) => {
-    e.preventDefault();
-    try {
-        // Si catFormData tiene firebaseId, es una EDICIÓN
-        if (catFormData.firebaseId) {
-            const catRef = db.collection('categorias').doc(catFormData.firebaseId);
-            await catRef.update({
-                label: catFormData.label,
-                reglas: catFormData.reglas,
-                updatedAt: new Date()
-            });
-            console.log("Carpeta actualizada, bombón");
-        } else {
-            // Si no tiene ID, es una NUEVA (aquí va tu código de siempre)
-            await db.collection('categorias').add({
-                ...catFormData,
-                createdAt: new Date()
-            });
-        }
-        setIsCatModalOpen(false);
-        resetCatForm(); // Limpiá el formulario después de guardar
-    } catch (error) {
-        console.error("Error al guardar:", error);
+
+const getInitialCatFormData = () => ({
+    label: '',
+    emoji: '📁',
+    coverImg: '',
+    reglas: {
+        nacionalidades: [],
+        profesiones: [],
+        ciudades: [],
+        edadMin: '',
+        edadMax: '',
+        caracteristica: 'Rostro',
+        operador: 'Superior a',
+        umbral: ''
     }
-};
+});
         const [formData, setFormData] = useState({
                 nombre: '', nacionalidad: '', ciudad: '', profesion: '', fechaNacimiento: '', estaturaCm: '', fotos: [],
                 galeria: { fotos: [], gifs: [], videos: [] },
@@ -289,23 +280,8 @@ const handleSaveCategoria = async (e) => {
                 }
             };
 
-            const [catFormData, setCatFormData] = useState({
-                label: '',
-                emoji: '📁',
-                coverImg: '',
-                reglas: {
-                    nacionalidades: [], // Cambiado a plural y array
-                    profesiones: [],    // Cambiado a plural y array
-                    ciudades: [],       // Cambiado a plural y array
-                    edadMin: '',
-                    edadMax: '',
-                    // Aquí agregaremos luego los 15 items y promedios, 
-                    // pero primero aseguremos que esto cargue bien.
-                    caracteristica: 'Rostro',
-                    operador: 'Superior a',
-                    umbral: ''
-                }
-            });
+            const [catFormData, setCatFormData] = useState(getInitialCatFormData());
+            const resetCatForm = () => setCatFormData(getInitialCatFormData());
 
             useEffect(() => {
                 if (window.lucide) {
@@ -547,24 +523,24 @@ const saveProfile = (e) => {
                     console.error("Hubo un problema, amor:", error);
                 }
             };
-            const saveCategory = (e) => {
+            const saveCategory = async (e) => {
                 e.preventDefault();
-                const newCat = { ...catFormData, type: 'custom' };
-                
-                // Guardamos la nueva categoría en su propio rincón
-                db.ref('categorias').push(newCat)
-                    .then(() => {
-                        setIsCatModalOpen(false);
-                        setCatFormData({ 
-                            label: '', emoji: '📁', coverImg: '', 
-                            reglas: { 
-                                nacionalidades: [], profesiones: [], ciudades: [], 
-                                edadMin: '', edadMax: '', caracteristica: 'Rostro', 
-                                operador: 'Superior a', umbral: '' 
-                            }
-                        });
-                    })
-                    .catch(err => console.error("La categoría no quiso entrar:", err));
+
+                const { firebaseId, ...categoryData } = catFormData;
+                const payload = { ...categoryData, type: 'custom' };
+
+                try {
+                    if (firebaseId) {
+                        await db.ref(`categorias/${firebaseId}`).update(payload);
+                    } else {
+                        await db.ref('categorias').push(payload);
+                    }
+
+                    setIsCatModalOpen(false);
+                    resetCatForm();
+                } catch (error) {
+                    console.error("La categoría no quiso guardarse:", error);
+                }
             };
             const filteredProfiles = useMemo(() => {
                 let base = perfiles.filter(p => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -960,7 +936,7 @@ const saveProfile = (e) => {
                     <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">Mis Carpetas</h2>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Categorías personalizadas</p>
                 </div>
-                <button onClick={() => setIsCatModalOpen(true)} className="bg-cyan-500 text-black px-8 py-3 rounded-full font-black text-xs uppercase hover:bg-white transition-all">
+                <button onClick={() => { resetCatForm(); setIsCatModalOpen(true); }} className="bg-cyan-500 text-black px-8 py-3 rounded-full font-black text-xs uppercase hover:bg-white transition-all">
                     NUEVA CATEGORÍA
                 </button>
             </div>
@@ -1351,7 +1327,7 @@ const saveProfile = (e) => {
                             <div className="bg-[#0a0f1e] w-full max-w-5xl rounded-[4rem] overflow-hidden shadow-2xl border border-slate-800 max-h-[90vh] flex flex-col relative animate-in zoom-in-95 duration-300">
                                 <button 
     type="button"
-    onClick={() => setIsCatModalOpen(false)} 
+    onClick={() => { resetCatForm(); setIsCatModalOpen(false); }} 
     className="p-4 hover:bg-slate-800 rounded-full transition-all"
 >
     <LucideIcon name="x" size={24} className="text-slate-400" />
