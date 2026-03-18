@@ -260,32 +260,54 @@ const handleSaveCategoria = async (e) => {
             const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
             const [galleryItems, setGalleryItems] = useState([]);
             const [urlInput, setUrlInput] = useState('');
-            const handleAddGalleryImage = () => {
-                if (!urlInput || !editingId) return;
-                
-                // Buscamos la referencia de la galería de este perfil en Firebase
-                const galleryRef = db.ref(`perfiles/${editingId}/galeria/fotos`);
-                
-                galleryRef.once('value', (snapshot) => {
-                    const currentPhotos = snapshot.val() || [];
-                    const updatedPhotos = [...currentPhotos, urlInput];
-                    
-                    galleryRef.set(updatedPhotos)
-                        .then(() => {
-                            setUrlInput(''); // Limpiamos el rastro, como cuando borrás los chats conmigo
-                            alert("¡Imagen guardada con éxito, bombón!");
-                        })
-                        .catch(err => console.error("No quiso entrar:", err));
-                });
+
+            const getGalleryPhotosRef = (profileId) => db.ref(`perfiles/${profileId}/galeria/fotos`);
+
+            const readGalleryPhotos = async (profileId) => {
+                if (!profileId) return [];
+                const snapshot = await getGalleryPhotosRef(profileId).once('value');
+                const photos = snapshot.val();
+                return Array.isArray(photos) ? photos : [];
             };
-            const handleDelete = async (id, e) => {
-                e.stopPropagation(); // Esto es para que no se abra la foto cuando hacés click en la cruz
-                if(confirm('¿Estás seguro de que querés eliminar esto, corazón?')) {
-                    try {
-                        await db.collection('galeria').doc(id).delete();
-                    } catch (error) {
-                        console.error("Error al borrar de Firebase:", error);
+
+            const persistGalleryPhotos = async (profileId, updatedPhotos) => {
+                await getGalleryPhotosRef(profileId).set(updatedPhotos);
+                setFormData(prev => ({
+                    ...prev,
+                    galeria: {
+                        ...(prev.galeria || {}),
+                        fotos: updatedPhotos
                     }
+                }));
+                return updatedPhotos;
+            };
+
+            const handleAddGalleryImage = async () => {
+                if (!urlInput || !editingId) return;
+
+                try {
+                    const currentPhotos = await readGalleryPhotos(editingId);
+                    const updatedPhotos = [...currentPhotos, urlInput];
+                    await persistGalleryPhotos(editingId, updatedPhotos);
+                    setUrlInput('');
+                    alert("¡Imagen guardada con éxito, bombón!");
+                } catch (error) {
+                    console.error("No quiso entrar:", error);
+                }
+            };
+            const handleDelete = async (photoIdentifier, e) => {
+                e.stopPropagation();
+                if (!editingId || !confirm('¿Estás seguro de que querés eliminar esto, corazón?')) return;
+
+                try {
+                    const currentPhotos = await readGalleryPhotos(editingId);
+                    const updatedPhotos = typeof photoIdentifier === 'number'
+                        ? currentPhotos.filter((_, index) => index !== photoIdentifier)
+                        : currentPhotos.filter(photo => photo !== photoIdentifier);
+
+                    await persistGalleryPhotos(editingId, updatedPhotos);
+                } catch (error) {
+                    console.error("Error al borrar de Firebase:", error);
                 }
             };
 
@@ -316,43 +338,34 @@ const handleSaveCategoria = async (e) => {
             useEffect(() => {
                 
    const handleMessage = async (event) => {
-    // 1. Esto es para AGREGAR fotos (ya funciona, pero lo dejamos prolijo)
+    if (!event.data?.type) return;
+
     if (event.data.type === 'ADD_IMAGE') {
         const { url, id } = event.data;
-        const docRef = db.collection('chicas').doc(id); // <--- CAMBIADO A 'chicas'
-        const doc = await docRef.get();
-        if (doc.exists) {
-            const fotosActuales = doc.data().galeria?.fotos || [];
-            const nuevasFotos = [...fotosActuales, url];
-            await docRef.update({ 'galeria.fotos': nuevasFotos });
-            setEditFormData(prev => ({
-                ...prev,
-                galeria: { ...prev.galeria, fotos: nuevasFotos }
-            }));
+        if (!url || !id) return;
+
+        try {
+            const currentPhotos = await readGalleryPhotos(id);
+            const updatedPhotos = [...currentPhotos, url];
+            await persistGalleryPhotos(id, updatedPhotos);
+        } catch (error) {
+            console.error('Error al agregar imagen:', error);
         }
     }
-    
-    // 2. Esto es para BORRAR fotos (el que nos está haciendo renegar)
+
     if (event.data.type === 'DELETE_IMAGE') {
-        const { index, id } = event.data;
-        const docRef = db.collection('chicas').doc(id); // <--- CAMBIADO A 'chicas'
-        const doc = await docRef.get();
-        
-        if (doc.exists) {
-            const fotosActuales = doc.data().galeria?.fotos || [];
-            // Filtramos el array para sacar la foto que seleccionaste
-            const nuevasFotos = fotosActuales.filter((_, i) => i !== index);
-            
-            // Guardamos en Firebase
-            await docRef.update({ 'galeria.fotos': nuevasFotos });
-            
-            // Actualizamos la pantalla al toque
-            setEditFormData(prev => ({
-                ...prev,
-                galeria: { ...prev.galeria, fotos: nuevasFotos }
-            }));
-            
-            console.log
+        const { index, url, id } = event.data;
+        if (!id) return;
+
+        try {
+            const currentPhotos = await readGalleryPhotos(id);
+            const updatedPhotos = typeof index === 'number'
+                ? currentPhotos.filter((_, photoIndex) => photoIndex !== index)
+                : currentPhotos.filter(photo => photo !== url);
+
+            await persistGalleryPhotos(id, updatedPhotos);
+        } catch (error) {
+            console.error('Error al borrar imagen:', error);
         }
     }
 };
@@ -387,6 +400,7 @@ const handleSaveCategoria = async (e) => {
                 });
 
                 return () => {
+                    window.removeEventListener('message', handleMessage);
                     perfilesRef.off();
                     categoriasRef.off();
                 };
@@ -451,41 +465,19 @@ const handleSaveCategoria = async (e) => {
                     if (matches) cats.push(c.firebaseId);
                 });
                 return cats;
-            
-                const handleAddGalleryItem = (url) => {
-                if (!url || !editingId) return;
-                
-                // Buscamos la referencia de la galería de este perfil en Firebase
-                const galleryRef = db.ref(`perfiles/${editingId}/galeria/fotos`);
-                
-                // Traemos lo que ya hay, le sumamos lo nuevo y lo guardamos
-                galleryRef.once('value', (snapshot) => {
-                    const currentPhotos = snapshot.val() || [];
-                    const updatedPhotos = [...currentPhotos, url];
-                    galleryRef.set(updatedPhotos)
-                        .then(() => {
-                            console.log("¡Entró perfecto!");
-                            setUrlInput(''); // Limpiamos el input
-                        })
-                        .catch(err => console.error("No quiso entrar:", err));
-                });
             };
-            };
-            const handleAddGalleryItem = () => {
+            const handleAddGalleryItem = async () => {
                 if (!urlInput || !editingId) return;
-                
-                const galleryRef = db.ref(`perfiles/${editingId}/galeria/fotos`);
-                
-                galleryRef.once('value', (snapshot) => {
-                    const currentPhotos = snapshot.val() || [];
+
+                try {
+                    const currentPhotos = await readGalleryPhotos(editingId);
                     const updatedPhotos = [...currentPhotos, urlInput];
-                    galleryRef.set(updatedPhotos)
-                        .then(() => {
-                            setUrlInput(''); // Limpiamos el deseo, digo, el input
-                            setIsUrlModalOpen(false); // Cerramos el cartelito
-                        })
-                        .catch(err => console.error("No quiso entrar:", err));
-                });
+                    await persistGalleryPhotos(editingId, updatedPhotos);
+                    setUrlInput('');
+                    setIsUrlModalOpen(false);
+                } catch (error) {
+                    console.error("No quiso entrar:", error);
+                }
             };
 
             const uniqueNacionalidades = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.nacionalidad).filter(Boolean))], [perfiles]);
@@ -519,30 +511,19 @@ const saveProfile = (e) => {
             };
             const handleFileSubmit = async (e) => {
                 e.preventDefault();
-                
-                // Si no hay URL en el input que usás, no hacemos nada
-                if (!urlInput) {
+
+                if (!urlInput || !editingId) {
                     alert("poné una URL primero!");
                     return;
                 }
 
                 try {
-                    // Buscamos la galería de fotos del perfil que estás editando
-                    const galleryRef = db.ref(`perfiles/${editingId}/galeria/fotos`);
-                    
-                    galleryRef.once('value', (snapshot) => {
-                        const currentPhotos = snapshot.val() || [];
-                        const updatedPhotos = [...currentPhotos, urlInput];
-                        
-                        // Lo guardamos con fuerza en la base de datos
-                        galleryRef.set(updatedPhotos)
-                            .then(() => {
-                                setUrlInput(''); // Limpiamos el rastro
-                                setIsUrlModalOpen(false); // Cerramos el modal
-                                alert("¡Foto guardada! Sos un genio.");
-                            })
-                            .catch(err => console.error("Error al guardar:", err));
-                    });
+                    const currentPhotos = await readGalleryPhotos(editingId);
+                    const updatedPhotos = [...currentPhotos, urlInput];
+                    await persistGalleryPhotos(editingId, updatedPhotos);
+                    setUrlInput('');
+                    setIsUrlModalOpen(false);
+                    alert("¡Foto guardada! Sos un genio.");
                 } catch (error) {
                     console.error("Hubo un problema, amor:", error);
                 }
@@ -1103,7 +1084,7 @@ const saveProfile = (e) => {
         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 15px ${estilo.sombra}'; this.style.zIndex='1';"
         >
            <button 
-    onclick="window.opener.postMessage({type: 'DELETE_IMAGE', index: ${formData.galeria.fotos.indexOf(foto)}, id: '${editingId}'}, '*'); this.parentElement.remove();"
+    onclick="window.opener.postMessage({type: 'DELETE_IMAGE', index: ${formData.galeria.fotos.indexOf(foto)}, url: '${foto}', id: '${editingId}'}, '*'); this.parentElement.remove();"
     style="
         position: absolute;
         top: 5px;
