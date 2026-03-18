@@ -304,38 +304,36 @@ const getInitialCatFormData = () => ({
             }, [activeTab, isModalOpen, isCatModalOpen, perfiles, searchQuery, selectedCategory, filters, categorias]);
 
             useEffect(() => {
-                
-   const handleMessage = async (event) => {
-    // 1. Esto es para AGREGAR fotos (ya funciona, pero lo dejamos prolijo)
-    if (event.data.type === 'ADD_IMAGE') {
-        const { url, id } = event.data;
-        await submitGalleryImage({ profileId: id, url });
-    }
-    
-    // 2. Esto es para BORRAR fotos (el que nos está haciendo renegar)
-    if (event.data.type === 'DELETE_IMAGE') {
-        const { index, id } = event.data;
-        const docRef = db.collection('chicas').doc(id); // <--- CAMBIADO A 'chicas'
-        const doc = await docRef.get();
-        
-        if (doc.exists) {
-            const fotosActuales = doc.data().galeria?.fotos || [];
-            // Filtramos el array para sacar la foto que seleccionaste
-            const nuevasFotos = fotosActuales.filter((_, i) => i !== index);
-            
-            // Guardamos en Firebase
-            await docRef.update({ 'galeria.fotos': nuevasFotos });
-            
-            // Actualizamos la pantalla al toque
-            setEditFormData(prev => ({
-                ...prev,
-                galeria: { ...prev.galeria, fotos: nuevasFotos }
-            }));
-            
-            console.log
-        }
-    }
-};
+                const handleMessage = async (event) => {
+                    if (event.data.type === 'ADD_IMAGE') {
+                        const { url, id } = event.data;
+                        const galleryRef = db.ref(`perfiles/${id}/galeria/fotos`);
+                        const snapshot = await galleryRef.once('value');
+                        const currentPhotos = snapshot.val() || [];
+                        const updatedPhotos = [...currentPhotos, url];
+
+                        await galleryRef.set(updatedPhotos);
+                        setFormData(prev => ({
+                            ...prev,
+                            galeria: { ...prev.galeria, fotos: updatedPhotos }
+                        }));
+                    }
+
+                    if (event.data.type === 'DELETE_IMAGE') {
+                        const { index, id } = event.data;
+                        const galleryRef = db.ref(`perfiles/${id}/galeria/fotos`);
+                        const snapshot = await galleryRef.once('value');
+                        const currentPhotos = snapshot.val() || [];
+                        const nuevasFotos = currentPhotos.filter((_, i) => i !== index);
+
+                        await galleryRef.set(nuevasFotos);
+                        setFormData(prev => ({
+                            ...prev,
+                            galeria: { ...prev.galeria, fotos: nuevasFotos }
+                        }));
+                    }
+                };
+
                 window.addEventListener('message', handleMessage);
                 const perfilesRef = db.ref('perfiles');
                 perfilesRef.on('value', (snapshot) => {
@@ -367,6 +365,7 @@ const getInitialCatFormData = () => ({
                 });
 
                 return () => {
+                    window.removeEventListener('message', handleMessage);
                     perfilesRef.off();
                     categoriasRef.off();
                 };
