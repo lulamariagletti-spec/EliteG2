@@ -555,6 +555,23 @@ const saveProfile = (e) => {
                     alert("No se pudo borrar la carpeta. Probá de nuevo.");
                 }
             };
+
+            const deleteProfile = async () => {
+                if (!editingId) return;
+
+                const confirmed = confirm('¿Borrar perfil? Esta acción también lo elimina de Firebase.');
+                if (!confirmed) return;
+
+                try {
+                    await db.ref(`perfiles/${editingId}`).remove();
+                    setPerfiles(prev => prev.filter(p => p.firebaseId !== editingId));
+                    setIsModalOpen(false);
+                    setEditingId(null);
+                } catch (error) {
+                    console.error("No se pudo borrar el perfil:", error);
+                    alert("No se pudo borrar el perfil. Probá de nuevo.");
+                }
+            };
             const filteredProfiles = useMemo(() => {
                 let base = perfiles.filter(p => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -1322,7 +1339,7 @@ const saveProfile = (e) => {
 </div>
                                     <div className="flex gap-4">
                                         {editingId && (
-                                            <button type="button" onClick={() => { if(confirm('¿Borrar perfil?')) { setPerfiles(perfiles.filter(p => p.id !== editingId)); setIsModalOpen(false); }}} className="bg-red-500/10 text-red-500 px-10 py-8 rounded-[3rem] font-black uppercase text-xs tracking-widest hover:bg-red-500 hover:text-white transition-all border border-red-500/20">
+                                            <button type="button" onClick={deleteProfile} className="bg-red-500/10 text-red-500 px-10 py-8 rounded-[3rem] font-black uppercase text-xs tracking-widest hover:bg-red-500 hover:text-white transition-all border border-red-500/20">
                                                 <LucideIcon name="trash-2" size={20} />
                                             </button>
                                         )}
