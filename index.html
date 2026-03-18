@@ -173,6 +173,24 @@
             );
         };
 
+        const normalizeGalleryPhoto = (foto) => {
+            if (typeof foto === 'string') {
+                return { url: foto, tag: '' };
+            }
+
+            if (foto && typeof foto === 'object') {
+                return {
+                    url: foto.url || '',
+                    tag: foto.tag || ''
+                };
+            }
+
+            return { url: '', tag: '' };
+        };
+
+        const getGalleryPhotoUrl = (foto) => normalizeGalleryPhoto(foto).url;
+        const getGalleryPhotoTag = (foto) => normalizeGalleryPhoto(foto).tag;
+
         const App = () => {
             const [carpetaAbierta, setCarpetaAbierta] = React.useState(null);
             const [perfiles, setPerfiles] = useState([]);
@@ -259,7 +277,7 @@ const getInitialCatFormData = () => ({
                 
                 galleryRef.once('value', (snapshot) => {
                     const currentPhotos = snapshot.val() || [];
-                    const updatedPhotos = [...currentPhotos, urlInput];
+                    const updatedPhotos = [...currentPhotos.map(normalizeGalleryPhoto), { url: urlInput, tag: '' }];
                     
                     galleryRef.set(updatedPhotos)
                         .then(() => {
@@ -290,48 +308,48 @@ const getInitialCatFormData = () => ({
             }, [activeTab, isModalOpen, isCatModalOpen, perfiles, searchQuery, selectedCategory, filters, categorias]);
 
             useEffect(() => {
-                
-   const handleMessage = async (event) => {
-    // 1. Esto es para AGREGAR fotos (ya funciona, pero lo dejamos prolijo)
+                const handleMessage = async (event) => {
+    if (!event.data?.type) return;
+
     if (event.data.type === 'ADD_IMAGE') {
         const { url, id } = event.data;
-        const docRef = db.collection('chicas').doc(id); // <--- CAMBIADO A 'chicas'
-        const doc = await docRef.get();
-        if (doc.exists) {
-            const fotosActuales = doc.data().galeria?.fotos || [];
-            const nuevasFotos = [...fotosActuales, url];
-            await docRef.update({ 'galeria.fotos': nuevasFotos });
-            setEditFormData(prev => ({
+        if (!url || !id) return;
+
+        const galleryRef = db.ref(`perfiles/${id}/galeria/fotos`);
+        const snapshot = await galleryRef.once('value');
+        const fotosActuales = snapshot.val() || [];
+        const nuevasFotos = [...fotosActuales.map(normalizeGalleryPhoto), { url, tag: '' }];
+
+        await galleryRef.set(nuevasFotos);
+
+        if (id === editingId) {
+            setFormData(prev => ({
                 ...prev,
-                galeria: { ...prev.galeria, fotos: nuevasFotos }
+                galeria: { ...(prev.galeria || {}), fotos: nuevasFotos }
             }));
         }
     }
     
-    // 2. Esto es para BORRAR fotos (el que nos está haciendo renegar)
     if (event.data.type === 'DELETE_IMAGE') {
         const { index, id } = event.data;
-        const docRef = db.collection('chicas').doc(id); // <--- CAMBIADO A 'chicas'
-        const doc = await docRef.get();
-        
-        if (doc.exists) {
-            const fotosActuales = doc.data().galeria?.fotos || [];
-            // Filtramos el array para sacar la foto que seleccionaste
-            const nuevasFotos = fotosActuales.filter((_, i) => i !== index);
-            
-            // Guardamos en Firebase
-            await docRef.update({ 'galeria.fotos': nuevasFotos });
-            
-            // Actualizamos la pantalla al toque
-            setEditFormData(prev => ({
+        if (typeof index !== 'number' || !id) return;
+
+        const galleryRef = db.ref(`perfiles/${id}/galeria/fotos`);
+        const snapshot = await galleryRef.once('value');
+        const fotosActuales = snapshot.val() || [];
+        const nuevasFotos = fotosActuales.filter((_, i) => i !== index).map(normalizeGalleryPhoto);
+
+        await galleryRef.set(nuevasFotos);
+
+        if (id === editingId) {
+            setFormData(prev => ({
                 ...prev,
-                galeria: { ...prev.galeria, fotos: nuevasFotos }
+                galeria: { ...(prev.galeria || {}), fotos: nuevasFotos }
             }));
-            
-            console.log
         }
     }
-};
+                };
+
                 window.addEventListener('message', handleMessage);
                 const perfilesRef = db.ref('perfiles');
                 perfilesRef.on('value', (snapshot) => {
@@ -363,10 +381,11 @@ const getInitialCatFormData = () => ({
                 });
 
                 return () => {
+                    window.removeEventListener('message', handleMessage);
                     perfilesRef.off();
                     categoriasRef.off();
                 };
-            }, []);
+            }, [editingId]);
 
             const calcularEdad = (fecha) => {
                 if (!fecha) return '?';
@@ -437,7 +456,7 @@ const getInitialCatFormData = () => ({
                 // Traemos lo que ya hay, le sumamos lo nuevo y lo guardamos
                 galleryRef.once('value', (snapshot) => {
                     const currentPhotos = snapshot.val() || [];
-                    const updatedPhotos = [...currentPhotos, url];
+                    const updatedPhotos = [...currentPhotos.map(normalizeGalleryPhoto), { url, tag: '' }];
                     galleryRef.set(updatedPhotos)
                         .then(() => {
                             console.log("¡Entró perfecto!");
@@ -454,7 +473,7 @@ const getInitialCatFormData = () => ({
                 
                 galleryRef.once('value', (snapshot) => {
                     const currentPhotos = snapshot.val() || [];
-                    const updatedPhotos = [...currentPhotos, urlInput];
+                    const updatedPhotos = [...currentPhotos.map(normalizeGalleryPhoto), { url: urlInput, tag: '' }];
                     galleryRef.set(updatedPhotos)
                         .then(() => {
                             setUrlInput(''); // Limpiamos el deseo, digo, el input
@@ -470,7 +489,13 @@ const getInitialCatFormData = () => ({
 
 const saveProfile = (e) => {
                 e.preventDefault();
-                const profileData = { ...formData };
+                const profileData = {
+                    ...formData,
+                    galeria: {
+                        ...(formData.galeria || {}),
+                        fotos: (formData.galeria?.fotos || []).map(normalizeGalleryPhoto)
+                    }
+                };
                 
                 if (editingId) {
                     // Si estamos editando, buscamos el lugar exacto y lo actualizamos
@@ -508,7 +533,7 @@ const saveProfile = (e) => {
                     
                     galleryRef.once('value', (snapshot) => {
                         const currentPhotos = snapshot.val() || [];
-                        const updatedPhotos = [...currentPhotos, urlInput];
+                        const updatedPhotos = [...currentPhotos.map(normalizeGalleryPhoto), { url: urlInput, tag: '' }];
                         
                         // Lo guardamos con fuerza en la base de datos
                         galleryRef.set(updatedPhotos)
@@ -1075,7 +1100,7 @@ const saveProfile = (e) => {
             <head>
                 <h1>Galería de ${formData.nombre}</h1>
 <div class="grid">
-    ${formData.galeria && formData.galeria.fotos ? formData.galeria.fotos.map(foto => {
+    ${formData.galeria && formData.galeria.fotos ? formData.galeria.fotos.map((foto, index) => {
     // El arcoíris del placer: Colores según profesión
     const config = {
         "CANTANTE": { color: "#0ea5e9", sombra: "rgba(14,165,233,0.8)" },    // Celeste
@@ -1109,7 +1134,7 @@ const saveProfile = (e) => {
         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 15px ${estilo.sombra}'; this.style.zIndex='1';"
         >
            <button 
-    onclick="window.opener.postMessage({type: 'DELETE_IMAGE', index: ${formData.galeria.fotos.indexOf(foto)}, id: '${editingId}'}, '*'); this.parentElement.remove();"
+    onclick="window.opener.postMessage({type: 'DELETE_IMAGE', index: ${index}, id: '${editingId}'}, '*'); this.parentElement.remove();"
     style="
         position: absolute;
         top: 5px;
@@ -1130,7 +1155,8 @@ const saveProfile = (e) => {
         box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
     "
 >✕</button>
-<img src="${foto}" style="width: 100%; height: 100%; object-fit: cover;" />
+<img src="${getGalleryPhotoUrl(foto)}" style="width: 100%; height: 100%; object-fit: cover;" />
+${getGalleryPhotoTag(foto) ? `<div style="position:absolute;left:10px;bottom:10px;z-index:15;background:rgba(2,6,23,0.78);color:#22d3ee;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${getGalleryPhotoTag(foto)}</div>` : ''}
         </div>
     `;
 }).join('') : '<p style="text-align:center; grid-column: 1/-1; color: #64748b;">No hay archivos cargados.</p>'}
