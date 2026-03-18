@@ -212,6 +212,7 @@
             const [editingId, setEditingId] = useState(null);
             const [selectedCategory, setSelectedCategory] = React.useState(null);
             const [sortBy, setSortBy] = useState('promedio');
+            const [urlInput, setUrlInput] = useState('');
             
             const [filters, setFilters] = useState({
                 nacionalidad: 'Todas',
@@ -243,6 +244,45 @@ const getInitialCatFormData = () => ({
                 galeria: { fotos: [], gifs: [], videos: [] },
                 puntuaciones: { Ojos: 0, Rostro: 0, Busto: 0, Cola: 0, Cintura: 0, Cabello: 0, Estatura: 0, Sensualidad: 0, Dulzura: 0, Elegancia: 0 }
             });
+            const addGalleryImage = async ({ profileId, url, tag = 'fotos' }) => {
+                const normalizedUrl = (url || '').trim();
+                if (!profileId || !normalizedUrl) return [];
+
+                const galleryRef = db.ref(`perfiles/${profileId}/galeria/${tag}`);
+                const snapshot = await galleryRef.once('value');
+                const currentItems = snapshot.val() || [];
+                const updatedItems = [...currentItems, normalizedUrl];
+
+                await galleryRef.set(updatedItems);
+
+                if (profileId === editingId) {
+                    setFormData(prev => ({
+                        ...prev,
+                        galeria: {
+                            ...(prev.galeria || { fotos: [], gifs: [], videos: [] }),
+                            [tag]: updatedItems
+                        }
+                    }));
+                }
+
+                return updatedItems;
+            };
+
+            const submitGalleryImage = async ({ profileId = editingId, url = urlInput, successMessage } = {}) => {
+                if (!profileId || !(url || '').trim()) return;
+
+                try {
+                    await addGalleryImage({ profileId, url, tag: 'fotos' });
+                    setUrlInput('');
+
+
+                    if (successMessage) {
+                        alert(successMessage);
+                    }
+                } catch (error) {
+                    console.error('Error al guardar imagen en galería:', error);
+                }
+            };
             const handleDelete = async (id, e) => {
                 e.stopPropagation(); // Esto es para que no se abra la foto cuando hacés click en la cruz
                 if(confirm('¿Estás seguro de que querés eliminar esto, corazón?')) {
@@ -265,32 +305,27 @@ const getInitialCatFormData = () => ({
 
             useEffect(() => {
                 const handleMessage = async (event) => {
-                    if (!event.data || !editingId || event.data.id !== editingId) return;
-
                     if (event.data.type === 'ADD_IMAGE') {
-                        const url = event.data.url?.trim();
-                        if (!url) return;
-
-                        const galleryRef = db.ref(`perfiles/${editingId}/galeria/fotos`);
+                        const { url, id } = event.data;
+                        const galleryRef = db.ref(`perfiles/${id}/galeria/fotos`);
                         const snapshot = await galleryRef.once('value');
-                        const fotosActuales = snapshot.val() || [];
-                        const nuevasFotos = [...fotosActuales, url];
-                        await galleryRef.set(nuevasFotos);
+                        const currentPhotos = snapshot.val() || [];
+                        const updatedPhotos = [...currentPhotos, url];
+
+                        await galleryRef.set(updatedPhotos);
                         setFormData(prev => ({
                             ...prev,
-                            galeria: { ...prev.galeria, fotos: nuevasFotos }
+                            galeria: { ...prev.galeria, fotos: updatedPhotos }
                         }));
-                        return;
                     }
 
                     if (event.data.type === 'DELETE_IMAGE') {
-                        const index = Number(event.data.index);
-                        if (Number.isNaN(index)) return;
-
-                        const galleryRef = db.ref(`perfiles/${editingId}/galeria/fotos`);
+                        const { index, id } = event.data;
+                        const galleryRef = db.ref(`perfiles/${id}/galeria/fotos`);
                         const snapshot = await galleryRef.once('value');
-                        const fotosActuales = snapshot.val() || [];
-                        const nuevasFotos = fotosActuales.filter((_, i) => i !== index);
+                        const currentPhotos = snapshot.val() || [];
+                        const nuevasFotos = currentPhotos.filter((_, i) => i !== index);
+
                         await galleryRef.set(nuevasFotos);
                         setFormData(prev => ({
                             ...prev,
@@ -298,6 +333,7 @@ const getInitialCatFormData = () => ({
                         }));
                     }
                 };
+
                 window.addEventListener('message', handleMessage);
                 const perfilesRef = db.ref('perfiles');
                 perfilesRef.on('value', (snapshot) => {
@@ -394,41 +430,6 @@ const getInitialCatFormData = () => ({
                     if (matches) cats.push(c.firebaseId);
                 });
                 return cats;
-            
-                const handleAddGalleryItem = (url) => {
-                if (!url || !editingId) return;
-                
-                // Buscamos la referencia de la galería de este perfil en Firebase
-                const galleryRef = db.ref(`perfiles/${editingId}/galeria/fotos`);
-                
-                // Traemos lo que ya hay, le sumamos lo nuevo y lo guardamos
-                galleryRef.once('value', (snapshot) => {
-                    const currentPhotos = snapshot.val() || [];
-                    const updatedPhotos = [...currentPhotos, url];
-                    galleryRef.set(updatedPhotos)
-                        .then(() => {
-                            console.log("¡Entró perfecto!");
-                            setUrlInput(''); // Limpiamos el input
-                        })
-                        .catch(err => console.error("No quiso entrar:", err));
-                });
-            };
-            };
-            const handleAddGalleryItem = () => {
-                if (!urlInput || !editingId) return;
-                
-                const galleryRef = db.ref(`perfiles/${editingId}/galeria/fotos`);
-                
-                galleryRef.once('value', (snapshot) => {
-                    const currentPhotos = snapshot.val() || [];
-                    const updatedPhotos = [...currentPhotos, urlInput];
-                    galleryRef.set(updatedPhotos)
-                        .then(() => {
-                            setUrlInput(''); // Limpiamos el deseo, digo, el input
-                            setIsUrlModalOpen(false); // Cerramos el cartelito
-                        })
-                        .catch(err => console.error("No quiso entrar:", err));
-                });
             };
 
             const uniqueNacionalidades = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.nacionalidad).filter(Boolean))], [perfiles]);
@@ -458,36 +459,6 @@ const saveProfile = (e) => {
                             });
                         })
                         .catch(err => console.error("No pudo entrar el perfil:", err));
-                }
-            };
-            const handleFileSubmit = async (e) => {
-                e.preventDefault();
-                
-                // Si no hay URL en el input que usás, no hacemos nada
-                if (!urlInput) {
-                    alert("poné una URL primero!");
-                    return;
-                }
-
-                try {
-                    // Buscamos la galería de fotos del perfil que estás editando
-                    const galleryRef = db.ref(`perfiles/${editingId}/galeria/fotos`);
-                    
-                    galleryRef.once('value', (snapshot) => {
-                        const currentPhotos = snapshot.val() || [];
-                        const updatedPhotos = [...currentPhotos, urlInput];
-                        
-                        // Lo guardamos con fuerza en la base de datos
-                        galleryRef.set(updatedPhotos)
-                            .then(() => {
-                                setUrlInput(''); // Limpiamos el rastro
-                                setIsUrlModalOpen(false); // Cerramos el modal
-                                alert("¡Foto guardada! Sos un genio.");
-                            })
-                            .catch(err => console.error("Error al guardar:", err));
-                    });
-                } catch (error) {
-                    console.error("Hubo un problema, amor:", error);
                 }
             };
             const saveCategory = async (e) => {
@@ -1032,8 +1003,7 @@ const saveProfile = (e) => {
                     {editingId ? 'Editar Perfil' : 'Información del Perfil'}
                 </h3>
                 {editingId && (
-                    
-<button 
+                    <button
     type="button"
     onClick={() => {
         const nuevaVentana = window.open('', '_blank', 'width=1200,height=900,resizable=yes,scrollbars=yes');
@@ -1045,7 +1015,69 @@ const saveProfile = (e) => {
         nuevaVentana.document.write(`
             <html>
             <head>
-                <title>Galería de ${formData.nombre}</title>
+                <h1>Galería de ${formData.nombre}</h1>
+<div class="grid">
+    ${formData.galeria && formData.galeria.fotos ? formData.galeria.fotos.map(foto => {
+    // El arcoíris del placer: Colores según profesión
+    const config = {
+        "CANTANTE": { color: "#0ea5e9", sombra: "rgba(14,165,233,0.8)" },    // Celeste
+        "NSFW":  { color: "#ef4444", sombra: "rgba(239,68,68,0.8)" },      // Rojo
+        "ACTRIZ":{ color: "#22c55e", sombra: "rgba(34,197,94,0.8)" },        // Verde
+        "MODELO": { color: "#f97316", sombra: "rgba(249,115,22,0.8)" },      // Naranja
+        "BAILARINA": { color: "#a855f7", sombra: "rgba(168,85,247,0.8)" },    // Morado
+        "INFLUENCER":{ color: "#ec4899", sombra: "rgba(236,72,153,0.8)" },      // Rosada
+        "PERIODISTA": { color: "#facc15", sombra: "rgba(250,204,21,0.8)" },  // Amarillo
+        "ATLETA":  { color: "#78350f", sombra: "rgba(120,53,15,0.8)" },         // Marron
+        "OTRO":{ color: "#ffffff", sombra: "rgba(255,255,255,0.8)" }, // Blanco
+        "DEFAULT": { color: "#334155", sombra: "transparent" }
+    };
+
+    // Buscamos el estilo o usamos el default si no la encontrás
+    const estilo = config[formData.profesion?.toUpperCase()] || config["DEFAULT"];
+    
+    return `
+        <div style="
+            aspect-ratio: 1/1; 
+            border-radius: 15px; 
+            overflow: hidden; 
+            border: 2px solid ${estilo.color}; 
+            box-shadow: 0 0 15px ${estilo.sombra}; 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            background: #0f172a;
+        "
+        onmouseover="this.style.transform='scale(1.08)'; this.style.boxShadow='0 0 35px ${estilo.color}, inset 0 0 15px ${estilo.sombra}'; this.style.zIndex='10';"
+        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 15px ${estilo.sombra}'; this.style.zIndex='1';"
+        onclick="window.open('${foto}', '_blank', 'noopener,noreferrer')"
+        title="Abrir imagen en una nueva pestaña"
+        >
+           <button 
+    onclick="event.stopPropagation(); window.opener.postMessage({type: 'DELETE_IMAGE', index: ${formData.galeria.fotos.indexOf(foto)}, id: '${editingId}'}, '*'); this.parentElement.remove();"
+    style="
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        z-index: 20;
+        background: #ef4444;
+        color: white;
+        border: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    "
+>✕</button>
+<img src="${foto}" alt="Imagen de la galería" style="width: 100%; height: 100%; object-fit: cover;" />
+        </div>
+    `;
+}).join('') : '<p style="text-align:center; grid-column: 1/-1; color: #64748b;">No hay archivos cargados.</p>'}
                 <style>
                     body {
                         background-color: #020617;
@@ -1290,6 +1322,27 @@ const saveProfile = (e) => {
                         onChange={e => setFormData({...formData, fotos: [e.target.value]})} 
                     />
                 </div>
+
+                {editingId && (
+                    <div className="col-span-2 space-y-2">
+                        <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">URL para sumar a la galería</label>
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                            <input
+                                placeholder="https://imagen.com/galeria.jpg"
+                                className="flex-1 bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold text-xs"
+                                value={urlInput}
+                                onChange={e => setUrlInput(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => submitGalleryImage({ successMessage: '¡Foto guardada! Sos un genio.' })}
+                                className="bg-cyan-500 text-white px-6 py-4 rounded-3xl font-black uppercase text-[10px] tracking-widest hover:bg-cyan-400 transition-all"
+                            >
+                                Guardar en galería
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="space-y-1">
                     <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">Nacimiento</label>
