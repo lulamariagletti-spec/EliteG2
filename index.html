@@ -144,20 +144,6 @@
         const { useState, useEffect, useMemo } = React;
 
         const GALLERY_LABELS = ['C', 'P', 'B', 'N', 'S', 'E'];
-        const GALLERY_LABEL_STYLES = {
-            C: { bg: 'linear-gradient(135deg, rgba(59, 130, 246, 0.96), rgba(37, 99, 235, 0.78))', border: '#bfdbfe', glow: 'rgba(59, 130, 246, 0.55)' },
-            P: { bg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.96), rgba(126, 34, 206, 0.78))', border: '#e9d5ff', glow: 'rgba(168, 85, 247, 0.55)' },
-            B: { bg: 'linear-gradient(135deg, rgba(236, 72, 153, 0.96), rgba(190, 24, 93, 0.78))', border: '#fbcfe8', glow: 'rgba(236, 72, 153, 0.55)' },
-            N: { bg: 'linear-gradient(135deg, rgba(239, 68, 68, 0.96), rgba(185, 28, 28, 0.78))', border: '#fecaca', glow: 'rgba(239, 68, 68, 0.55)' },
-            S: { bg: 'linear-gradient(135deg, rgba(34, 197, 94, 0.96), rgba(21, 128, 61, 0.78))', border: '#bbf7d0', glow: 'rgba(34, 197, 94, 0.55)' },
-            E: { bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.96), rgba(217, 119, 6, 0.78))', border: '#fde68a', glow: 'rgba(245, 158, 11, 0.55)' },
-            DEFAULT: { bg: 'linear-gradient(135deg, rgba(8, 145, 178, 0.96), rgba(14, 116, 144, 0.78))', border: '#67e8f9', glow: 'rgba(34, 211, 238, 0.45)' }
-        };
-        const getGalleryLabelStyle = (label) => GALLERY_LABEL_STYLES[label] || GALLERY_LABEL_STYLES.DEFAULT;
-        const getGalleryBadgeInlineStyles = (label, extra = '') => {
-            const style = getGalleryLabelStyle(label);
-            return `position:absolute; right: 10px; bottom: 10px; z-index: 15; min-width: 34px; height: 30px; padding: 0 10px; border-radius: 999px; background: ${style.bg}; border: 1px solid ${style.border}; color: white; display:flex; align-items:center; justify-content:center; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; box-shadow: 0 0 16px ${style.glow}, inset 0 0 12px rgba(255,255,255,0.16); text-shadow: 0 0 8px rgba(255,255,255,0.35); backdrop-filter: blur(6px); ${extra}`;
-        };
         const normalizeGalleryItem = (item) => {
             if (typeof item === 'string') return { url: item, label: '' };
             if (item && typeof item === 'object') {
@@ -242,8 +228,6 @@
             const [sortBy, setSortBy] = useState('promedio');
             const [urlInput, setUrlInput] = useState('');
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
-
-            const previewGalleryBadgeStyle = getGalleryLabelStyle(galleryLabel);
 
             const [filters, setFilters] = useState({
                 nacionalidad: 'Todas',
@@ -1249,7 +1233,7 @@ const saveProfile = (e) => {
                             "
                         >✕</button>
                         <img src="${fotoUrl}" alt="Imagen de la galería" style="width: 100%; height: 100%; object-fit: cover;" />
-                        ${fotoLabel ? `<div style="${getGalleryBadgeInlineStyles(fotoLabel)}">${fotoLabel}</div>` : ""}
+                        ${fotoLabel ? `<div style="position:absolute; top: 8px; right: 8px; z-index: 15; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px 0 0 999px; background: rgba(8, 145, 178, 0.92); color: white; display:flex; align-items:center; justify-content:center; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; box-shadow: 0 0 12px rgba(34, 211, 238, 0.45);">${fotoLabel}</div>` : ""}
                         </div>
                     `;
                 }).join('') : '<p style="text-align:center; grid-column: 1/-1; color: #64748b;">No hay archivos cargados.</p>'}
@@ -1324,16 +1308,7 @@ const saveProfile = (e) => {
                     <p className="mb-2 text-[9px] font-black uppercase tracking-[0.3em] text-cyan-400/80">Preview galería</p>
                     <div className="relative h-32 overflow-hidden rounded-[1.5rem] border border-cyan-500/40 bg-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
                         <img src={urlInput} className="w-full h-full object-cover" alt="Preview galería" />
-                        <div
-                            className="absolute bottom-[10px] right-[10px] px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-white border rounded-full"
-                            style={{
-                                background: previewGalleryBadgeStyle.bg,
-                                borderColor: previewGalleryBadgeStyle.border,
-                                boxShadow: `0 0 16px ${previewGalleryBadgeStyle.glow}, inset 0 0 12px rgba(255,255,255,0.16)`,
-                                textShadow: '0 0 8px rgba(255,255,255,0.35)',
-                                backdropFilter: 'blur(6px)'
-                            }}
-                        >
+                        <div className="absolute top-2 right-0 rounded-l-full bg-cyan-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-white shadow-[0_0_12px_rgba(34,211,238,0.45)]">
                             {galleryLabel}
                         </div>
                     </div>
