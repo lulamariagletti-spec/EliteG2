@@ -2046,22 +2046,22 @@ const saveProfile = (e) => {
                 {editingId && (
                     <div className="col-span-2 space-y-2">
                         <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">URL para sumar a la galería</label>
-                        <div className="space-y-3">
-                            <div className="grid gap-3 xl:grid-cols-[minmax(0,1.6fr)_minmax(180px,0.7fr)_minmax(200px,0.8fr)]">
-                                <input
-                                    placeholder={galleryMediaType === 'video' ? "https://video.com/video.mp4 o https://youtube.com/..." : "https://imagen.com/galeria.jpg"}
-                                    className="min-w-0 w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold text-xs"
-                                    value={urlInput}
-                                    onChange={e => setUrlInput(e.target.value)}
-                                />
-                                <select
-                                    value={galleryMediaType}
-                                    onChange={e => setGalleryMediaType(e.target.value)}
-                                    className="w-full bg-slate-900/50 border border-slate-800 px-5 py-4 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-black text-xs uppercase tracking-[0.25em]"
-                                >
-                                    <option value="image">Imagen</option>
-                                    <option value="video">Video</option>
-                                </select>
+                        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(180px,0.7fr)_minmax(190px,0.8fr)]">
+                            <input
+                                placeholder={galleryMediaType === 'video' ? "https://video.com/video.mp4 o https://youtube.com/..." : "https://imagen.com/galeria.jpg"}
+                                className="min-w-0 bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold text-xs"
+                                value={urlInput}
+                                onChange={e => setUrlInput(e.target.value)}
+                            />
+                            <select
+                                value={galleryMediaType}
+                                onChange={e => setGalleryMediaType(e.target.value)}
+                                className="w-full bg-slate-900/50 border border-slate-800 px-5 py-4 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-black text-xs uppercase tracking-[0.25em]"
+                            >
+                                <option value="image">Imagen</option>
+                                <option value="video">Video</option>
+                            </select>
+                            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_minmax(210px,auto)]">
                                 <select
                                     value={galleryLabel}
                                     onChange={e => setGalleryLabel(e.target.value)}
@@ -2071,12 +2071,10 @@ const saveProfile = (e) => {
                                         <option key={label} value={label}>Etiqueta {label}</option>
                                     ))}
                                 </select>
-                            </div>
-                            <div className="flex justify-stretch sm:justify-end">
                                 <button
                                     type="button"
                                     onClick={() => submitGalleryImage({ successMessage: '¡Foto guardada! Sos un genio.' })}
-                                    className="w-full sm:w-auto bg-cyan-500 text-white px-6 py-4 rounded-3xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-cyan-400 transition-all sm:min-w-[220px]"
+                                    className="w-full sm:w-auto bg-cyan-500 text-white px-6 py-4 rounded-3xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-cyan-400 transition-all sm:min-w-[210px]"
                                 >
                                     Guardar en galería
                                 </button>
