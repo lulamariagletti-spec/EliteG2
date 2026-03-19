@@ -523,7 +523,7 @@
                     </button>
                 </div>
 
-                <div class="grid">
+                <div class="grid" id="galleryGrid">
                     ${fotosGaleria.length ? fotosGaleria.map((foto, index) => {
                     const fotoUrl = getGalleryItemUrl(foto);
                     const fotoLabel = getGalleryItemLabel(foto);
@@ -542,21 +542,23 @@
                     };
                     const estilo = config[profession?.toUpperCase()] || config["DEFAULT"];
                     return `
-                        <div style="
-                            aspect-ratio: 1/1;
-                            border-radius: 15px;
-                            overflow: hidden;
-                            border: 2px solid ${estilo.color};
-                            box-shadow: 0 0 15px ${estilo.sombra};
-                            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                            cursor: pointer;
-                            position: relative;
-                            background: #0f172a;
-                        "
-                        onmouseover="this.style.transform='scale(1.08)'; this.style.boxShadow='0 0 35px ${estilo.color}, inset 0 0 15px ${estilo.sombra}'; this.style.zIndex='10';"
-                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 15px ${estilo.sombra}'; this.style.zIndex='1';"
-                        onclick="openFullscreenViewer(${index})"
-                        title="Abrir visor de pantalla completa"
+                        <div
+                            class="gallery-card"
+                            data-gallery-index="${index}"
+                            title="Abrir visor de pantalla completa"
+                            style="
+                                aspect-ratio: 1/1;
+                                border-radius: 15px;
+                                overflow: hidden;
+                                border: 2px solid ${estilo.color};
+                                box-shadow: 0 0 15px ${estilo.sombra};
+                                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                                cursor: pointer;
+                                position: relative;
+                                background: #0f172a;
+                            "
+                            onmouseover="this.style.transform='scale(1.08)'; this.style.boxShadow='0 0 35px ${estilo.color}, inset 0 0 15px ${estilo.sombra}'; this.style.zIndex='10';"
+                            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 15px ${estilo.sombra}'; this.style.zIndex='1';"
                         >
                            <button
                             onclick="event.stopPropagation(); window.opener.postMessage({type: 'DELETE_IMAGE', index: ${foto.sourceIndex}, mediaType: '${getGalleryItemType(foto)}', id: '${editingId}'}, '*');"
@@ -579,6 +581,8 @@
                                 justify-content: center;
                                 box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
                             "
+                            aria-label="Eliminar elemento de galería"
+                            type="button"
                         >✕</button>
                         ${getGalleryItemType(foto) === 'video'
                             ? (() => {
@@ -623,6 +627,7 @@
 
                 <script>
                     const viewer = document.getElementById('fullscreenViewer');
+                    const galleryGrid = document.getElementById('galleryGrid');
                     const viewerSlides = Array.from(document.querySelectorAll('.viewer-slide'));
                     const viewerPrevButton = document.getElementById('viewerPrev');
                     const viewerNextButton = document.getElementById('viewerNext');
@@ -645,9 +650,11 @@
 
                     function openFullscreenViewer(index) {
                         if (!viewerSlides.length) return;
+                        const parsedIndex = Number(index);
+                        if (!Number.isInteger(parsedIndex) || parsedIndex < 0 || parsedIndex >= viewerSlides.length) return;
                         viewer.classList.add('open');
                         document.body.style.overflow = 'hidden';
-                        renderViewerSlide(index);
+                        renderViewerSlide(parsedIndex);
                     }
                     function closeFullscreenViewer() {
                         viewer.classList.remove('open');
@@ -662,6 +669,27 @@
                         if (event) event.stopPropagation();
                         if (viewerSlides.length <= 1) return;
                         renderViewerSlide((currentViewerIndex - 1 + viewerSlides.length) % viewerSlides.length);
+                    }
+                    if (galleryGrid) {
+                        galleryGrid.addEventListener('click', function(event) {
+                            const deleteButton = event.target.closest('.gallery-delete');
+                            if (deleteButton) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                window.opener.postMessage({
+                                    type: 'DELETE_IMAGE',
+                                    index: Number(deleteButton.dataset.deleteIndex),
+                                    mediaType: deleteButton.dataset.deleteMediaType,
+                                    id: '${editingId}'
+                                }, '*');
+                                return;
+                            }
+
+                            const card = event.target.closest('.gallery-card');
+                            if (!card) return;
+                            event.preventDefault();
+                            openFullscreenViewer(card.dataset.galleryIndex);
+                        });
                     }
                     viewer.addEventListener('click', function(event) {
                         if (event.target === viewer) {
