@@ -144,6 +144,51 @@
         const { useState, useEffect, useMemo } = React;
 
         const GALLERY_LABELS = ['C', 'P', 'B', 'N', 'S', 'E'];
+        const GALLERY_LABEL_STYLES = {
+            C: {
+                bg: 'linear-gradient(135deg, rgba(34,211,238,0.92), rgba(14,116,144,0.95))',
+                border: 'rgba(103,232,249,0.95)',
+                glow: 'rgba(34,211,238,0.8)',
+                text: '#ecfeff'
+            },
+            P: {
+                bg: 'linear-gradient(135deg, rgba(244,114,182,0.92), rgba(157,23,77,0.95))',
+                border: 'rgba(251,207,232,0.95)',
+                glow: 'rgba(244,114,182,0.78)',
+                text: '#fff1f2'
+            },
+            B: {
+                bg: 'linear-gradient(135deg, rgba(251,191,36,0.94), rgba(180,83,9,0.95))',
+                border: 'rgba(253,224,71,0.98)',
+                glow: 'rgba(251,191,36,0.82)',
+                text: '#fffbea'
+            },
+            N: {
+                bg: 'linear-gradient(135deg, rgba(163,230,53,0.92), rgba(63,98,18,0.95))',
+                border: 'rgba(217,249,157,0.95)',
+                glow: 'rgba(163,230,53,0.78)',
+                text: '#f7fee7'
+            },
+            S: {
+                bg: 'linear-gradient(135deg, rgba(192,132,252,0.92), rgba(107,33,168,0.95))',
+                border: 'rgba(233,213,255,0.95)',
+                glow: 'rgba(192,132,252,0.8)',
+                text: '#faf5ff'
+            },
+            E: {
+                bg: 'linear-gradient(135deg, rgba(248,113,113,0.92), rgba(153,27,27,0.95))',
+                border: 'rgba(254,202,202,0.95)',
+                glow: 'rgba(248,113,113,0.8)',
+                text: '#fef2f2'
+            },
+            DEFAULT: {
+                bg: 'linear-gradient(135deg, rgba(51,65,85,0.92), rgba(15,23,42,0.95))',
+                border: 'rgba(148,163,184,0.85)',
+                glow: 'rgba(148,163,184,0.45)',
+                text: '#f8fafc'
+            }
+        };
+        const getGalleryLabelStyle = (label) => GALLERY_LABEL_STYLES[label] || GALLERY_LABEL_STYLES.DEFAULT;
         const normalizeGalleryItem = (item) => {
             if (typeof item === 'string') return { url: item, label: '' };
             if (item && typeof item === 'object') {
@@ -1180,6 +1225,7 @@ const saveProfile = (e) => {
                     ${fotosGaleria.length ? fotosGaleria.map((foto, index) => {
                     const fotoUrl = getGalleryItemUrl(foto);
                     const fotoLabel = getGalleryItemLabel(foto);
+                    const labelStyle = getGalleryLabelStyle(fotoLabel);
                     const config = {
                         "CANTANTE": { color: "#0ea5e9", sombra: "rgba(14,165,233,0.8)" },
                         "NSFW":  { color: "#ef4444", sombra: "rgba(239,68,68,0.8)" },
@@ -1233,7 +1279,7 @@ const saveProfile = (e) => {
                             "
                         >✕</button>
                         <img src="${fotoUrl}" alt="Imagen de la galería" style="width: 100%; height: 100%; object-fit: cover;" />
-                        ${fotoLabel ? `<div style="position:absolute; top: 8px; right: 8px; z-index: 15; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px 0 0 999px; background: rgba(8, 145, 178, 0.92); color: white; display:flex; align-items:center; justify-content:center; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; box-shadow: 0 0 12px rgba(34, 211, 238, 0.45);">${fotoLabel}</div>` : ""}
+                        ${fotoLabel ? `<div style="position:absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 15; min-width: 52px; height: 30px; padding: 0 14px; border-radius: 999px; background: ${labelStyle.bg}; border: 1px solid ${labelStyle.border}; color: ${labelStyle.text}; display:flex; align-items:center; justify-content:center; font-size: 12px; font-weight: 900; letter-spacing: 0.24em; box-shadow: 0 0 14px ${labelStyle.glow}, 0 0 24px ${labelStyle.glow}; text-shadow: 0 0 10px ${labelStyle.glow}; backdrop-filter: blur(8px);">${fotoLabel}</div>` : ""}
                         </div>
                     `;
                 }).join('') : '<p style="text-align:center; grid-column: 1/-1; color: #64748b;">No hay archivos cargados.</p>'}
@@ -1308,9 +1354,23 @@ const saveProfile = (e) => {
                     <p className="mb-2 text-[9px] font-black uppercase tracking-[0.3em] text-cyan-400/80">Preview galería</p>
                     <div className="relative h-32 overflow-hidden rounded-[1.5rem] border border-cyan-500/40 bg-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
                         <img src={urlInput} className="w-full h-full object-cover" alt="Preview galería" />
-                        <div className="absolute top-2 right-0 rounded-l-full bg-cyan-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-white shadow-[0_0_12px_rgba(34,211,238,0.45)]">
-                            {galleryLabel}
-                        </div>
+                        {(() => {
+                            const labelStyle = getGalleryLabelStyle(galleryLabel);
+                            return (
+                                <div
+                                    className="absolute bottom-3 left-1/2 flex min-w-[3.25rem] -translate-x-1/2 items-center justify-center rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.35em] backdrop-blur-md"
+                                    style={{
+                                        background: labelStyle.bg,
+                                        borderColor: labelStyle.border,
+                                        color: labelStyle.text,
+                                        boxShadow: `0 0 14px ${labelStyle.glow}, 0 0 24px ${labelStyle.glow}`,
+                                        textShadow: `0 0 10px ${labelStyle.glow}`
+                                    }}
+                                >
+                                    {galleryLabel}
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
             )}
