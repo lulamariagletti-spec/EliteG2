@@ -143,6 +143,11 @@
         const db = firebase.database();
         const { useState, useEffect, useMemo, useRef } = React;
 
+        const clampIndex = (index, total) => {
+            if (!total) return 0;
+            return (index + total) % total;
+        };
+
         const GALLERY_LABELS = ['C', 'P', 'B', 'N', 'S', 'E'];
         const GALLERY_LABEL_STYLES = {
             C: {
@@ -542,6 +547,9 @@
             const [urlInput, setUrlInput] = useState('');
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
             const [galleryFilterLabel, setGalleryFilterLabel] = useState('TODAS');
+            const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
+            const galleryTouchStartXRef = useRef(null);
+            const galleryTouchDeltaXRef = useRef(0);
 
             const [filters, setFilters] = useState({
                 nacionalidad: 'Todas',
@@ -821,6 +829,83 @@ const getInitialCatFormData = () => ({
                     return matchesLabel && matchesQuery;
                 });
             }, [allGalleryPhotos, galleryFilterLabel, searchQuery]);
+            const selectedGalleryPhoto = selectedGalleryIndex === null
+                ? null
+                : filteredGalleryPhotos[clampIndex(selectedGalleryIndex, filteredGalleryPhotos.length)] || null;
+
+            useEffect(() => {
+                if (selectedGalleryIndex === null) return;
+
+                if (!filteredGalleryPhotos.length) {
+                    setSelectedGalleryIndex(null);
+                    return;
+                }
+
+                if (selectedGalleryIndex >= filteredGalleryPhotos.length) {
+                    setSelectedGalleryIndex(0);
+                }
+            }, [filteredGalleryPhotos, selectedGalleryIndex]);
+
+            useEffect(() => {
+                if (selectedGalleryIndex === null) return;
+
+                const handleGalleryKeydown = (event) => {
+                    if (event.key === 'Escape') {
+                        setSelectedGalleryIndex(null);
+                        return;
+                    }
+
+                    if (!filteredGalleryPhotos.length) return;
+
+                    if (event.key === 'ArrowRight') {
+                        setSelectedGalleryIndex((current) => clampIndex((current ?? 0) + 1, filteredGalleryPhotos.length));
+                    }
+
+                    if (event.key === 'ArrowLeft') {
+                        setSelectedGalleryIndex((current) => clampIndex((current ?? 0) - 1, filteredGalleryPhotos.length));
+                    }
+                };
+
+                window.addEventListener('keydown', handleGalleryKeydown);
+                return () => window.removeEventListener('keydown', handleGalleryKeydown);
+            }, [filteredGalleryPhotos.length, selectedGalleryIndex]);
+
+            const openGalleryViewer = (index) => setSelectedGalleryIndex(index);
+            const closeGalleryViewer = () => {
+                galleryTouchStartXRef.current = null;
+                galleryTouchDeltaXRef.current = 0;
+                setSelectedGalleryIndex(null);
+            };
+            const showNextGalleryPhoto = () => setSelectedGalleryIndex((current) => clampIndex((current ?? 0) + 1, filteredGalleryPhotos.length));
+            const showPreviousGalleryPhoto = () => setSelectedGalleryIndex((current) => clampIndex((current ?? 0) - 1, filteredGalleryPhotos.length));
+            const handleGalleryTouchStart = (event) => {
+                if (filteredGalleryPhotos.length <= 1) return;
+                galleryTouchStartXRef.current = event.touches[0]?.clientX ?? null;
+                galleryTouchDeltaXRef.current = 0;
+            };
+            const handleGalleryTouchMove = (event) => {
+                if (galleryTouchStartXRef.current === null) return;
+                const currentX = event.touches[0]?.clientX;
+                if (typeof currentX !== 'number') return;
+                galleryTouchDeltaXRef.current = currentX - galleryTouchStartXRef.current;
+            };
+            const handleGalleryTouchEnd = () => {
+                if (galleryTouchStartXRef.current === null) return;
+
+                const swipeThreshold = 60;
+                const deltaX = galleryTouchDeltaXRef.current;
+
+                galleryTouchStartXRef.current = null;
+                galleryTouchDeltaXRef.current = 0;
+
+                if (Math.abs(deltaX) < swipeThreshold) return;
+
+                if (deltaX < 0) {
+                    showNextGalleryPhoto();
+                } else {
+                    showPreviousGalleryPhoto();
+                }
+            };
 
 const saveProfile = (e) => {
                 e.preventDefault();
@@ -1296,13 +1381,19 @@ const saveProfile = (e) => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
-                    {filteredGalleryPhotos.map(photo => {
+                    {filteredGalleryPhotos.map((photo, index) => {
                         const labelStyle = getGalleryLabelStyle(photo.label);
 
                         return (
-                            <div key={photo.id} className="group bg-[#0a0f1e] border border-slate-800 rounded-[2.4rem] overflow-hidden hover:border-cyan-500/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.12)] transition-all duration-500">
+                            <button
+                                key={photo.id}
+                                type="button"
+                                onClick={() => openGalleryViewer(index)}
+                                className="group text-left bg-[#0a0f1e] border border-slate-800 rounded-[2.4rem] overflow-hidden hover:border-cyan-500/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.12)] transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:ring-offset-2 focus:ring-offset-[#020617]"
+                            >
                                 <div className="aspect-[4/5] relative overflow-hidden bg-slate-950">
                                     <img src={photo.url} alt={`${photo.nombre} - ${photo.label || 'galería'}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-cyan-950/40 via-transparent to-transparent" />
                                     <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent">
                                         <div className="flex items-end justify-between gap-3">
                                             <div>
@@ -1326,9 +1417,87 @@ const saveProfile = (e) => {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </button>
                         );
                     })}
+                </div>
+            )}
+
+            {selectedGalleryPhoto && (
+                <div className="fixed inset-0 z-[120] bg-slate-950/95 backdrop-blur-xl flex items-center justify-center p-4 sm:p-8" onClick={closeGalleryViewer}>
+                    <button
+                        type="button"
+                        onClick={closeGalleryViewer}
+                        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-12 h-12 rounded-full border border-slate-700 bg-slate-900/80 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all"
+                        aria-label="Cerrar visor"
+                    >
+                        <LucideIcon name="x" size={22} />
+                    </button>
+
+                    {filteredGalleryPhotos.length > 1 && (
+                        <>
+                            <button
+                                type="button"
+                                onClick={(event) => { event.stopPropagation(); showPreviousGalleryPhoto(); }}
+                                className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-slate-700 bg-slate-900/80 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all"
+                                aria-label="Foto anterior"
+                            >
+                                <LucideIcon name="chevron-left" size={26} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(event) => { event.stopPropagation(); showNextGalleryPhoto(); }}
+                                className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-slate-700 bg-slate-900/80 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all"
+                                aria-label="Foto siguiente"
+                            >
+                                <LucideIcon name="chevron-right" size={26} />
+                            </button>
+                        </>
+                    )}
+
+                    <div className="w-full max-w-6xl max-h-full flex flex-col gap-4" onClick={(event) => event.stopPropagation()}>
+                        <div className="flex items-center justify-between gap-4 px-1 sm:px-2">
+                            <div>
+                                <p className="text-2xl sm:text-3xl font-black italic text-white tracking-tighter">{selectedGalleryPhoto.nombre}</p>
+                                <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-cyan-400 mt-2">{selectedGalleryPhoto.profesion}{selectedGalleryPhoto.nacionalidad ? ` · ${selectedGalleryPhoto.nacionalidad}` : ''}</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className="min-w-[52px] h-[52px] rounded-2xl border flex items-center justify-center text-base font-black uppercase shadow-xl"
+                                    style={{
+                                        background: getGalleryLabelStyle(selectedGalleryPhoto.label).bg,
+                                        borderColor: getGalleryLabelStyle(selectedGalleryPhoto.label).border,
+                                        color: getGalleryLabelStyle(selectedGalleryPhoto.label).text,
+                                        boxShadow: `0 0 20px ${getGalleryLabelStyle(selectedGalleryPhoto.label).glow}`
+                                    }}
+                                >
+                                    {selectedGalleryPhoto.label || '—'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            className="relative flex-1 min-h-0 rounded-[2rem] overflow-hidden border border-slate-800 bg-black/50 touch-pan-y"
+                            onTouchStart={handleGalleryTouchStart}
+                            onTouchMove={handleGalleryTouchMove}
+                            onTouchEnd={handleGalleryTouchEnd}
+                        >
+                            <img
+                                src={selectedGalleryPhoto.url}
+                                alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
+                                className="w-full h-[calc(100vh-14rem)] object-contain bg-black select-none"
+                            />
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1 sm:px-2">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">
+                                {selectedGalleryIndex + 1} de {filteredGalleryPhotos.length} fotos visibles
+                            </p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500">
+                                Navegá con teclado, botones laterales o deslizá en celular · Respeta el filtro actual
+                            </p>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
