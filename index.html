@@ -542,9 +542,6 @@
             const [urlInput, setUrlInput] = useState('');
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
             const [galleryFilterLabel, setGalleryFilterLabel] = useState('TODAS');
-            const [isGalleryViewerOpen, setIsGalleryViewerOpen] = useState(false);
-            const [galleryViewerIndex, setGalleryViewerIndex] = useState(0);
-            const galleryViewerStripRef = useRef(null);
 
             const [filters, setFilters] = useState({
                 nacionalidad: 'Todas',
@@ -1332,13 +1329,7 @@ const saveProfile = (e) => {
 
                         return (
                             <div key={photo.id} className="group bg-[#0a0f1e] border border-slate-800 rounded-[2.4rem] overflow-hidden hover:border-cyan-500/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.12)] transition-all duration-500">
-                                <div
-                                    className="aspect-[4/5] relative overflow-hidden bg-slate-950 cursor-pointer"
-                                    onClick={() => {
-                                        setGalleryViewerIndex(filteredGalleryPhotos.findIndex(item => item.id === photo.id));
-                                        setIsGalleryViewerOpen(true);
-                                    }}
-                                >
+                                <div className="aspect-[4/5] relative overflow-hidden bg-slate-950">
                                     <img src={photo.url} alt={`${photo.nombre} - ${photo.label || 'galería'}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                                     <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent">
                                         <div className="flex items-end justify-between gap-3">
@@ -1368,73 +1359,6 @@ const saveProfile = (e) => {
                     })}
                 </div>
             )}
-        </div>
-    )}
-
-    {isGalleryViewerOpen && filteredGalleryPhotos.length > 0 && (
-        <div
-            className="fixed inset-0 z-[120] bg-[#020617]/95 backdrop-blur-xl"
-            onClick={(event) => {
-                if (event.target === event.currentTarget) {
-                    setIsGalleryViewerOpen(false);
-                }
-            }}
-        >
-            <button
-                onClick={() => setIsGalleryViewerOpen(false)}
-                className="fixed top-6 right-6 z-[130] w-12 h-12 rounded-full bg-slate-900/90 border border-slate-700 text-white hover:border-cyan-400 hover:text-cyan-400 transition-all flex items-center justify-center shadow-2xl"
-                aria-label="Cerrar visor"
-            >
-                <LucideIcon name="x" size={20} />
-            </button>
-
-            <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-[130] px-5 py-2 rounded-full bg-slate-900/80 border border-slate-700 text-[10px] font-black uppercase tracking-[0.28em] text-slate-300">
-                Scroll para recorrer la galería
-            </div>
-
-            <div ref={galleryViewerStripRef} className="h-screen overflow-y-auto snap-y snap-mandatory">
-                {filteredGalleryPhotos.map((photo, index) => {
-                    const labelStyle = getGalleryLabelStyle(photo.label);
-                    return (
-                        <section
-                            key={`viewer-${photo.id}`}
-                            id={`main-gallery-viewer-slide-${index}`}
-                            className="min-h-screen snap-start flex flex-col items-center justify-center px-6 py-24"
-                        >
-                            <div className="w-full max-w-6xl space-y-6">
-                                <div className="flex flex-wrap items-center justify-between gap-4">
-                                    <div>
-                                        <p className="text-3xl md:text-5xl font-black italic text-white tracking-tighter">{photo.nombre}</p>
-                                        <div className="flex flex-wrap items-center gap-3 mt-3">
-                                            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-cyan-400">{photo.profesion}</span>
-                                            {photo.nacionalidad && <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">{photo.nacionalidad}</span>}
-                                        </div>
-                                    </div>
-                                    <div
-                                        className="min-w-[58px] h-[58px] rounded-[1.4rem] border flex items-center justify-center text-base font-black uppercase shadow-xl"
-                                        style={{
-                                            background: labelStyle.bg,
-                                            borderColor: labelStyle.border,
-                                            color: labelStyle.text,
-                                            boxShadow: `0 0 18px ${labelStyle.glow}`
-                                        }}
-                                    >
-                                        {photo.label || '—'}
-                                    </div>
-                                </div>
-
-                                <div className="rounded-[2.5rem] overflow-hidden border border-slate-800 shadow-[0_0_40px_rgba(15,23,42,0.55)] bg-slate-950">
-                                    <img
-                                        src={photo.url}
-                                        alt={`${photo.nombre} - vista completa`}
-                                        className="w-full max-h-[78vh] object-contain bg-slate-950"
-                                    />
-                                </div>
-                            </div>
-                        </section>
-                    );
-                })}
-            </div>
         </div>
     )}
 
