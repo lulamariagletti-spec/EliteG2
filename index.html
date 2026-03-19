@@ -143,6 +143,34 @@
         const db = firebase.database();
         const { useState, useEffect, useMemo } = React;
 
+        const GALLERY_LABELS = ['C', 'P', 'B', 'N', 'S', 'E'];
+        const GALLERY_LABEL_STYLES = {
+            C: { bg: 'linear-gradient(135deg, rgba(59, 130, 246, 0.96), rgba(37, 99, 235, 0.78))', border: '#bfdbfe', glow: 'rgba(59, 130, 246, 0.55)' },
+            P: { bg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.96), rgba(126, 34, 206, 0.78))', border: '#e9d5ff', glow: 'rgba(168, 85, 247, 0.55)' },
+            B: { bg: 'linear-gradient(135deg, rgba(236, 72, 153, 0.96), rgba(190, 24, 93, 0.78))', border: '#fbcfe8', glow: 'rgba(236, 72, 153, 0.55)' },
+            N: { bg: 'linear-gradient(135deg, rgba(239, 68, 68, 0.96), rgba(185, 28, 28, 0.78))', border: '#fecaca', glow: 'rgba(239, 68, 68, 0.55)' },
+            S: { bg: 'linear-gradient(135deg, rgba(34, 197, 94, 0.96), rgba(21, 128, 61, 0.78))', border: '#bbf7d0', glow: 'rgba(34, 197, 94, 0.55)' },
+            E: { bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.96), rgba(217, 119, 6, 0.78))', border: '#fde68a', glow: 'rgba(245, 158, 11, 0.55)' },
+            DEFAULT: { bg: 'linear-gradient(135deg, rgba(8, 145, 178, 0.96), rgba(14, 116, 144, 0.78))', border: '#67e8f9', glow: 'rgba(34, 211, 238, 0.45)' }
+        };
+        const getGalleryLabelStyle = (label) => GALLERY_LABEL_STYLES[label] || GALLERY_LABEL_STYLES.DEFAULT;
+        const getGalleryBadgeInlineStyles = (label, extra = '') => {
+            const style = getGalleryLabelStyle(label);
+            return `position:absolute; right: 10px; bottom: 10px; z-index: 15; min-width: 34px; height: 30px; padding: 0 10px; border-radius: 999px; background: ${style.bg}; border: 1px solid ${style.border}; color: white; display:flex; align-items:center; justify-content:center; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; box-shadow: 0 0 16px ${style.glow}, inset 0 0 12px rgba(255,255,255,0.16); text-shadow: 0 0 8px rgba(255,255,255,0.35); backdrop-filter: blur(6px); ${extra}`;
+        };
+        const normalizeGalleryItem = (item) => {
+            if (typeof item === 'string') return { url: item, label: '' };
+            if (item && typeof item === 'object') {
+                return {
+                    url: (item.url || '').trim(),
+                    label: GALLERY_LABELS.includes(item.label) ? item.label : ''
+                };
+            }
+            return { url: '', label: '' };
+        };
+        const getGalleryItemUrl = (item) => normalizeGalleryItem(item).url;
+        const getGalleryItemLabel = (item) => normalizeGalleryItem(item).label;
+
         const STORAGE_KEY = 'g2_elite_database_v4';
         const CAT_STORAGE_KEY = 'g2_elite_categories_v4';
         const CARACTERISTICAS = [
@@ -213,6 +241,9 @@
             const [selectedCategory, setSelectedCategory] = React.useState(null);
             const [sortBy, setSortBy] = useState('promedio');
             const [urlInput, setUrlInput] = useState('');
+            const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
+
+            const previewGalleryBadgeStyle = getGalleryLabelStyle(galleryLabel);
 
             const [filters, setFilters] = useState({
                 nacionalidad: 'Todas',
@@ -244,14 +275,15 @@ const getInitialCatFormData = () => ({
                 galeria: { fotos: [], gifs: [], videos: [] },
                 puntuaciones: { Ojos: 0, Rostro: 0, Busto: 0, Cola: 0, Cintura: 0, Cabello: 0, Estatura: 0, Sensualidad: 0, Dulzura: 0, Elegancia: 0 }
             });
-            const addGalleryImage = async ({ profileId, url, tag = 'fotos' }) => {
+            const addGalleryImage = async ({ profileId, url, tag = 'fotos', label = '' }) => {
                 const normalizedUrl = (url || '').trim();
+                const normalizedLabel = GALLERY_LABELS.includes(label) ? label : '';
                 if (!profileId || !normalizedUrl) return [];
 
                 const galleryRef = db.ref(`perfiles/${profileId}/galeria/${tag}`);
                 const snapshot = await galleryRef.once('value');
                 const currentItems = snapshot.val() || [];
-                const updatedItems = [...currentItems, normalizedUrl];
+                const updatedItems = [...currentItems, { url: normalizedUrl, label: normalizedLabel }];
 
                 await galleryRef.set(updatedItems);
 
@@ -268,12 +300,13 @@ const getInitialCatFormData = () => ({
                 return updatedItems;
             };
 
-            const submitGalleryImage = async ({ profileId = editingId, url = urlInput, successMessage } = {}) => {
+            const submitGalleryImage = async ({ profileId = editingId, url = urlInput, label = galleryLabel, successMessage } = {}) => {
                 if (!profileId || !(url || '').trim()) return;
 
                 try {
-                    await addGalleryImage({ profileId, url, tag: 'fotos' });
+                    await addGalleryImage({ profileId, url, tag: 'fotos', label });
                     setUrlInput('');
+                    setGalleryLabel(GALLERY_LABELS[0]);
 
 
                     if (successMessage) {
@@ -306,11 +339,11 @@ const getInitialCatFormData = () => ({
             useEffect(() => {
                 const handleMessage = async (event) => {
                     if (event.data.type === 'ADD_IMAGE') {
-                        const { url, id } = event.data;
+                        const { url, id, label } = event.data;
                         const galleryRef = db.ref(`perfiles/${id}/galeria/fotos`);
                         const snapshot = await galleryRef.once('value');
                         const currentPhotos = snapshot.val() || [];
-                        const updatedPhotos = [...currentPhotos, url];
+                        const updatedPhotos = [...currentPhotos, { url: (url || '').trim(), label: GALLERY_LABELS.includes(label) ? label : '' }];
 
                         await galleryRef.set(updatedPhotos);
                         setFormData(prev => ({
@@ -1007,7 +1040,7 @@ const saveProfile = (e) => {
     type="button"
     onClick={() => {
         const nuevaVentana = window.open('', '_blank');
-        const fotosGaleria = formData.galeria?.fotos || [];
+        const fotosGaleria = (formData.galeria?.fotos || []).map(normalizeGalleryItem).filter(item => item.url);
         nuevaVentana.document.write(`
             <!DOCTYPE html>
             <html>
@@ -1150,7 +1183,10 @@ const saveProfile = (e) => {
                 <div id="miModal" class="modal-url">
                     <h2 style="margin:0; font-size: 14px; color: #94a3b8;">PEGAR URL DEL ARCHIVO</h2>
                     <input type="text" id="nuevaFotoUrl" placeholder="https://ejemplo.com/foto.jpg">
-                    <button onclick="window.opener.postMessage({type: 'ADD_IMAGE', url: document.getElementById('nuevaFotoUrl').value, id: '${editingId}'}, '*'); document.getElementById('miModal').style.display='none'; document.getElementById('nuevaFotoUrl').value='';"
+                    <select id="nuevaFotoEtiqueta" style="width: 100%; padding: 12px; margin-top: 15px; background: #020617; border: 1px solid #334155; color: #22d3ee; border-radius: 8px; outline: none;">
+                        ${GALLERY_LABELS.map(label => `<option value="${label}">Etiqueta ${label}</option>`).join('')}
+                    </select>
+                    <button onclick="window.opener.postMessage({type: 'ADD_IMAGE', url: document.getElementById('nuevaFotoUrl').value, label: document.getElementById('nuevaFotoEtiqueta').value, id: '${editingId}'}, '*'); document.getElementById('miModal').style.display='none'; document.getElementById('nuevaFotoUrl').value=''; document.getElementById('nuevaFotoEtiqueta').value='${GALLERY_LABELS[0]}';"
                         style="margin-top: 15px; width: 100%; padding: 10px; background: #06b6d4; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                         Guardar
                     </button>
@@ -1158,6 +1194,8 @@ const saveProfile = (e) => {
 
                 <div class="grid">
                     ${fotosGaleria.length ? fotosGaleria.map((foto, index) => {
+                    const fotoUrl = getGalleryItemUrl(foto);
+                    const fotoLabel = getGalleryItemLabel(foto);
                     const config = {
                         "CANTANTE": { color: "#0ea5e9", sombra: "rgba(14,165,233,0.8)" },
                         "NSFW":  { color: "#ef4444", sombra: "rgba(239,68,68,0.8)" },
@@ -1210,7 +1248,8 @@ const saveProfile = (e) => {
                                 box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
                             "
                         >✕</button>
-                        <img src="${foto}" alt="Imagen de la galería" style="width: 100%; height: 100%; object-fit: cover;" />
+                        <img src="${fotoUrl}" alt="Imagen de la galería" style="width: 100%; height: 100%; object-fit: cover;" />
+                        ${fotoLabel ? `<div style="${getGalleryBadgeInlineStyles(fotoLabel)}">${fotoLabel}</div>` : ""}
                         </div>
                     `;
                 }).join('') : '<p style="text-align:center; grid-column: 1/-1; color: #64748b;">No hay archivos cargados.</p>'}
@@ -1222,7 +1261,7 @@ const saveProfile = (e) => {
                     <div id="viewerStrip" class="viewer-strip">
                         ${fotosGaleria.map((foto, index) => `
                             <div class="viewer-slide" id="viewer-slide-${index}">
-                                <img src="${foto}" alt="Vista completa ${index + 1}" />
+                                <img src="${foto.url}" alt="Vista completa ${index + 1}" />
                             </div>
                         `).join('')}
                     </div>
@@ -1280,6 +1319,26 @@ const saveProfile = (e) => {
                     </div>
                 )}
             </div>
+            {editingId && urlInput.trim() && (
+                <div className="w-48">
+                    <p className="mb-2 text-[9px] font-black uppercase tracking-[0.3em] text-cyan-400/80">Preview galería</p>
+                    <div className="relative h-32 overflow-hidden rounded-[1.5rem] border border-cyan-500/40 bg-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
+                        <img src={urlInput} className="w-full h-full object-cover" alt="Preview galería" />
+                        <div
+                            className="absolute bottom-[10px] right-[10px] px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-white border rounded-full"
+                            style={{
+                                background: previewGalleryBadgeStyle.bg,
+                                borderColor: previewGalleryBadgeStyle.border,
+                                boxShadow: `0 0 16px ${previewGalleryBadgeStyle.glow}, inset 0 0 12px rgba(255,255,255,0.16)`,
+                                textShadow: '0 0 8px rgba(255,255,255,0.35)',
+                                backdropFilter: 'blur(6px)'
+                            }}
+                        >
+                            {galleryLabel}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
 
         {/* CAMPOS DE TEXTO */}
@@ -1300,13 +1359,22 @@ const saveProfile = (e) => {
                 {editingId && (
                     <div className="col-span-2 space-y-2">
                         <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">URL para sumar a la galería</label>
-                        <div className="flex flex-col gap-3 sm:flex-row">
+                        <div className="flex flex-col gap-3 xl:flex-row">
                             <input
                                 placeholder="https://imagen.com/galeria.jpg"
                                 className="flex-1 bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold text-xs"
                                 value={urlInput}
                                 onChange={e => setUrlInput(e.target.value)}
                             />
+                            <select
+                                value={galleryLabel}
+                                onChange={e => setGalleryLabel(e.target.value)}
+                                className="bg-slate-900/50 border border-slate-800 px-5 py-4 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-black text-xs uppercase tracking-[0.25em]"
+                            >
+                                {GALLERY_LABELS.map(label => (
+                                    <option key={label} value={label}>Etiqueta {label}</option>
+                                ))}
+                            </select>
                             <button
                                 type="button"
                                 onClick={() => submitGalleryImage({ successMessage: '¡Foto guardada! Sos un genio.' })}
