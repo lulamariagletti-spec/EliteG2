@@ -194,18 +194,62 @@
             }
         };
         const getGalleryLabelStyle = (label) => GALLERY_LABEL_STYLES[label] || GALLERY_LABEL_STYLES.DEFAULT;
-        const normalizeGalleryItem = (item) => {
-            if (typeof item === 'string') return { url: item, label: '' };
-            if (item && typeof item === 'object') {
+        const VIDEO_FILE_REGEX = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i;
+        const YOUTUBE_REGEX = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i;
+        const VIMEO_REGEX = /vimeo\.com\/(?:video\/)?(\d+)/i;
+        const getVideoEmbedInfo = (url) => {
+            const normalizedUrl = (url || '').trim();
+            if (!normalizedUrl) return null;
+
+            const youtubeMatch = normalizedUrl.match(YOUTUBE_REGEX);
+            if (youtubeMatch) {
                 return {
-                    url: (item.url || '').trim(),
-                    label: GALLERY_LABELS.includes(item.label) ? item.label : ''
+                    provider: 'youtube',
+                    src: `https://www.youtube.com/embed/${youtubeMatch[1]}`,
+                    title: 'Video de YouTube'
                 };
             }
-            return { url: '', label: '' };
+
+            const vimeoMatch = normalizedUrl.match(VIMEO_REGEX);
+            if (vimeoMatch) {
+                return {
+                    provider: 'vimeo',
+                    src: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+                    title: 'Video de Vimeo'
+                };
+            }
+
+            return null;
+        };
+        const detectGalleryItemType = (url = '', explicitType = '') => {
+            if (explicitType === 'video' || explicitType === 'image') return explicitType;
+            const normalizedUrl = (url || '').trim();
+            if (VIDEO_FILE_REGEX.test(normalizedUrl) || getVideoEmbedInfo(normalizedUrl)) {
+                return 'video';
+            }
+            return 'image';
+        };
+        const normalizeGalleryItem = (item, fallbackType = '') => {
+            if (typeof item === 'string') {
+                return {
+                    url: item.trim(),
+                    label: '',
+                    type: detectGalleryItemType(item, fallbackType)
+                };
+            }
+            if (item && typeof item === 'object') {
+                const url = (item.url || '').trim();
+                return {
+                    url,
+                    label: GALLERY_LABELS.includes(item.label) ? item.label : '',
+                    type: detectGalleryItemType(url, item.type || fallbackType)
+                };
+            }
+            return { url: '', label: '', type: detectGalleryItemType('', fallbackType) };
         };
         const getGalleryItemUrl = (item) => normalizeGalleryItem(item).url;
         const getGalleryItemLabel = (item) => normalizeGalleryItem(item).label;
+        const getGalleryItemType = (item) => normalizeGalleryItem(item).type;
 
         const STORAGE_KEY = 'g2_elite_database_v4';
         const CAT_STORAGE_KEY = 'g2_elite_categories_v4';
@@ -240,7 +284,14 @@
         const renderGalleryWindow = ({ targetWindow, profileName, profession, photos, editingId }) => {
             if (!targetWindow || targetWindow.closed) return;
 
-            const fotosGaleria = (photos || []).map(normalizeGalleryItem).filter(item => item.url);
+            const fotosGaleria = (photos || []).map((item, index) => {
+                const normalizedItem = normalizeGalleryItem(item);
+                return {
+                    ...normalizedItem,
+                    sourceTag: item?.sourceTag || (normalizedItem.type === 'video' ? 'videos' : 'fotos'),
+                    sourceIndex: typeof item?.sourceIndex === 'number' ? item.sourceIndex : index
+                };
+            }).filter(item => item.url);
 
             targetWindow.document.open();
             targetWindow.document.write(`
@@ -458,11 +509,15 @@
 
                 <div id="miModal" class="modal-url">
                     <h2 style="margin:0; font-size: 14px; color: #94a3b8;">PEGAR URL DEL ARCHIVO</h2>
-                    <input type="text" id="nuevaFotoUrl" placeholder="https://ejemplo.com/foto.jpg">
+                    <input type="text" id="nuevaFotoUrl" placeholder="https://ejemplo.com/foto.jpg o https://youtube.com/...">
+                    <select id="nuevoArchivoTipo" style="width: 100%; padding: 12px; margin-top: 15px; background: #020617; border: 1px solid #334155; color: #22d3ee; border-radius: 8px; outline: none;">
+                        <option value="image">Imagen</option>
+                        <option value="video">Video</option>
+                    </select>
                     <select id="nuevaFotoEtiqueta" style="width: 100%; padding: 12px; margin-top: 15px; background: #020617; border: 1px solid #334155; color: #22d3ee; border-radius: 8px; outline: none;">
                         ${GALLERY_LABELS.map(label => `<option value="${label}">Etiqueta ${label}</option>`).join('')}
                     </select>
-                    <button onclick="window.opener.postMessage({type: 'ADD_IMAGE', url: document.getElementById('nuevaFotoUrl').value, label: document.getElementById('nuevaFotoEtiqueta').value, id: '${editingId}'}, '*'); document.getElementById('miModal').style.display='none'; document.getElementById('nuevaFotoUrl').value=''; document.getElementById('nuevaFotoEtiqueta').value='${GALLERY_LABELS[0]}';"
+                    <button onclick="window.opener.postMessage({type: 'ADD_IMAGE', url: document.getElementById('nuevaFotoUrl').value, label: document.getElementById('nuevaFotoEtiqueta').value, mediaType: document.getElementById('nuevoArchivoTipo').value, id: '${editingId}'}, '*'); document.getElementById('miModal').style.display='none'; document.getElementById('nuevaFotoUrl').value=''; document.getElementById('nuevaFotoEtiqueta').value='${GALLERY_LABELS[0]}'; document.getElementById('nuevoArchivoTipo').value='image';"
                         style="margin-top: 15px; width: 100%; padding: 10px; background: #06b6d4; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                         Guardar
                     </button>
@@ -504,7 +559,7 @@
                         title="Abrir visor de pantalla completa"
                         >
                            <button
-                            onclick="event.stopPropagation(); window.opener.postMessage({type: 'DELETE_IMAGE', index: ${index}, id: '${editingId}'}, '*');"
+                            onclick="event.stopPropagation(); window.opener.postMessage({type: 'DELETE_IMAGE', index: ${foto.sourceIndex}, mediaType: '${getGalleryItemType(foto)}', id: '${editingId}'}, '*');"
                             style="
                                 position: absolute;
                                 top: 5px;
@@ -525,7 +580,17 @@
                                 box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
                             "
                         >✕</button>
-                        <img src="${fotoUrl}" alt="Imagen de la galería" style="width: 100%; height: 100%; object-fit: cover;" />
+                        ${getGalleryItemType(foto) === 'video'
+                            ? (() => {
+                                const embedInfo = getVideoEmbedInfo(fotoUrl);
+                                if (embedInfo) {
+                                    return `<div style="width: 100%; height: 100%; background: radial-gradient(circle at top, rgba(34,211,238,0.35), rgba(15,23,42,0.96)); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding: 18px; box-sizing:border-box; text-align:center;"><div style="width:64px; height:64px; border-radius:999px; border:1px solid rgba(34,211,238,0.5); background:rgba(15,23,42,0.75); display:flex; align-items:center; justify-content:center; color:#22d3ee; font-size:28px;">▶</div><div style="font-size:12px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#e2e8f0;">Video embebido</div><div style="font-size:11px; color:#94a3b8; max-width:100%; word-break:break-word;">${embedInfo.provider.toUpperCase()}</div></div>`;
+                                }
+                                return `<video src="${fotoUrl}" style="width: 100%; height: 100%; object-fit: cover;" muted playsinline preload="metadata"></video>`;
+                            })()
+                            : `<img src="${fotoUrl}" alt="Imagen de la galería" style="width: 100%; height: 100%; object-fit: cover;" />`
+                        }
+                        <div style="position:absolute; left: 12px; top: 12px; z-index: 15; padding: 6px 10px; border-radius: 999px; background: rgba(2,6,23,0.72); border: 1px solid rgba(148,163,184,0.24); color: #e2e8f0; display:flex; align-items:center; justify-content:center; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; backdrop-filter: blur(8px);">${getGalleryItemType(foto) === 'video' ? 'VIDEO' : 'IMG'}</div>
                         ${fotoLabel ? `<div style="position:absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 15; min-width: 52px; height: 30px; padding: 0 14px; border-radius: 999px; background: ${labelStyle.bg}; border: 1px solid ${labelStyle.border}; color: ${labelStyle.text}; display:flex; align-items:center; justify-content:center; font-size: 12px; font-weight: 900; letter-spacing: 0.24em; box-shadow: 0 0 14px ${labelStyle.glow}, 0 0 24px ${labelStyle.glow}; text-shadow: 0 0 10px ${labelStyle.glow}; backdrop-filter: blur(8px);">${fotoLabel}</div>` : ""}
                         </div>
                     `;
@@ -540,11 +605,19 @@
                     ` : ''}
                     <div class="viewer-hint">Usá ← → para cambiar y Escape para salir</div>
                     <div class="viewer-stage" id="viewerStage">
-                        ${fotosGaleria.map((foto, index) => `
+                        ${fotosGaleria.map((foto, index) => {
+                            const itemType = getGalleryItemType(foto);
+                            const embedInfo = getVideoEmbedInfo(foto.url);
+                            return `
                             <div class="viewer-slide" id="viewer-slide-${index}">
-                                <img src="${foto.url}" alt="Vista completa ${index + 1}" />
-                            </div>
-                        `).join('')}
+                                ${itemType === 'video'
+                                    ? (embedInfo
+                                        ? `<iframe src="${embedInfo.src}" title="${embedInfo.title} ${index + 1}" style="width:min(92vw, 1400px); height:min(75vh, 820px); border:0; border-radius:24px; box-shadow:0 0 40px rgba(34, 211, 238, 0.2); background:#000;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`
+                                        : `<video src="${foto.url}" controls playsinline style="max-width:min(92vw, 1400px); max-height:calc(100vh - 64px); width:auto; height:auto; border-radius:24px; box-shadow:0 0 40px rgba(34, 211, 238, 0.2); background:#000;"></video>`)
+                                    : `<img src="${foto.url}" alt="Vista completa ${index + 1}" />`
+                                }
+                            </div>`;
+                        }).join('')}
                     </div>
                 </div>
 
@@ -664,6 +737,7 @@
             const [sortBy, setSortBy] = useState('promedio');
             const [urlInput, setUrlInput] = useState('');
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
+            const [galleryMediaType, setGalleryMediaType] = useState('image');
             const [galleryFilterLabel, setGalleryFilterLabel] = useState('TODAS');
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
 
@@ -697,15 +771,16 @@ const getInitialCatFormData = () => ({
                 galeria: { fotos: [], gifs: [], videos: [] },
                 puntuaciones: { Ojos: 0, Rostro: 0, Busto: 0, Cola: 0, Cintura: 0, Cabello: 0, Estatura: 0, Sensualidad: 0, Dulzura: 0, Elegancia: 0 }
             });
-            const addGalleryImage = async ({ profileId, url, tag = 'fotos', label = '' }) => {
+            const addGalleryImage = async ({ profileId, url, tag = 'fotos', label = '', type = 'image' }) => {
                 const normalizedUrl = (url || '').trim();
                 const normalizedLabel = GALLERY_LABELS.includes(label) ? label : '';
+                const normalizedType = detectGalleryItemType(normalizedUrl, type);
                 if (!profileId || !normalizedUrl) return [];
 
                 const galleryRef = db.ref(`perfiles/${profileId}/galeria/${tag}`);
                 const snapshot = await galleryRef.once('value');
                 const currentItems = snapshot.val() || [];
-                const updatedItems = [...currentItems, { url: normalizedUrl, label: normalizedLabel }];
+                const updatedItems = [...currentItems, { url: normalizedUrl, label: normalizedLabel, type: normalizedType }];
 
                 await galleryRef.set(updatedItems);
 
@@ -722,20 +797,21 @@ const getInitialCatFormData = () => ({
                 return updatedItems;
             };
 
-            const submitGalleryImage = async ({ profileId = editingId, url = urlInput, label = galleryLabel, successMessage } = {}) => {
+            const submitGalleryImage = async ({ profileId = editingId, url = urlInput, label = galleryLabel, type = galleryMediaType, successMessage } = {}) => {
                 if (!profileId || !(url || '').trim()) return;
 
                 try {
-                    await addGalleryImage({ profileId, url, tag: 'fotos', label });
+                    await addGalleryImage({ profileId, url, tag: type === 'video' ? 'videos' : 'fotos', label, type });
                     setUrlInput('');
                     setGalleryLabel(GALLERY_LABELS[0]);
+                    setGalleryMediaType('image');
 
 
                     if (successMessage) {
                         alert(successMessage);
                     }
                 } catch (error) {
-                    console.error('Error al guardar imagen en galería:', error);
+                    console.error('Error al guardar archivo en galería:', error);
                 }
             };
             const handleDelete = async (id, e) => {
@@ -764,31 +840,37 @@ const getInitialCatFormData = () => ({
                         targetWindow: galleryWindowRef.current,
                         profileName: formData.nombre,
                         profession: formData.profesion,
-                        photos: formData.galeria?.fotos || [],
+                        photos: [
+                            ...(formData.galeria?.fotos || []).map((item, index) => ({ ...normalizeGalleryItem(item, 'image'), sourceTag: 'fotos', sourceIndex: index })),
+                            ...(formData.galeria?.videos || []).map((item, index) => ({ ...normalizeGalleryItem(item, 'video'), sourceTag: 'videos', sourceIndex: index }))
+                        ],
                         editingId
                     });
                 }
-            }, [editingId, formData.nombre, formData.profesion, formData.galeria?.fotos]);
+            }, [editingId, formData.nombre, formData.profesion, formData.galeria?.fotos, formData.galeria?.videos]);
 
             useEffect(() => {
                 const handleMessage = async (event) => {
                     if (event.data.type === 'ADD_IMAGE') {
-                        const { url, id, label } = event.data;
-                        const galleryRef = db.ref(`perfiles/${id}/galeria/fotos`);
+                        const { url, id, label, mediaType } = event.data;
+                        const tag = mediaType === 'video' ? 'videos' : 'fotos';
+                        const galleryRef = db.ref(`perfiles/${id}/galeria/${tag}`);
                         const snapshot = await galleryRef.once('value');
                         const currentPhotos = snapshot.val() || [];
-                        const updatedPhotos = [...currentPhotos, { url: (url || '').trim(), label: GALLERY_LABELS.includes(label) ? label : '' }];
+                        const normalizedUrl = (url || '').trim();
+                        const updatedPhotos = [...currentPhotos, { url: normalizedUrl, label: GALLERY_LABELS.includes(label) ? label : '', type: detectGalleryItemType(normalizedUrl, mediaType) }];
 
                         await galleryRef.set(updatedPhotos);
                         setFormData(prev => ({
                             ...prev,
-                            galeria: { ...prev.galeria, fotos: updatedPhotos }
+                            galeria: { ...prev.galeria, [tag]: updatedPhotos }
                         }));
                     }
 
                     if (event.data.type === 'DELETE_IMAGE') {
-                        const { index, id } = event.data;
-                        const galleryRef = db.ref(`perfiles/${id}/galeria/fotos`);
+                        const { index, id, mediaType } = event.data;
+                        const tag = mediaType === 'video' ? 'videos' : 'fotos';
+                        const galleryRef = db.ref(`perfiles/${id}/galeria/${tag}`);
                         const snapshot = await galleryRef.once('value');
                         const currentPhotos = snapshot.val() || [];
                         const nuevasFotos = currentPhotos.filter((_, i) => i !== index);
@@ -796,7 +878,7 @@ const getInitialCatFormData = () => ({
                         await galleryRef.set(nuevasFotos);
                         setFormData(prev => ({
                             ...prev,
-                            galeria: { ...prev.galeria, fotos: nuevasFotos }
+                            galeria: { ...prev.galeria, [tag]: nuevasFotos }
                         }));
                     }
                 };
@@ -904,7 +986,10 @@ const getInitialCatFormData = () => ({
             const uniqueCiudades = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.ciudad).filter(Boolean))], [perfiles]);
             const allGalleryPhotos = useMemo(() => {
                 return (perfiles || []).flatMap((perfil) => {
-                    const galleryItems = Array.isArray(perfil?.galeria?.fotos) ? perfil.galeria.fotos : [];
+                    const galleryItems = [
+                        ...(Array.isArray(perfil?.galeria?.fotos) ? perfil.galeria.fotos.map(item => normalizeGalleryItem(item, 'image')) : []),
+                        ...(Array.isArray(perfil?.galeria?.videos) ? perfil.galeria.videos.map(item => normalizeGalleryItem(item, 'video')) : [])
+                    ];
 
                     return galleryItems
                         .map((item, index) => {
@@ -915,6 +1000,7 @@ const getInitialCatFormData = () => ({
                                 id: `${perfil.firebaseId || perfil.nombre || 'perfil'}-${index}-${normalizedItem.url}`,
                                 url: normalizedItem.url,
                                 label: normalizedItem.label,
+                                type: normalizedItem.type,
                                 nombre: perfil.nombre || 'Sin nombre',
                                 profesion: perfil.profesion || 'Perfil',
                                 nacionalidad: perfil.nacionalidad || '',
@@ -1142,7 +1228,7 @@ const saveProfile = (e) => {
                                         <LucideIcon name="images" size={12} /> Filtros de Galería
                                     </h4>
                                     <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.25em] mt-2">
-                                        {filteredGalleryPhotos.length} fotos visibles de {allGalleryPhotos.length}
+                                        {filteredGalleryPhotos.length} archivos visibles de {allGalleryPhotos.length}
                                     </p>
                                 </div>
 
@@ -1400,7 +1486,7 @@ const saveProfile = (e) => {
             <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
                 <div>
                     <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Galería</h2>
-                    <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest mt-1">Todas las fotos cargadas en las galerías de las participantes</p>
+                    <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest mt-1">Todas las imágenes y videos cargados en las galerías de las participantes</p>
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1460,7 +1546,7 @@ const saveProfile = (e) => {
                     <div className="w-20 h-20 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-6">
                         <LucideIcon name="image-off" size={28} className="text-slate-600" />
                     </div>
-                    <h3 className="text-xl font-black italic text-white uppercase tracking-tighter">No hay fotos para mostrar</h3>
+                    <h3 className="text-xl font-black italic text-white uppercase tracking-tighter">No hay archivos para mostrar</h3>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-3">Probá con otra búsqueda o quitá el filtro por etiqueta.</p>
                 </div>
             ) : (
@@ -1476,7 +1562,21 @@ const saveProfile = (e) => {
                                 className="group text-left bg-[#0a0f1e] border border-slate-800 rounded-[2.4rem] overflow-hidden hover:border-cyan-500/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.12)] transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:ring-offset-2 focus:ring-offset-[#020617]"
                             >
                                 <div className="aspect-[4/5] relative overflow-hidden bg-slate-950">
-                                    <img src={photo.url} alt={`${photo.nombre} - ${photo.label || 'galería'}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                    {photo.type === 'video' ? (() => {
+                                        const embedInfo = getVideoEmbedInfo(photo.url);
+                                        if (embedInfo) {
+                                            return (
+                                                <div className="w-full h-full bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.3),_rgba(15,23,42,0.95))] flex flex-col items-center justify-center gap-4 p-6 text-center">
+                                                    <div className="w-16 h-16 rounded-full border border-cyan-400/40 bg-slate-950/70 flex items-center justify-center text-cyan-300 text-2xl">▶</div>
+                                                    <div>
+                                                        <p className="text-sm font-black uppercase tracking-[0.3em] text-white">Video</p>
+                                                        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 mt-2">{embedInfo.provider}</p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return <video src={photo.url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" muted playsInline preload="metadata" />;
+                                    })() : <img src={photo.url} alt={`${photo.nombre} - ${photo.label || 'galería'}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />}
                                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-cyan-950/40 via-transparent to-transparent" />
                                     <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent">
                                         <div className="flex items-end justify-between gap-3">
@@ -1487,16 +1587,21 @@ const saveProfile = (e) => {
                                                     <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400 mt-1">{photo.nacionalidad}</p>
                                                 )}
                                             </div>
-                                            <div
-                                                className="min-w-[46px] h-[46px] rounded-2xl border flex items-center justify-center text-sm font-black uppercase shadow-xl"
-                                                style={{
-                                                    background: labelStyle.bg,
-                                                    borderColor: labelStyle.border,
-                                                    color: labelStyle.text,
-                                                    boxShadow: `0 0 16px ${labelStyle.glow}`
-                                                }}
-                                            >
-                                                {photo.label || '—'}
+                                            <div className="flex flex-col items-end gap-2">
+                                                <div className="px-3 py-1 rounded-full border border-slate-700 bg-slate-950/85 text-[9px] font-black uppercase tracking-[0.3em] text-slate-200">
+                                                    {photo.type === 'video' ? 'VIDEO' : 'IMG'}
+                                                </div>
+                                                <div
+                                                    className="min-w-[46px] h-[46px] rounded-2xl border flex items-center justify-center text-sm font-black uppercase shadow-xl"
+                                                    style={{
+                                                        background: labelStyle.bg,
+                                                        borderColor: labelStyle.border,
+                                                        color: labelStyle.text,
+                                                        boxShadow: `0 0 16px ${labelStyle.glow}`
+                                                    }}
+                                                >
+                                                    {photo.label || '—'}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1525,6 +1630,9 @@ const saveProfile = (e) => {
                                 <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-cyan-400 mt-2">{selectedGalleryPhoto.profesion}{selectedGalleryPhoto.nacionalidad ? ` · ${selectedGalleryPhoto.nacionalidad}` : ''}</p>
                             </div>
                             <div className="flex items-center gap-3">
+                                <div className="px-3 py-2 rounded-full border border-slate-700 bg-slate-950/85 text-[10px] font-black uppercase tracking-[0.3em] text-slate-200">
+                                    {selectedGalleryPhoto.type === 'video' ? 'VIDEO' : 'IMG'}
+                                </div>
                                 <div
                                     className="min-w-[52px] h-[52px] rounded-2xl border flex items-center justify-center text-base font-black uppercase shadow-xl"
                                     style={{
@@ -1540,11 +1648,34 @@ const saveProfile = (e) => {
                         </div>
 
                         <div className="relative flex-1 min-h-0 rounded-[2rem] overflow-hidden border border-slate-800 bg-black/50">
-                            <img
-                                src={selectedGalleryPhoto.url}
-                                alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
-                                className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
-                            />
+                            {selectedGalleryPhoto.type === 'video' ? (() => {
+                                const embedInfo = getVideoEmbedInfo(selectedGalleryPhoto.url);
+                                if (embedInfo) {
+                                    return (
+                                        <iframe
+                                            src={embedInfo.src}
+                                            title={`${selectedGalleryPhoto.nombre} video`}
+                                            className="w-full h-[calc(100vh-14rem)] bg-black"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            allowFullScreen
+                                        />
+                                    );
+                                }
+                                return (
+                                    <video
+                                        src={selectedGalleryPhoto.url}
+                                        controls
+                                        playsInline
+                                        className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
+                                    />
+                                );
+                            })() : (
+                                <img
+                                    src={selectedGalleryPhoto.url}
+                                    alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
+                                    className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
+                                />
+                            )}
 
                             {filteredGalleryPhotos.length > 1 && (
                                 <>
@@ -1570,7 +1701,7 @@ const saveProfile = (e) => {
 
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1 sm:px-2">
                             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">
-                                {selectedGalleryIndex + 1} de {filteredGalleryPhotos.length} fotos visibles
+                                {selectedGalleryIndex + 1} de {filteredGalleryPhotos.length} archivos visibles
                             </p>
                             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500">
                                 Navegá con las flechas del teclado o los botones inferiores · Respeta el filtro actual
@@ -1804,7 +1935,10 @@ const saveProfile = (e) => {
             targetWindow: nuevaVentana,
             profileName: formData.nombre,
             profession: formData.profesion,
-            photos: formData.galeria?.fotos || [],
+            photos: [
+                ...(formData.galeria?.fotos || []).map((item, index) => ({ ...normalizeGalleryItem(item, 'image'), sourceTag: 'fotos', sourceIndex: index })),
+                ...(formData.galeria?.videos || []).map((item, index) => ({ ...normalizeGalleryItem(item, 'video'), sourceTag: 'videos', sourceIndex: index }))
+            ],
             editingId
         });
         nuevaVentana.focus();
@@ -1832,7 +1966,18 @@ const saveProfile = (e) => {
                 <div className="w-48">
                     <p className="mb-2 text-[9px] font-black uppercase tracking-[0.3em] text-cyan-400/80">Preview galería</p>
                     <div className="relative h-32 overflow-hidden rounded-[1.5rem] border border-cyan-500/40 bg-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
-                        <img src={urlInput} className="w-full h-full object-cover" alt="Preview galería" />
+                        {galleryMediaType === 'video' ? (() => {
+                            const embedInfo = getVideoEmbedInfo(urlInput);
+                            if (embedInfo) {
+                                return (
+                                    <div className="w-full h-full bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.28),_rgba(15,23,42,0.96))] flex flex-col items-center justify-center gap-2 text-center px-4">
+                                        <div className="w-10 h-10 rounded-full border border-cyan-400/40 bg-slate-950/70 flex items-center justify-center text-cyan-300 text-lg">▶</div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white">{embedInfo.provider}</p>
+                                    </div>
+                                );
+                            }
+                            return <video src={urlInput} className="w-full h-full object-cover" muted playsInline preload="metadata" />;
+                        })() : <img src={urlInput} className="w-full h-full object-cover" alt="Preview galería" />}
                         {(() => {
                             const labelStyle = getGalleryLabelStyle(galleryLabel);
                             return (
@@ -1875,11 +2020,19 @@ const saveProfile = (e) => {
                         <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">URL para sumar a la galería</label>
                         <div className="flex flex-col gap-3 xl:flex-row">
                             <input
-                                placeholder="https://imagen.com/galeria.jpg"
+                                placeholder={galleryMediaType === 'video' ? "https://video.com/video.mp4 o https://youtube.com/..." : "https://imagen.com/galeria.jpg"}
                                 className="flex-1 bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold text-xs"
                                 value={urlInput}
                                 onChange={e => setUrlInput(e.target.value)}
                             />
+                            <select
+                                value={galleryMediaType}
+                                onChange={e => setGalleryMediaType(e.target.value)}
+                                className="bg-slate-900/50 border border-slate-800 px-5 py-4 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-black text-xs uppercase tracking-[0.25em]"
+                            >
+                                <option value="image">Imagen</option>
+                                <option value="video">Video</option>
+                            </select>
                             <select
                                 value={galleryLabel}
                                 onChange={e => setGalleryLabel(e.target.value)}
