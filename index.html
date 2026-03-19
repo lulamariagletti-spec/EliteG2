@@ -632,7 +632,35 @@ const getInitialCatFormData = () => ({
                 if (window.lucide) {
                     window.lucide.createIcons();
                 }
-            }, [activeTab, isModalOpen, isCatModalOpen, perfiles, searchQuery, selectedCategory, filters, categorias]);
+            }, [activeTab, isModalOpen, isCatModalOpen, perfiles, searchQuery, selectedCategory, filters, categorias, isGalleryViewerOpen]);
+
+            useEffect(() => {
+                if (!isGalleryViewerOpen) return;
+
+                document.body.style.overflow = 'hidden';
+                const timeoutId = window.setTimeout(() => {
+                    const target = document.getElementById(`main-gallery-viewer-slide-${galleryViewerIndex}`);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } else if (galleryViewerStripRef.current) {
+                        galleryViewerStripRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                }, 30);
+
+                const handleEscapeViewer = (event) => {
+                    if (event.key === 'Escape') {
+                        setIsGalleryViewerOpen(false);
+                    }
+                };
+
+                window.addEventListener('keydown', handleEscapeViewer);
+
+                return () => {
+                    window.clearTimeout(timeoutId);
+                    window.removeEventListener('keydown', handleEscapeViewer);
+                    document.body.style.overflow = '';
+                };
+            }, [galleryViewerIndex, isGalleryViewerOpen, filteredGalleryPhotos]);
 
             useEffect(() => {
                 if (galleryWindowRef.current && !galleryWindowRef.current.closed && editingId) {
