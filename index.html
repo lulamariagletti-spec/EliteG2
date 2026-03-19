@@ -336,20 +336,25 @@
                         font-size: 28px;
                         line-height: 1;
                     }
-                    .viewer-strip {
+                    .viewer-stage {
+                        position: relative;
                         width: 100%;
                         height: 100vh;
-                        overflow-y: auto;
-                        scroll-snap-type: y mandatory;
-                    }
-                    .viewer-slide {
-                        min-height: 100vh;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        padding: 32px;
+                        padding: 32px 88px;
                         box-sizing: border-box;
-                        scroll-snap-align: start;
+                    }
+                    .viewer-slide {
+                        display: none;
+                        width: 100%;
+                        height: 100%;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .viewer-slide.active {
+                        display: flex;
                     }
                     .viewer-slide img {
                         max-width: min(92vw, 1400px);
@@ -359,6 +364,45 @@
                         object-fit: contain;
                         border-radius: 24px;
                         box-shadow: 0 0 40px rgba(34, 211, 238, 0.2);
+                    }
+                    .viewer-nav {
+                        position: fixed;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        z-index: 2100;
+                        width: 56px;
+                        height: 56px;
+                        border-radius: 999px;
+                        border: 1px solid rgba(148, 163, 184, 0.4);
+                        background: rgba(15, 23, 42, 0.9);
+                        color: #f8fafc;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        font-size: 30px;
+                        line-height: 1;
+                        transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+                    }
+                    .viewer-nav:hover {
+                        transform: translateY(-50%) scale(1.06);
+                        border-color: rgba(34, 211, 238, 0.8);
+                        color: #22d3ee;
+                    }
+                    .viewer-nav.prev {
+                        left: 24px;
+                    }
+                    .viewer-nav.next {
+                        right: 24px;
+                    }
+                    .viewer-nav[disabled] {
+                        opacity: 0.45;
+                        cursor: default;
+                    }
+                    .viewer-nav[disabled]:hover {
+                        transform: translateY(-50%);
+                        border-color: rgba(148, 163, 184, 0.4);
+                        color: #f8fafc;
                     }
                     .viewer-hint {
                         position: fixed;
@@ -460,8 +504,12 @@
 
                 <div id="fullscreenViewer" class="fullscreen-viewer">
                     <button class="viewer-close" onclick="closeFullscreenViewer()">×</button>
-                    <div class="viewer-hint">Scroll para recorrer la galería</div>
-                    <div id="viewerStrip" class="viewer-strip">
+                    ${fotosGaleria.length > 1 ? `
+                        <button class="viewer-nav prev" id="viewerPrev" onclick="showPreviousViewerPhoto(event)" aria-label="Foto anterior">‹</button>
+                        <button class="viewer-nav next" id="viewerNext" onclick="showNextViewerPhoto(event)" aria-label="Foto siguiente">›</button>
+                    ` : ''}
+                    <div class="viewer-hint">Usá ← → para cambiar y Escape para salir</div>
+                    <div class="viewer-stage" id="viewerStage">
                         ${fotosGaleria.map((foto, index) => `
                             <div class="viewer-slide" id="viewer-slide-${index}">
                                 <img src="${foto.url}" alt="Vista completa ${index + 1}" />
@@ -472,20 +520,45 @@
 
                 <script>
                     const viewer = document.getElementById('fullscreenViewer');
-                    const viewerStrip = document.getElementById('viewerStrip');
+                    const viewerSlides = Array.from(document.querySelectorAll('.viewer-slide'));
+                    const viewerPrevButton = document.getElementById('viewerPrev');
+                    const viewerNextButton = document.getElementById('viewerNext');
+                    let currentViewerIndex = 0;
+
+                    function syncViewerButtons() {
+                        const disableNavigation = viewerSlides.length <= 1;
+                        if (viewerPrevButton) viewerPrevButton.disabled = disableNavigation;
+                        if (viewerNextButton) viewerNextButton.disabled = disableNavigation;
+                    }
+
+                    function renderViewerSlide(index) {
+                        if (!viewerSlides.length) return;
+                        currentViewerIndex = Math.max(0, Math.min(index, viewerSlides.length - 1));
+                        viewerSlides.forEach(function(slide, slideIndex) {
+                            slide.classList.toggle('active', slideIndex === currentViewerIndex);
+                        });
+                        syncViewerButtons();
+                    }
+
                     function openFullscreenViewer(index) {
+                        if (!viewerSlides.length) return;
                         viewer.classList.add('open');
                         document.body.style.overflow = 'hidden';
-                        const target = document.getElementById('viewer-slide-' + index);
-                        if (target) {
-                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        } else {
-                            viewerStrip.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
+                        renderViewerSlide(index);
                     }
                     function closeFullscreenViewer() {
                         viewer.classList.remove('open');
                         document.body.style.overflow = '';
+                    }
+                    function showNextViewerPhoto(event) {
+                        if (event) event.stopPropagation();
+                        if (viewerSlides.length <= 1) return;
+                        renderViewerSlide((currentViewerIndex + 1) % viewerSlides.length);
+                    }
+                    function showPreviousViewerPhoto(event) {
+                        if (event) event.stopPropagation();
+                        if (viewerSlides.length <= 1) return;
+                        renderViewerSlide((currentViewerIndex - 1 + viewerSlides.length) % viewerSlides.length);
                     }
                     viewer.addEventListener('click', function(event) {
                         if (event.target === viewer) {
@@ -493,10 +566,25 @@
                         }
                     });
                     window.addEventListener('keydown', function(event) {
+                        if (!viewer.classList.contains('open')) return;
+
                         if (event.key === 'Escape') {
+                            event.preventDefault();
                             closeFullscreenViewer();
+                            return;
+                        }
+
+                        if (event.key === 'ArrowRight') {
+                            event.preventDefault();
+                            showNextViewerPhoto();
+                        }
+
+                        if (event.key === 'ArrowLeft') {
+                            event.preventDefault();
+                            showPreviousViewerPhoto();
                         }
                     });
+                    renderViewerSlide(0);
                 <\/script>
             </body>
             </html>
@@ -548,8 +636,6 @@
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
             const [galleryFilterLabel, setGalleryFilterLabel] = useState('TODAS');
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
-            const galleryTouchStartXRef = useRef(null);
-            const galleryTouchDeltaXRef = useRef(0);
 
             const [filters, setFilters] = useState({
                 nacionalidad: 'Todas',
@@ -871,41 +957,9 @@ const getInitialCatFormData = () => ({
             }, [filteredGalleryPhotos.length, selectedGalleryIndex]);
 
             const openGalleryViewer = (index) => setSelectedGalleryIndex(index);
-            const closeGalleryViewer = () => {
-                galleryTouchStartXRef.current = null;
-                galleryTouchDeltaXRef.current = 0;
-                setSelectedGalleryIndex(null);
-            };
+            const closeGalleryViewer = () => setSelectedGalleryIndex(null);
             const showNextGalleryPhoto = () => setSelectedGalleryIndex((current) => clampIndex((current ?? 0) + 1, filteredGalleryPhotos.length));
             const showPreviousGalleryPhoto = () => setSelectedGalleryIndex((current) => clampIndex((current ?? 0) - 1, filteredGalleryPhotos.length));
-            const handleGalleryTouchStart = (event) => {
-                if (filteredGalleryPhotos.length <= 1) return;
-                galleryTouchStartXRef.current = event.touches[0]?.clientX ?? null;
-                galleryTouchDeltaXRef.current = 0;
-            };
-            const handleGalleryTouchMove = (event) => {
-                if (galleryTouchStartXRef.current === null) return;
-                const currentX = event.touches[0]?.clientX;
-                if (typeof currentX !== 'number') return;
-                galleryTouchDeltaXRef.current = currentX - galleryTouchStartXRef.current;
-            };
-            const handleGalleryTouchEnd = () => {
-                if (galleryTouchStartXRef.current === null) return;
-
-                const swipeThreshold = 60;
-                const deltaX = galleryTouchDeltaXRef.current;
-
-                galleryTouchStartXRef.current = null;
-                galleryTouchDeltaXRef.current = 0;
-
-                if (Math.abs(deltaX) < swipeThreshold) return;
-
-                if (deltaX < 0) {
-                    showNextGalleryPhoto();
-                } else {
-                    showPreviousGalleryPhoto();
-                }
-            };
 
 const saveProfile = (e) => {
                 e.preventDefault();
@@ -1476,16 +1530,11 @@ const saveProfile = (e) => {
                             </div>
                         </div>
 
-                        <div
-                            className="relative flex-1 min-h-0 rounded-[2rem] overflow-hidden border border-slate-800 bg-black/50 touch-pan-y"
-                            onTouchStart={handleGalleryTouchStart}
-                            onTouchMove={handleGalleryTouchMove}
-                            onTouchEnd={handleGalleryTouchEnd}
-                        >
+                        <div className="relative flex-1 min-h-0 rounded-[2rem] overflow-hidden border border-slate-800 bg-black/50">
                             <img
                                 src={selectedGalleryPhoto.url}
                                 alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
-                                className="w-full h-[calc(100vh-14rem)] object-contain bg-black select-none"
+                                className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
                             />
                         </div>
 
@@ -1494,7 +1543,7 @@ const saveProfile = (e) => {
                                 {selectedGalleryIndex + 1} de {filteredGalleryPhotos.length} fotos visibles
                             </p>
                             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500">
-                                Navegá con teclado, botones laterales o deslizá en celular · Respeta el filtro actual
+                                Navegá con las flechas del teclado o los botones laterales · Respeta el filtro actual
                             </p>
                         </div>
                     </div>
