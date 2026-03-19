@@ -343,7 +343,7 @@
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        padding: 32px 88px;
+                        padding: 32px 24px 112px;
                         box-sizing: border-box;
                     }
                     .viewer-slide {
@@ -367,25 +367,24 @@
                     }
                     .viewer-nav {
                         position: fixed;
-                        top: 50%;
-                        transform: translateY(-50%);
+                        bottom: 26px;
                         z-index: 2100;
-                        width: 56px;
-                        height: 56px;
+                        width: 44px;
+                        height: 44px;
                         border-radius: 999px;
-                        border: 1px solid rgba(148, 163, 184, 0.4);
-                        background: rgba(15, 23, 42, 0.9);
+                        border: 1px solid rgba(148, 163, 184, 0.42);
+                        background: rgba(15, 23, 42, 0.92);
                         color: #f8fafc;
                         display: flex;
                         align-items: center;
                         justify-content: center;
                         cursor: pointer;
-                        font-size: 30px;
+                        font-size: 24px;
                         line-height: 1;
                         transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
                     }
                     .viewer-nav:hover {
-                        transform: translateY(-50%) scale(1.06);
+                        transform: scale(1.06);
                         border-color: rgba(34, 211, 238, 0.8);
                         color: #22d3ee;
                     }
@@ -400,14 +399,14 @@
                         cursor: default;
                     }
                     .viewer-nav[disabled]:hover {
-                        transform: translateY(-50%);
-                        border-color: rgba(148, 163, 184, 0.4);
+                        transform: none;
+                        border-color: rgba(148, 163, 184, 0.42);
                         color: #f8fafc;
                     }
                     .viewer-hint {
                         position: fixed;
                         left: 50%;
-                        bottom: 20px;
+                        bottom: 28px;
                         transform: translateX(-50%);
                         z-index: 2100;
                         padding: 10px 16px;
@@ -417,6 +416,37 @@
                         font-size: 12px;
                         letter-spacing: 0.08em;
                         text-transform: uppercase;
+                        pointer-events: none;
+                    }
+                    @media (max-width: 640px) {
+                        .viewer-stage {
+                            padding: 20px 16px 106px;
+                        }
+                        .viewer-close {
+                            top: 14px;
+                            right: 16px;
+                            width: 42px;
+                            height: 42px;
+                        }
+                        .viewer-nav {
+                            bottom: 18px;
+                            width: 40px;
+                            height: 40px;
+                            font-size: 22px;
+                        }
+                        .viewer-nav.prev {
+                            left: 16px;
+                        }
+                        .viewer-nav.next {
+                            right: 16px;
+                        }
+                        .viewer-hint {
+                            bottom: 20px;
+                            padding: 8px 12px;
+                            font-size: 10px;
+                            max-width: calc(100vw - 120px);
+                            text-align: center;
+                        }
                     }
                 </style>
             </head>
@@ -1488,27 +1518,6 @@ const saveProfile = (e) => {
                         <LucideIcon name="x" size={22} />
                     </button>
 
-                    {filteredGalleryPhotos.length > 1 && (
-                        <>
-                            <button
-                                type="button"
-                                onClick={(event) => { event.stopPropagation(); showPreviousGalleryPhoto(); }}
-                                className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-slate-700 bg-slate-900/80 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all"
-                                aria-label="Foto anterior"
-                            >
-                                <LucideIcon name="chevron-left" size={26} />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={(event) => { event.stopPropagation(); showNextGalleryPhoto(); }}
-                                className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-slate-700 bg-slate-900/80 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all"
-                                aria-label="Foto siguiente"
-                            >
-                                <LucideIcon name="chevron-right" size={26} />
-                            </button>
-                        </>
-                    )}
-
                     <div className="w-full max-w-6xl max-h-full flex flex-col gap-4" onClick={(event) => event.stopPropagation()}>
                         <div className="flex items-center justify-between gap-4 px-1 sm:px-2">
                             <div>
@@ -1536,6 +1545,27 @@ const saveProfile = (e) => {
                                 alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
                                 className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
                             />
+
+                            {filteredGalleryPhotos.length > 1 && (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={(event) => { event.stopPropagation(); showPreviousGalleryPhoto(); }}
+                                        className="absolute left-4 bottom-4 sm:left-6 sm:bottom-6 w-10 h-10 rounded-full border border-slate-700 bg-slate-900/90 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all shadow-lg shadow-black/40"
+                                        aria-label="Foto anterior"
+                                    >
+                                        <LucideIcon name="chevron-left" size={20} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={(event) => { event.stopPropagation(); showNextGalleryPhoto(); }}
+                                        className="absolute right-4 bottom-4 sm:right-6 sm:bottom-6 w-10 h-10 rounded-full border border-slate-700 bg-slate-900/90 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all shadow-lg shadow-black/40"
+                                        aria-label="Foto siguiente"
+                                    >
+                                        <LucideIcon name="chevron-right" size={20} />
+                                    </button>
+                                </>
+                            )}
                         </div>
 
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1 sm:px-2">
@@ -1543,7 +1573,7 @@ const saveProfile = (e) => {
                                 {selectedGalleryIndex + 1} de {filteredGalleryPhotos.length} fotos visibles
                             </p>
                             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500">
-                                Navegá con las flechas del teclado o los botones laterales · Respeta el filtro actual
+                                Navegá con las flechas del teclado o los botones inferiores · Respeta el filtro actual
                             </p>
                         </div>
                     </div>
