@@ -200,6 +200,7 @@
         };
         const getGalleryLabelStyle = (label) => GALLERY_LABEL_STYLES[label] || GALLERY_LABEL_STYLES.DEFAULT;
         const VIDEO_FILE_REGEX = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i;
+        const GIF_FILE_REGEX = /\.gif(\?.*)?$/i;
         const YOUTUBE_REGEX = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i;
         const VIMEO_REGEX = /vimeo\.com\/(?:video\/)?(\d+)/i;
         const getVideoEmbedInfo = (url) => {
@@ -255,6 +256,7 @@
         const getGalleryItemUrl = (item) => normalizeGalleryItem(item).url;
         const getGalleryItemLabel = (item) => normalizeGalleryItem(item).label;
         const getGalleryItemType = (item) => normalizeGalleryItem(item).type;
+        const isGifUrl = (url = '') => GIF_FILE_REGEX.test((url || '').trim());
 
         const STORAGE_KEY = 'g2_elite_database_v4';
         const CAT_STORAGE_KEY = 'g2_elite_categories_v4';
@@ -773,6 +775,8 @@
             const [galleryMediaType, setGalleryMediaType] = useState('image');
             const [galleryFilterLabel, setGalleryFilterLabel] = useState('INICIAL');
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
+            const [isGalleryPlaying, setIsGalleryPlaying] = useState(false);
+            const galleryPlaybackTimeoutRef = useRef(null);
 
             const [filters, setFilters] = useState({
                 nacionalidad: 'Todas',
@@ -1021,6 +1025,7 @@ const getInitialCatFormData = () => ({
                 return (perfiles || []).flatMap((perfil) => {
                     const galleryItems = [
                         ...(Array.isArray(perfil?.galeria?.fotos) ? perfil.galeria.fotos.map(item => normalizeGalleryItem(item, 'image')) : []),
+                        ...(Array.isArray(perfil?.galeria?.gifs) ? perfil.galeria.gifs.map(item => normalizeGalleryItem(item, 'image')) : []),
                         ...(Array.isArray(perfil?.galeria?.videos) ? perfil.galeria.videos.map(item => normalizeGalleryItem(item, 'video')) : [])
                     ];
 
@@ -1034,6 +1039,7 @@ const getInitialCatFormData = () => ({
                                 url: normalizedItem.url,
                                 label: normalizedItem.label,
                                 type: normalizedItem.type,
+                                isGif: normalizedItem.type === 'image' && isGifUrl(normalizedItem.url),
                                 nombre: perfil.nombre || 'Sin nombre',
                                 profesion: perfil.profesion || 'Perfil',
                                 nacionalidad: perfil.nacionalidad || '',
@@ -1109,8 +1115,45 @@ const getInitialCatFormData = () => ({
                 return () => window.removeEventListener('keydown', handleGalleryKeydown);
             }, [filteredGalleryPhotos.length, selectedGalleryIndex]);
 
-            const openGalleryViewer = (index) => setSelectedGalleryIndex(index);
-            const closeGalleryViewer = () => setSelectedGalleryIndex(null);
+            useEffect(() => {
+                if (selectedGalleryIndex === null) {
+                    setIsGalleryPlaying(false);
+                }
+            }, [selectedGalleryIndex]);
+
+            useEffect(() => {
+                if (galleryPlaybackTimeoutRef.current) {
+                    clearTimeout(galleryPlaybackTimeoutRef.current);
+                    galleryPlaybackTimeoutRef.current = null;
+                }
+
+                if (!isGalleryPlaying || !selectedGalleryPhoto) return;
+
+                if (selectedGalleryPhoto.type === 'video') {
+                    return;
+                }
+
+                const timeoutDuration = selectedGalleryPhoto.isGif ? 25000 : 5000;
+                galleryPlaybackTimeoutRef.current = setTimeout(() => {
+                    setSelectedGalleryIndex((current) => clampIndex((current ?? 0) + 1, filteredGalleryPhotos.length));
+                }, timeoutDuration);
+
+                return () => {
+                    if (galleryPlaybackTimeoutRef.current) {
+                        clearTimeout(galleryPlaybackTimeoutRef.current);
+                        galleryPlaybackTimeoutRef.current = null;
+                    }
+                };
+            }, [isGalleryPlaying, selectedGalleryPhoto, filteredGalleryPhotos.length]);
+
+            const openGalleryViewer = (index, autoplay = false) => {
+                setSelectedGalleryIndex(index);
+                setIsGalleryPlaying(autoplay);
+            };
+            const closeGalleryViewer = () => {
+                setIsGalleryPlaying(false);
+                setSelectedGalleryIndex(null);
+            };
             const showNextGalleryPhoto = () => setSelectedGalleryIndex((current) => clampIndex((current ?? 0) + 1, filteredGalleryPhotos.length));
             const showPreviousGalleryPhoto = () => setSelectedGalleryIndex((current) => clampIndex((current ?? 0) - 1, filteredGalleryPhotos.length));
 
@@ -1590,6 +1633,21 @@ const saveProfile = (e) => {
                 </button>
             </div>
 
+            <div className="flex items-center gap-3">
+                <button
+                    type="button"
+                    onClick={() => openGalleryViewer(0, true)}
+                    disabled={!filteredGalleryPhotos.length}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-cyan-500/60 bg-cyan-500/20 text-cyan-300 text-[10px] font-black uppercase tracking-[0.28em] hover:bg-cyan-500/30 hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                    <LucideIcon name="play" size={14} />
+                    Play galería general
+                </button>
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                    Fotos: 5s · GIF: 5 ciclos aprox · Videos: hasta terminar
+                </p>
+            </div>
+
             {filteredGalleryPhotos.length === 0 ? (
                 <div className="py-24 border border-dashed border-slate-800 rounded-[3rem] text-center bg-slate-950/30">
                     <div className="w-20 h-20 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-6">
@@ -1638,7 +1696,7 @@ const saveProfile = (e) => {
                                             </div>
                                             <div className="flex flex-col items-end gap-2">
                                                 <div className="px-3 py-1 rounded-full border border-slate-700 bg-slate-950/85 text-[9px] font-black uppercase tracking-[0.3em] text-slate-200">
-                                                    {photo.type === 'video' ? 'VIDEO' : 'IMG'}
+                                                    {photo.type === 'video' ? 'VIDEO' : (photo.isGif ? 'GIF' : 'IMG')}
                                                 </div>
                                                 <div
                                                     className="min-w-[46px] h-[46px] rounded-2xl border flex items-center justify-center text-sm font-black uppercase shadow-xl"
@@ -1679,8 +1737,17 @@ const saveProfile = (e) => {
                                 <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-cyan-400 mt-2">{selectedGalleryPhoto.profesion}{selectedGalleryPhoto.nacionalidad ? ` · ${selectedGalleryPhoto.nacionalidad}` : ''}</p>
                             </div>
                             <div className="flex items-center gap-3">
+                                {filteredGalleryPhotos.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsGalleryPlaying((prev) => !prev)}
+                                        className="px-4 py-2 rounded-full border border-cyan-500/60 bg-cyan-500/20 text-cyan-200 text-[10px] font-black uppercase tracking-[0.28em] hover:bg-cyan-500/35 hover:text-white transition-all"
+                                    >
+                                        {isGalleryPlaying ? 'Pause' : 'Play'}
+                                    </button>
+                                )}
                                 <div className="px-3 py-2 rounded-full border border-slate-700 bg-slate-950/85 text-[10px] font-black uppercase tracking-[0.3em] text-slate-200">
-                                    {selectedGalleryPhoto.type === 'video' ? 'VIDEO' : 'IMG'}
+                                    {selectedGalleryPhoto.type === 'video' ? 'VIDEO' : (selectedGalleryPhoto.isGif ? 'GIF' : 'IMG')}
                                 </div>
                                 <div
                                     className="min-w-[52px] h-[52px] rounded-2xl border flex items-center justify-center text-base font-black uppercase shadow-xl"
@@ -1715,6 +1782,12 @@ const saveProfile = (e) => {
                                         src={selectedGalleryPhoto.url}
                                         controls
                                         playsInline
+                                        autoPlay={isGalleryPlaying}
+                                        onEnded={() => {
+                                            if (isGalleryPlaying && filteredGalleryPhotos.length > 1) {
+                                                showNextGalleryPhoto();
+                                            }
+                                        }}
                                         className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
                                     />
                                 );
@@ -2345,4 +2418,3 @@ const saveProfile = (e) => {
     </script>
 </body>
 </html>
-
