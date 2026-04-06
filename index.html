@@ -1052,17 +1052,6 @@ const getInitialCatFormData = () => ({
             }, [allGalleryPhotos]);
             const filteredGalleryPhotos = useMemo(() => {
                 const query = searchQuery.trim().toLowerCase();
-                const galleryBaseSubset = allGalleryPhotos.filter(photo => {
-                    if (galleryFilterLabel === GALLERY_FILTER_MODES.INICIAL) {
-                        return photo.label !== 'X';
-                    }
-
-                    if (galleryFilterLabel === GALLERY_FILTER_MODES.FULL) {
-                        return true;
-                    }
-
-                    return photo.label === galleryFilterLabel;
-                });
 
                 return allGalleryPhotos.filter(photo => {
                     const matchesLabel = galleryFilterLabel === 'INICIAL'
@@ -1076,7 +1065,7 @@ const getInitialCatFormData = () => ({
                         || (photo.nacionalidad || '').toLowerCase().includes(query)
                         || (photo.label || '').toLowerCase().includes(query);
 
-                    return matchesQuery;
+                    return matchesLabel && matchesQuery;
                 });
             }, [allGalleryPhotos, galleryFilterLabel, searchQuery]);
             const selectedGalleryPhoto = selectedGalleryIndex === null
@@ -1540,7 +1529,7 @@ const saveProfile = (e) => {
             <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
                 <div>
                     <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Galería</h2>
-                    <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest mt-1">100% de imágenes y videos cargados en las galerías de las participantes</p>
+                    <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest mt-1">Todas las imágenes y videos cargados en las galerías de las participantes</p>
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
