@@ -118,37 +118,75 @@
         }
 
         .gothic-frame {
+            --frame-metal: var(--metal-gold);
+            --frame-metal-soft: color-mix(in srgb, var(--frame-metal) 62%, #f8fafc 38%);
+            --frame-shadow: rgba(0, 0, 0, 0.45);
+            --frame-inset: rgba(241, 245, 249, 0.28);
+            --frame-thickness: 1px;
+            --frame-inner-thickness: 3px;
+            --frame-accent-thickness: 4px;
+            --ornament-size: 16px;
+            --ornament-offset: 8px;
+            --ornament-stroke: 2px;
             position: relative;
-            border: 1px solid rgba(179, 148, 85, 0.6);
+            border: var(--frame-thickness) solid color-mix(in srgb, var(--frame-metal) 72%, var(--ink-dark) 28%);
             box-shadow:
-                inset 0 0 0 1px rgba(232, 214, 166, 0.32),
-                inset 0 0 0 3px rgba(142, 155, 171, 0.22),
-                inset 0 0 0 4px rgba(220, 224, 232, 0.28),
-                0 12px 32px rgba(0, 0, 0, 0.45);
+                inset 0 0 0 1px color-mix(in srgb, var(--frame-metal-soft) 62%, transparent),
+                inset 0 0 0 var(--frame-inner-thickness) color-mix(in srgb, var(--frame-metal) 22%, #94a3b8 78%),
+                inset 0 0 0 var(--frame-accent-thickness) var(--frame-inset),
+                0 12px 32px var(--frame-shadow);
+        }
+        .gothic-frame--primary {
+            --frame-metal: var(--metal-gold);
+            --frame-thickness: 2px;
+            --frame-inner-thickness: 4px;
+            --frame-accent-thickness: 5px;
+        }
+        .gothic-frame--secondary {
+            --frame-metal: var(--metal-silver);
+            --frame-thickness: 1px;
+            --frame-inner-thickness: 2px;
+            --frame-accent-thickness: 3px;
+            --frame-shadow: rgba(15, 23, 42, 0.52);
+        }
+        .gothic-frame--ornate {
+            --frame-metal: var(--metal-bronze);
+            --frame-thickness: 3px;
+            --frame-inner-thickness: 5px;
+            --frame-accent-thickness: 7px;
+            --ornament-size: 22px;
+            --ornament-offset: 10px;
+            --ornament-stroke: 3px;
+            --frame-shadow: rgba(2, 6, 23, 0.62);
+        }
+        .gothic-frame--grand {
+            --ornament-size: 28px;
+            --ornament-offset: 12px;
+            --ornament-stroke: 4px;
         }
         .gothic-frame::before,
         .gothic-frame::after {
             content: '';
             position: absolute;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(212, 175, 55, 0.62);
+            width: var(--ornament-size);
+            height: var(--ornament-size);
+            border: var(--ornament-stroke) solid color-mix(in srgb, var(--frame-metal-soft) 70%, #f8fafc 30%);
             pointer-events: none;
             z-index: 1;
         }
         .gothic-frame::before {
-            top: 8px;
-            left: 8px;
+            top: var(--ornament-offset);
+            left: var(--ornament-offset);
             border-right: 0;
             border-bottom: 0;
-            box-shadow: 0 0 0 1px rgba(192, 198, 210, 0.45);
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--frame-metal-soft) 62%, #e2e8f0 38%);
         }
         .gothic-frame::after {
-            bottom: 8px;
-            right: 8px;
+            bottom: var(--ornament-offset);
+            right: var(--ornament-offset);
             border-left: 0;
             border-top: 0;
-            box-shadow: 0 0 0 1px rgba(192, 198, 210, 0.45);
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--frame-metal-soft) 62%, #e2e8f0 38%);
         }
 
         .torch-sconce {
@@ -1808,7 +1846,7 @@ const saveProfile = (e) => {
                         </nav>
 
                         {activeTab === 'GALERIA' && (
-                            <div className="space-y-5 mb-8 p-6 theme-surface-soft rounded-2xl border theme-border-secondary animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="space-y-5 mb-8 p-6 theme-surface-soft rounded-2xl gothic-frame gothic-frame--secondary animate-in fade-in slide-in-from-bottom-2 duration-500">
                                 <div>
                                     <h4 className="text-[10px] font-black text-[var(--metal-gold)] uppercase tracking-widest flex items-center gap-2">
                                         <LucideIcon name="images" size={12} /> Filtros de Galería
@@ -1855,7 +1893,7 @@ const saveProfile = (e) => {
                         )}
 
                         {activeTab === 'RANKING' && (
-                            <div className="space-y-6 mb-8 p-6 theme-surface-soft rounded-2xl border theme-border-secondary animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="space-y-6 mb-8 p-6 theme-surface-soft rounded-2xl gothic-frame gothic-frame--secondary animate-in fade-in slide-in-from-bottom-2 duration-500">
                                 <h4 className="text-[10px] font-black text-[var(--metal-gold)] uppercase tracking-widest flex items-center gap-2">
                                     <LucideIcon name="filter" size={12} /> Filtros de Ranking
                                 </h4>
@@ -1977,7 +2015,7 @@ const saveProfile = (e) => {
     {/* 2. VISTA DE PERFILES (CUANDO ENTRAS A UNA CARPETA) */}
     {selectedCategory && (
         <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between bg-slate-900/40 p-6 rounded-2xl border theme-border-secondary">
+            <div className="flex items-center justify-between bg-slate-900/40 p-6 rounded-2xl gothic-frame gothic-frame--ornate gothic-frame--grand">
                 <button
                     onClick={() => setSelectedCategory(null)}
                     className="group flex items-center gap-3 text-[var(--metal-gold)] font-black text-xs uppercase tracking-widest"
@@ -2019,8 +2057,8 @@ const saveProfile = (e) => {
                                 if (typeof setEditingId === 'function') setEditingId(p.firebaseId);
                                 if (typeof setIsModalOpen === 'function') setIsModalOpen(true);
                             }}
-                            className="profile-card group relative bg-slate-900 rounded-2xl overflow-hidden border-4 cursor-pointer transition-all duration-500 hover:scale-[1.02] parchment-panel"
-                            style={{ borderColor: neonClass.color, boxShadow: `0 0 20px ${neonClass.sombra}` }}
+                            className="profile-card group relative bg-slate-900 rounded-2xl overflow-hidden gothic-frame gothic-frame--primary cursor-pointer transition-all duration-500 hover:scale-[1.02] parchment-panel"
+                            style={{ boxShadow: `0 0 20px ${neonClass.sombra}` }}
                         >
                             <div className="aspect-[4/5] bg-slate-950 relative overflow-hidden">
                                 <img
@@ -2069,19 +2107,19 @@ const saveProfile = (e) => {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="theme-surface-soft border theme-border-secondary rounded-[1.8rem] px-5 py-4">
+                    <div className="theme-surface-soft gothic-frame gothic-frame--secondary rounded-[1.8rem] px-5 py-4">
                         <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500">Total</p>
                         <p className="text-2xl font-black italic text-white mt-1">{allGalleryPhotos.length}</p>
                     </div>
-                    <div className="theme-surface-soft border theme-border-secondary rounded-[1.8rem] px-5 py-4">
+                    <div className="theme-surface-soft gothic-frame gothic-frame--secondary rounded-[1.8rem] px-5 py-4">
                         <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500">Visibles</p>
                         <p className="text-2xl font-black italic text-[var(--metal-gold)] mt-1">{filteredGalleryPhotos.length}</p>
                     </div>
-                    <div className="theme-surface-soft border theme-border-secondary rounded-[1.8rem] px-5 py-4">
+                    <div className="theme-surface-soft gothic-frame gothic-frame--secondary rounded-[1.8rem] px-5 py-4">
                         <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500">Etiquetas</p>
                         <p className="text-2xl font-black italic text-white mt-1">{GALLERY_LABELS.length}</p>
                     </div>
-                    <div className="theme-surface-soft border theme-border-secondary rounded-[1.8rem] px-5 py-4">
+                    <div className="theme-surface-soft gothic-frame gothic-frame--secondary rounded-[1.8rem] px-5 py-4">
                         <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500">Perfiles</p>
                         <p className="text-2xl font-black italic text-white mt-1">{new Set(allGalleryPhotos.map(photo => photo.profileId)).size}</p>
                     </div>
@@ -2339,9 +2377,9 @@ const saveProfile = (e) => {
 
     {/* 3. VISTA RANKING (SOLO TABLA) */}
     {activeTab === 'RANKING' && !selectedCategory && (
-        <div className="theme-surface-card rounded-2xl border theme-border-secondary overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+        <div className="theme-surface-card rounded-2xl gothic-frame gothic-frame--ornate animate-in zoom-in-95 duration-500">
             <table className="w-full text-left border-collapse">
-                <thead className="theme-surface-soft border-b theme-border-secondary">
+                <thead className="theme-surface-soft">
                     <tr>
                         <th className="px-4 py-6 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">#</th>
                         <th className="px-4 py-6 text-[9px] font-black text-slate-500 uppercase tracking-widest">Perfil</th>
@@ -2377,7 +2415,7 @@ const saveProfile = (e) => {
                 <tbody>
                     {sortedProfiles.map((p, idx) => (
 <tr key={p.id} onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }}
-    className={`cursor-pointer border-b theme-border-secondary last:border-0 transition-all duration-300 group ${idx === 0 ? 'podium-1' : idx === 1 ? 'podium-2' : idx === 2 ? 'podium-3' : 'hover:bg-white/5'}`}>
+    className={`cursor-pointer border-b border-slate-700/70 last:border-0 transition-all duration-300 group ${idx === 0 ? 'podium-1' : idx === 1 ? 'podium-2' : idx === 2 ? 'podium-3' : 'hover:bg-white/5'}`}>
 
     <td className="px-8 py-5">
         <span className={`font-black italic ${idx === 0 ? 'text-gold text-4xl' : idx === 1 ? 'text-silver text-3xl' : idx === 2 ? 'text-bronze text-2xl' : 'text-slate-600 text-lg'}`}>#{idx + 1}</span>
