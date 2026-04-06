@@ -594,6 +594,33 @@
         const getGalleryItemUrl = (item) => normalizeGalleryItem(item).url;
         const getGalleryItemLabel = (item) => normalizeGalleryItem(item).label;
         const getGalleryItemType = (item) => normalizeGalleryItem(item).type;
+        const getBattlePhotoForArena = (profile, arenaName) => {
+            const normalizedArena = (arenaName || '').trim().toLowerCase();
+            const galleryImages = Array.isArray(profile?.galeria?.fotos)
+                ? profile.galeria.fotos
+                    .map((item) => normalizeGalleryItem(item, 'image'))
+                    .filter((item) => item.type === 'image' && item.url)
+                : [];
+
+            const fallbackPhoto = profile?.fotos?.[0] || 'https://via.placeholder.com/400x500';
+            if (!galleryImages.length) return fallbackPhoto;
+
+            const findByLabels = (labels = []) => {
+                for (const label of labels) {
+                    const matched = galleryImages.find((item) => getGalleryItemLabel(item) === label);
+                    if (matched?.url) return matched.url;
+                }
+                return '';
+            };
+
+            let selectedPhoto = '';
+            if (normalizedArena === 'cola') selectedPhoto = findByLabels(['C']);
+            else if (normalizedArena === 'pechos') selectedPhoto = findByLabels(['P']);
+            else if (normalizedArena === 'cuerpo' || normalizedArena === 'cintura') selectedPhoto = findByLabels(['B', 'N']);
+            else if (normalizedArena === 'sensualidad') selectedPhoto = findByLabels(['S', 'E']);
+
+            return selectedPhoto || galleryImages[0]?.url || fallbackPhoto;
+        };
         const isGifUrl = (url = '') => GIF_FILE_REGEX.test((url || '').trim());
         const CRYING_EMOJI_FALLBACK = "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20256%20256%27%3E%3Crect%20width%3D%27256%27%20height%3D%27256%27%20rx%3D%2740%27%20fill%3D%27%23020617%27/%3E%3Ctext%20x%3D%27128%27%20y%3D%27152%27%20text-anchor%3D%27middle%27%20font-size%3D%27120%27%3E%F0%9F%98%A2%3C/text%3E%3C/svg%3E";
         const BROKEN_IMAGE_INLINE_HANDLER = `if(this.dataset.fallbackApplied==='true')return;this.dataset.fallbackApplied='true';this.src='${CRYING_EMOJI_FALLBACK}';this.style.objectFit='contain';this.style.padding='12px';this.style.background='#020617';this.alt='Imagen no disponible';`;
@@ -2518,17 +2545,26 @@ const saveProfile = (e) => {
     {/* 3. VISTA BATALLAS */}
     {activeTab === 'BATALLAS' && !selectedCategory && !selectedArena && (
         <div className="space-y-10 animate-in fade-in duration-500">
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                    <button
+                        onClick={() => setActiveTab('EXPLORAR')}
+                        className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl border theme-border-secondary text-[11px] font-black uppercase tracking-[0.16em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] hover:bg-[var(--metal-bronze)]/10 transition-all"
+                    >
+                        <i data-lucide="chevron-left" className="w-4 h-4"></i>
+                        Volver a Explorar
+                    </button>
+                    <button
+                        onClick={resetAllScores}
+                        className="bg-red-600/20 text-red-300 border border-red-400/40 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.18em] hover:bg-red-600 hover:text-white transition-all"
+                    >
+                        Resetear calificaciones
+                    </button>
+                </div>
                 <div>
                     <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Arenas</h2>
                     <p className="text-xs font-bold text-[var(--metal-gold)] uppercase tracking-widest mt-1">Elegí uno de los 15 ítems para iniciar las batallas</p>
                 </div>
-                <button
-                    onClick={resetAllScores}
-                    className="bg-red-600/20 text-red-300 border border-red-400/40 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.18em] hover:bg-red-600 hover:text-white transition-all"
-                >
-                    Resetear calificaciones
-                </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -2568,17 +2604,31 @@ const saveProfile = (e) => {
 
         return (
             <div className="space-y-8 animate-in fade-in duration-500">
-                <div className="flex items-center justify-between bg-slate-900/40 p-6 rounded-2xl border theme-border-secondary">
-                    <button
-                        onClick={() => setSelectedArena(null)}
-                        className="group flex items-center gap-3 text-[var(--metal-gold)] font-black text-xs uppercase tracking-widest"
-                    >
-                        <div className="bg-[var(--metal-bronze)]/10 p-2 rounded-xl group-hover:bg-[var(--metal-bronze)] group-hover:text-white transition-all">
+                <div className="sticky top-4 z-20 bg-slate-900/95 backdrop-blur-sm p-4 sm:p-6 rounded-2xl border theme-border-secondary space-y-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button
+                            onClick={() => setSelectedArena(null)}
+                            className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl border theme-border-secondary text-[11px] font-black uppercase tracking-[0.16em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] hover:bg-[var(--metal-bronze)]/10 transition-all"
+                        >
                             <i data-lucide="arrow-left" className="w-4 h-4"></i>
-                        </div>
-                        Volver a arenas
-                    </button>
-                    <h2 className="font-title text-4xl font-black italic text-white tracking-[0.08em] leading-none">{selectedArena}</h2>
+                            Volver a arenas
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('EXPLORAR')}
+                            className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl border theme-border-secondary text-[11px] font-black uppercase tracking-[0.16em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] hover:bg-[var(--metal-bronze)]/10 transition-all"
+                        >
+                            <i data-lucide="layout-grid" className="w-4 h-4"></i>
+                            Ir a Explorar
+                        </button>
+                    </div>
+                    <div className="min-w-0">
+                        <h2 className="font-title text-2xl sm:text-3xl lg:text-4xl font-black italic text-white tracking-[0.08em] break-words leading-tight">
+                            {selectedArena}
+                        </h2>
+                        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mt-1">
+                            Arena activa
+                        </p>
+                    </div>
                 </div>
 
                 {!arenaState && (
@@ -2606,6 +2656,7 @@ const saveProfile = (e) => {
                             onClick={() => registerBattleWinner(selectedArena, champion.firebaseId)}
                             className="theme-surface-card border theme-border-secondary rounded-2xl p-8 hover:border-[var(--metal-gold)] transition-all text-left"
                         >
+<<<<<<< codex/update-battle-card-rendering-logic
                             <div className="relative mb-5 h-56 w-full overflow-hidden rounded-xl border border-white/10">
                                 <img
                                     src={getBattleCardImage(champion)}
@@ -2619,6 +2670,14 @@ const saveProfile = (e) => {
                                     </span>
                                 )}
                             </div>
+=======
+                            <img
+                                src={getBattlePhotoForArena(champion, selectedArena)}
+                                alt={champion.nombre}
+                                className="w-full h-64 object-cover rounded-xl border border-slate-700/60 mb-5"
+                                onError={applyCryingEmojiFallback}
+                            />
+>>>>>>> main
                             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
                             <h3 className="text-3xl font-black italic text-white mt-2">{champion.nombre}</h3>
                             <p className="text-xs text-[var(--metal-gold)] mt-3">Victorias: {championStats?.wins || 0} · Batallas: {championStats?.battles || 0}</p>
@@ -2631,6 +2690,7 @@ const saveProfile = (e) => {
                             onClick={() => registerBattleWinner(selectedArena, challenger.firebaseId)}
                             className="theme-surface-card border theme-border-secondary rounded-2xl p-8 hover:border-[var(--metal-gold)] transition-all text-left"
                         >
+<<<<<<< codex/update-battle-card-rendering-logic
                             <div className="relative mb-5 h-56 w-full overflow-hidden rounded-xl border border-white/10">
                                 <img
                                     src={getBattleCardImage(challenger)}
@@ -2644,6 +2704,14 @@ const saveProfile = (e) => {
                                     </span>
                                 )}
                             </div>
+=======
+                            <img
+                                src={getBattlePhotoForArena(challenger, selectedArena)}
+                                alt={challenger.nombre}
+                                className="w-full h-64 object-cover rounded-xl border border-slate-700/60 mb-5"
+                                onError={applyCryingEmojiFallback}
+                            />
+>>>>>>> main
                             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
                             <h3 className="text-3xl font-black italic text-white mt-2">{challenger.nombre}</h3>
                             <p className="text-xs text-[var(--metal-gold)] mt-3">Victorias: {challengerStats?.wins || 0} · Batallas: {challengerStats?.battles || 0}</p>
