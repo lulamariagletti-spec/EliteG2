@@ -2883,7 +2883,7 @@ const saveProfile = (e) => {
                             <img
                                 src={getBattlePhotoForArena(champion, selectedArena)}
                                 alt={champion.nombre}
-                                className="w-full h-64 object-cover rounded-xl border border-slate-700/60 mb-5"
+                                className="w-full h-64 object-contain rounded-xl border border-slate-700/60 mb-5 bg-slate-950/70 p-2"
                                 onError={applyCryingEmojiFallback}
                             />
                             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
@@ -2911,7 +2911,7 @@ const saveProfile = (e) => {
                             <img
                                 src={getBattlePhotoForArena(challenger, selectedArena)}
                                 alt={challenger.nombre}
-                                className="w-full h-64 object-cover rounded-xl border border-slate-700/60 mb-5"
+                                className="w-full h-64 object-contain rounded-xl border border-slate-700/60 mb-5 bg-slate-950/70 p-2"
                                 onError={applyCryingEmojiFallback}
                             />
                             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
