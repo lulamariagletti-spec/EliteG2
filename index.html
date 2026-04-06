@@ -41,6 +41,30 @@
             border-color: color-mix(in srgb, var(--metal-silver) 52%, var(--ink-dark) 48%) !important;
         }
 
+        .stone-wall-surface {
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(226, 232, 240, 0.03) 0 1px,
+                    rgba(2, 6, 23, 0.16) 1px 57px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(226, 232, 240, 0.04) 0 2px,
+                    rgba(15, 23, 42, 0.62) 2px 84px,
+                    rgba(71, 85, 105, 0.28) 84px 87px
+                ),
+                radial-gradient(circle at 16% 22%, rgba(248, 250, 252, 0.06), transparent 48%),
+                radial-gradient(circle at 81% 67%, rgba(120, 113, 108, 0.22), transparent 53%),
+                repeating-radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.02) 0 2px, rgba(2, 6, 23, 0.02) 2px 4px),
+                linear-gradient(155deg, #0b1018 0%, #111827 58%, #0f172a 100%);
+            box-shadow:
+                inset 0 1px 0 rgba(226, 232, 240, 0.08),
+                inset 0 -36px 50px rgba(2, 6, 23, 0.58),
+                inset 24px 0 32px rgba(2, 6, 23, 0.2),
+                inset -24px 0 32px rgba(15, 23, 42, 0.24);
+        }
+
         body {
             font-family: 'Inter', 'Lora', sans-serif;
             margin: 0;
@@ -127,63 +151,55 @@
             box-shadow: 0 0 0 1px rgba(192, 198, 210, 0.45);
         }
 
-        .torch-glow-left,
-        .torch-glow-right {
+        .torch-sconce {
             position: absolute;
-            top: 0;
-            bottom: 0;
-            width: clamp(56px, 7vw, 92px);
+            width: 34px;
+            height: 88px;
             pointer-events: none;
-            z-index: 0;
+            z-index: 15;
         }
-        .torch-glow-left { left: 0; }
-        .torch-glow-right { right: 0; }
-        .torch-glow-left::before,
-        .torch-glow-right::before,
-        .torch-glow-left::after,
-        .torch-glow-right::after {
+        .torch-sconce::before,
+        .torch-sconce::after {
             content: '';
             position: absolute;
-            border-radius: 999px;
-            filter: blur(10px);
-            opacity: 0.7;
         }
-        .torch-glow-left::before,
-        .torch-glow-right::before {
-            top: 22%;
-            width: 70px;
-            height: 180px;
-            background: radial-gradient(ellipse at center, rgba(255, 198, 95, 0.62), rgba(251, 146, 60, 0.3) 45%, rgba(251, 146, 60, 0) 72%);
-            animation: torch-flicker 5.8s ease-in-out infinite;
+        .torch-sconce::before {
+            inset: 22px 8px 12px;
+            border-radius: 16px 16px 10px 10px;
+            background:
+                linear-gradient(180deg, rgba(226, 232, 240, 0.58), rgba(71, 85, 105, 0.88) 44%, rgba(15, 23, 42, 0.95)),
+                linear-gradient(90deg, rgba(248, 250, 252, 0.18), transparent 52%);
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            box-shadow:
+                inset 0 1px 0 rgba(248, 250, 252, 0.2),
+                0 8px 16px rgba(2, 6, 23, 0.45);
         }
-        .torch-glow-left::after,
-        .torch-glow-right::after {
-            top: 31%;
-            width: 32px;
-            height: 32px;
-            background: radial-gradient(circle, rgba(255, 242, 186, 0.92) 0%, rgba(251, 146, 60, 0.62) 52%, rgba(251, 146, 60, 0) 78%);
-            animation: torch-flicker 6.7s ease-in-out infinite reverse;
-        }
-        .torch-glow-left::before,
-        .torch-glow-left::after {
-            left: -10px;
-        }
-        .torch-glow-right::before,
-        .torch-glow-right::after {
-            right: -10px;
+        .torch-sconce::after {
+            top: -3px;
+            left: 4px;
+            width: 26px;
+            height: 38px;
+            border-radius: 58% 58% 46% 46%;
+            transform-origin: 50% 100%;
+            background:
+                radial-gradient(circle at 50% 68%, rgba(255, 244, 201, 0.96) 0 28%, rgba(251, 146, 60, 0.88) 52%, rgba(239, 68, 68, 0.28) 72%, rgba(251, 146, 60, 0) 100%);
+            filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.82)) drop-shadow(0 0 20px rgba(251, 146, 60, 0.45));
+            animation: torch-flame-flicker 2.15s ease-in-out infinite;
         }
 
-        @keyframes torch-flicker {
-            0%, 100% { opacity: 0.62; filter: blur(10px); }
-            40% { opacity: 0.78; filter: blur(12px); }
-            65% { opacity: 0.56; filter: blur(9px); }
+        .torch-sconce--left { left: 12px; }
+        .torch-sconce--right { right: 12px; }
+        .torch-sconce--top { top: 10px; }
+
+        @keyframes torch-flame-flicker {
+            0%, 100% { transform: scale(0.96) translateY(0); opacity: 0.84; }
+            30% { transform: scale(1.05) translateY(-1px); opacity: 1; }
+            58% { transform: scale(0.91) translateY(1px); opacity: 0.72; }
+            78% { transform: scale(1.02) translateY(0); opacity: 0.92; }
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .torch-glow-left::before,
-            .torch-glow-right::before,
-            .torch-glow-left::after,
-            .torch-glow-right::after {
+            .torch-sconce::after {
                 animation: none;
             }
         }
@@ -1678,8 +1694,9 @@ const saveProfile = (e) => {
                 return (b.scores?.[sortBy] || 0) - (a.scores?.[sortBy] || 0);
             });
             return (
-                <div className="flex h-screen overflow-hidden bg-[#020617]">
-                    <aside className="w-72 theme-surface-card border-r theme-border-secondary flex flex-col p-8 z-20 shadow-xl overflow-y-auto">
+                <div className="flex h-screen overflow-hidden bg-[#020617] stone-wall-surface relative">
+                    <aside className="w-72 theme-surface-card stone-wall-surface border-r theme-border-secondary flex flex-col p-8 z-20 shadow-xl overflow-y-auto relative">
+                        <div className="torch-sconce torch-sconce--left torch-sconce--top" aria-hidden="true"></div>
                         <div className="mb-12 text-center flex-shrink-0">
                             <h1 className="text-5xl font-black text-[var(--metal-gold)] italic tracking-tighter leading-none">G2</h1>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-2">Elite Database</p>
@@ -1817,8 +1834,10 @@ const saveProfile = (e) => {
                         </button>
                     </aside>
 
-                    <main className="flex-1 flex flex-col overflow-hidden bg-[#020617]">
-                        <header className="h-24 panel-frosted border-b theme-border-secondary flex items-center px-12 justify-between z-10 flex-shrink-0">
+                    <main className="flex-1 flex flex-col overflow-hidden bg-[#020617] stone-wall-surface relative">
+                        <header className="h-24 panel-frosted stone-wall-surface border-b theme-border-secondary flex items-center px-12 justify-between z-10 flex-shrink-0 relative">
+                            <div className="torch-sconce torch-sconce--left torch-sconce--top" aria-hidden="true"></div>
+                            <div className="torch-sconce torch-sconce--right torch-sconce--top" aria-hidden="true"></div>
                             <div className="relative w-full max-w-xl">
                                 <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[var(--metal-gold)]/50">
                                     <LucideIcon name="search" size={20} />
@@ -1833,7 +1852,9 @@ const saveProfile = (e) => {
                             </div>
                         </header>
 
-                        <div className="flex-1 overflow-y-auto p-12 relative z-10">
+                        <div className="flex-1 overflow-y-auto p-12 relative z-10 stone-wall-surface">
+                            <div className="torch-sconce torch-sconce--left torch-sconce--top" aria-hidden="true"></div>
+                            <div className="torch-sconce torch-sconce--right torch-sconce--top" aria-hidden="true"></div>
 
    {/* 1. VISTA EXPLORAR (CARPETAS POR PROFESIÓN) */}
                     {activeTab === 'EXPLORAR' && !selectedCategory && (
@@ -2432,7 +2453,6 @@ const saveProfile = (e) => {
         </div>
     )}
 </div>
-                        <div className="torch-glow-right" aria-hidden="true"></div>
                     </main>
 
                     {isModalOpen && (
