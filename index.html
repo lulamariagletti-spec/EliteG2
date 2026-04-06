@@ -1831,6 +1831,20 @@ const saveProfile = (e) => {
                 return { ...stats, score };
             };
 
+            const getProfileHeightLabel = (profile) => {
+                const rawHeight = profile?.estaturaCm;
+                if (rawHeight === undefined || rawHeight === null || rawHeight === '') {
+                    return 'Sin dato';
+                }
+
+                const numericHeight = Number(rawHeight);
+                if (Number.isNaN(numericHeight) || numericHeight <= 0) {
+                    return 'Sin dato';
+                }
+
+                return `${Math.round(numericHeight)} cm`;
+            };
+
             const initArenaBattle = (arenaName) => {
                 const orderedProfiles = [...perfiles]
                     .filter(p => p?.firebaseId && (p?.nombre || '').trim())
@@ -2634,7 +2648,7 @@ const saveProfile = (e) => {
 
         return (
             <div className="space-y-8 animate-in fade-in duration-500">
-                <div className="sticky top-4 z-20 bg-slate-900/95 backdrop-blur-sm p-4 sm:p-6 rounded-2xl border theme-border-secondary space-y-4">
+                <div className="bg-slate-900/95 backdrop-blur-sm p-4 sm:p-6 rounded-2xl border theme-border-secondary space-y-4">
                     <div className="flex flex-wrap items-center gap-3">
                         <button
                             onClick={() => setSelectedArena(null)}
@@ -2694,11 +2708,21 @@ const saveProfile = (e) => {
                             />
                             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
                             <h3 className="text-3xl font-black italic text-white mt-2">{champion.nombre}</h3>
+                            {selectedArena === 'Estatura' && (
+                                <p className="text-xs text-slate-200 mt-2">Altura: {getProfileHeightLabel(champion)}</p>
+                            )}
                             <p className="text-xs text-[var(--metal-gold)] mt-3">Victorias: {championStats?.wins || 0} · Batallas: {championStats?.battles || 0}</p>
                             <p className="text-xs text-white/80 mt-1">Puntaje final: {championStats?.score || 0}</p>
                         </button>
 
-                        <div className="flex items-center justify-center font-title text-4xl text-[var(--metal-gold)] font-black">VS</div>
+                        <div className="flex flex-col items-center justify-center text-center">
+                            <div className="font-title text-4xl text-[var(--metal-gold)] font-black">VS</div>
+                            {selectedArena === 'Estatura' && (
+                                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300 mt-3">
+                                    Compará altura en cm
+                                </p>
+                            )}
+                        </div>
 
                         <button
                             onClick={() => registerBattleWinner(selectedArena, challenger.firebaseId)}
@@ -2712,6 +2736,9 @@ const saveProfile = (e) => {
                             />
                             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
                             <h3 className="text-3xl font-black italic text-white mt-2">{challenger.nombre}</h3>
+                            {selectedArena === 'Estatura' && (
+                                <p className="text-xs text-slate-200 mt-2">Altura: {getProfileHeightLabel(challenger)}</p>
+                            )}
                             <p className="text-xs text-[var(--metal-gold)] mt-3">Victorias: {challengerStats?.wins || 0} · Batallas: {challengerStats?.battles || 0}</p>
                             <p className="text-xs text-white/80 mt-1">Puntaje final: {challengerStats?.score || 0}</p>
                         </button>
