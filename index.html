@@ -458,15 +458,58 @@
         ];
         const INITIAL_CATEGORIES = [];
         const PROFESIONES_CONFIG = {
-            'Cantante': { emoji: '🎤', color: 'rgba(34, 211, 238, 0.8)', tailwind: 'cyan-400' },
-            'Actriz': { emoji: '🎬', color: 'rgba(34, 197, 94, 0.8)', tailwind: 'green-500' },
-            'Modelo': { emoji: '👠', color: 'rgba(168, 85, 247, 0.8)', tailwind: 'purple-500' },
-            'NSFW': { emoji: '🔥', color: 'rgba(239, 68, 68, 0.8)', tailwind: 'red-500' },
-            'Influencer': { emoji: '📱', color: 'rgba(236, 72, 153, 0.8)', tailwind: 'pink-500' },
-            'Periodista': { emoji: '👓', color: 'rgba(234, 179, 8, 0.8)', tailwind: 'yellow-500' },
-            'Bailarina': { emoji: '💃', color: 'rgba(249, 115, 22, 0.8)', tailwind: 'orange-500' },
-            'Atleta': { emoji: '🏋️‍♀️', color: 'rgba(59, 130, 246, 0.8)', tailwind: 'blue-500' },
-            'Otro': { emoji: '📖', color: 'rgba(148, 163, 184, 0.8)', tailwind: 'slate-400' }
+            'Cantante': { glyph: 'crown', color: 'rgba(34, 211, 238, 0.8)', tailwind: 'cyan-400' },
+            'Actriz': { glyph: 'theater', color: 'rgba(34, 197, 94, 0.8)', tailwind: 'green-500' },
+            'Modelo': { glyph: 'floron', color: 'rgba(168, 85, 247, 0.8)', tailwind: 'purple-500' },
+            'NSFW': { glyph: 'torch', color: 'rgba(239, 68, 68, 0.8)', tailwind: 'red-500' },
+            'Influencer': { glyph: 'sigil', color: 'rgba(236, 72, 153, 0.8)', tailwind: 'pink-500' },
+            'Periodista': { glyph: 'quill', color: 'rgba(234, 179, 8, 0.8)', tailwind: 'yellow-500' },
+            'Bailarina': { glyph: 'floron', color: 'rgba(249, 115, 22, 0.8)', tailwind: 'orange-500' },
+            'Atleta': { glyph: 'shield', color: 'rgba(59, 130, 246, 0.8)', tailwind: 'blue-500' },
+            'Otro': { glyph: 'sigil', color: 'rgba(148, 163, 184, 0.8)', tailwind: 'slate-400' }
+        };
+        const getProfessionGlyph = (profession = '') => {
+            const lowP = String(profession || '').toLowerCase();
+            if (lowP.includes('cantante')) return 'crown';
+            if (lowP.includes('nsfw')) return 'torch';
+            if (lowP.includes('actriz') || lowP.includes('actor')) return 'theater';
+            if (lowP.includes('modelo')) return 'floron';
+            if (lowP.includes('influencer')) return 'sigil';
+            if (lowP.includes('periodista')) return 'quill';
+            if (lowP.includes('bailarina')) return 'floron';
+            if (lowP.includes('atleta')) return 'shield';
+            return 'shield';
+        };
+
+        const HeraldicGlyph = ({ variant = 'sigil', size = 18, className = '', tint = 'currentColor' }) => {
+            const common = {
+                width: size,
+                height: size,
+                viewBox: '0 0 24 24',
+                fill: 'none',
+                xmlns: 'http://www.w3.org/2000/svg',
+                className
+            };
+
+            if (variant === 'crown') {
+                return <svg {...common} stroke={tint} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17h18v3H3z"/><path d="M4 17l3-8 5 5 5-7 3 10"/></svg>;
+            }
+            if (variant === 'shield') {
+                return <svg {...common} stroke={tint} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v6c0 4.3-2.4 7-7 9-4.6-2-7-4.7-7-9V6l7-3z"/><path d="M9.5 11h5M12 8.5v5"/></svg>;
+            }
+            if (variant === 'floron') {
+                return <svg {...common} stroke={tint} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v16"/><path d="M6 9c1.4 0 2.8.9 3.4 2.2C8.2 11.5 7 12.8 7 14.3 5.4 13.5 4.3 11.9 4.3 10 4.3 9.5 5 9 6 9z"/><path d="M18 9c-1.4 0-2.8.9-3.4 2.2 1.2.3 2.4 1.6 2.4 3.1 1.6-.8 2.7-2.4 2.7-4.3 0-.5-.7-1-1.7-1z"/><circle cx="12" cy="12" r="2.2"/></svg>;
+            }
+            if (variant === 'quill') {
+                return <svg {...common} stroke={tint} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M20 4c-7 1-11.5 5.2-13 12l4-1 1 4c6.8-2.4 8.4-8.4 8-15z"/><path d="M8 16l-4 4"/></svg>;
+            }
+            if (variant === 'torch') {
+                return <svg {...common} stroke={tint} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M9 13l6-6"/><path d="M8 14l2 2 2-2-2-2z"/><path d="M11 16l-4 5h10l-4-5"/><path d="M15.5 4.5c.9 1.3.5 3.2-1 4.3-1.5-1.4-1.8-3.3-.8-4.9.6.1 1.2.3 1.8.6z"/></svg>;
+            }
+            if (variant === 'theater') {
+                return <svg {...common} stroke={tint} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 6h14v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/><path d="M9 11h.01M15 11h.01"/><path d="M8.5 15c1 .8 2.2 1.2 3.5 1.2s2.5-.4 3.5-1.2"/></svg>;
+            }
+            return <svg {...common} stroke={tint} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 6v12M6 12h12"/></svg>;
         };
 
         const LucideIcon = ({ name, size = 20, className = "" }) => {
@@ -1105,19 +1148,7 @@
             const [minEdad, setMinEdad] = useState(18);
             const [maxEdad, setMaxEdad] = useState(60);
 
-                // Función para obtener el emoji según profesión
-                const getEmoji = (prof) => {
-                    const lowP = prof?.toLowerCase() || '';
-                    if (lowP.includes('cantante')) return '🎤';
-                    if (lowP.includes('nsfw')) return '🔥';
-                    if (lowP.includes('actriz')) return '🎬';
-                    if (lowP.includes('modelo')) return '📸';
-                    if (lowP.includes('influencer')) return '📱';
-                    if (lowP.includes('periodista')) return '👓';
-                    if (lowP.includes('otro')) return '📖';
-                    if (lowP.includes('bailarina')) return '💃';
-                    if (lowP.includes('atleta')) return '🏋️‍♀️';
-                };
+                const getGlyph = (prof) => getProfessionGlyph(prof);
             const [categorias, setCategorias] = useState(INITIAL_CATEGORIES);
             const [activeTab, setActiveTab] = useState('EXPLORAR');
             const [searchQuery, setSearchQuery] = useState('');
@@ -1665,7 +1696,7 @@ const saveProfile = (e) => {
                                     <h4 className="text-[10px] font-black text-[var(--metal-gold)] uppercase tracking-widest flex items-center gap-2">
                                         <LucideIcon name="images" size={12} /> Filtros de Galería
                                     </h4>
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.25em] mt-2">
+                                    <p className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mt-2">
                                         {filteredGalleryPhotos.length} archivos visibles de {allGalleryPhotos.length}
                                     </p>
                                 </div>
@@ -1803,19 +1834,7 @@ const saveProfile = (e) => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                                 {[...new Set(perfiles.map(p => p.profesion || 'Perfil'))].map(prof => {
                                     const count = perfiles.filter(p => (p.profesion || 'Perfil') === prof).length;
-                                    const getEmoji = (p) => {
-                                        const lowP = (p || '').toLowerCase();
-                                        if(lowP.includes('cantante')) return '🎤';
-                                        if(lowP.includes('modelo')) return '📸';
-                                        if(lowP.includes('actriz') || lowP.includes('actor')) return '🎬';
-                                        if(lowP.includes('nsfw')) return '🔥';
-                                        if(lowP.includes('influencer')) return '📱';
-                                        if(lowP.includes('atleta')) return '🏋️‍♀️';
-                                        if(lowP.includes('bailarina')) return '💃';
-                                        if(lowP.includes('periodista')) return '👓';
-                                        if(lowP.includes('otro')) return '📖';
-                                        return '💼';
-                                    };
+                                    const glyphVariant = getProfessionGlyph(prof);
 
                                     return (
                                         <div
@@ -1824,7 +1843,7 @@ const saveProfile = (e) => {
                                             className="theme-surface-card rounded-2xl border theme-border-secondary p-8 text-center cursor-pointer hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:border-[color:color-mix(in_srgb,var(--metal-gold)_50%,transparent)] transition-all group relative overflow-hidden active:scale-95"
                                         >
                                             <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                                <span className="text-9xl">{getEmoji(prof)}</span>
+                                                <HeraldicGlyph variant={glyphVariant} size={110} className="text-slate-300/70" />
                                             </div>
                                             <div className="w-24 h-24 bg-slate-900 rounded-[2rem] flex items-center justify-center text-5xl mx-auto mb-6 shadow-2xl border theme-border-secondary group-hover:scale-110 group-hover:border-cyan-500 transition-all duration-500">
                                                 {getEmoji(prof)}
@@ -1853,7 +1872,7 @@ const saveProfile = (e) => {
                     </div>
                     Volver
                 </button>
-                <h2 className="text-6xl font-black italic text-white uppercase tracking-tighter leading-none">
+                <h2 className="font-title text-6xl font-black italic text-white tracking-[0.08em] leading-none">
     {/* Si estamos en la pestaña de categorías, buscamos el nombre lindo. Si no, mostramos la profesión directamente */}
     {activeTab === 'CATEGORIAS'
         ? (categorias.find(c => c.firebaseId === selectedCategory)?.label || "Archivo del Reino")
@@ -1875,7 +1894,7 @@ const saveProfile = (e) => {
     }).map(p => {
                     const profKey = p.profesion?.toUpperCase() || 'DEFAULT';
                     const neonClass = (typeof neonColors !== 'undefined' && neonColors[profKey]) ? neonColors[profKey] : { color: '#06b6d4', sombra: 'rgba(6,182,212,0.5)' };
-                    const emoji = (typeof getEmoji === 'function') ? getEmoji(p.profesion) : '👤';
+                    const glyphVariant = getGlyph(p.profesion);
 
                     return (
                         <div
@@ -1909,7 +1928,7 @@ const saveProfile = (e) => {
                                             <span className="text-[var(--metal-gold)] text-sm not-italic">
                                                 ({typeof calcularEdad === 'function' ? calcularEdad(p.fechaNacimiento) : '??'})
                                             </span>
-                                            <span className="text-sm">{emoji}</span>
+                                            <HeraldicGlyph variant={glyphVariant} size={14} className="text-cyan-300" />
                                         </h3>
                                         <div className="flex justify-between items-center mt-1">
                                             <span className="text-[var(--metal-gold)] text-[7px] font-black uppercase tracking-widest">{p.profesion}</span>
@@ -1968,7 +1987,7 @@ const saveProfile = (e) => {
                         <button
                             key={label}
                             onClick={() => setGalleryFilterLabel(label)}
-                            className="px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all"
+                            className="font-title px-4 py-2 rounded-full border text-[10px] font-semibold tracking-[0.08em] transition-all"
                             style={isActive ? {
                                 background: style.bg,
                                 borderColor: style.border,
@@ -2002,7 +2021,7 @@ const saveProfile = (e) => {
                     <LucideIcon name="play" size={14} />
                     Play galería general
                 </button>
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                <p className="font-title text-[10px] font-medium tracking-[0.07em] text-slate-500">
                     Fotos y GIF: 7s · Videos: hasta terminar
                 </p>
             </div>
@@ -2012,8 +2031,8 @@ const saveProfile = (e) => {
                     <div className="w-20 h-20 rounded-full bg-slate-900 border theme-border-secondary flex items-center justify-center mx-auto mb-6">
                         <LucideIcon name="image-off" size={28} className="text-slate-600" />
                     </div>
-                    <h3 className="text-xl font-black italic text-white uppercase tracking-tighter">No hay archivos para mostrar</h3>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-3">Probá con otra búsqueda o quitá el filtro por etiqueta.</p>
+                    <h3 className="font-title text-xl font-black italic text-white tracking-[0.06em]">No hay archivos para mostrar</h3>
+                    <p className="font-title text-xs font-medium text-slate-500 tracking-[0.06em] mt-3">Probá con otra búsqueda o quitá el filtro por etiqueta.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
@@ -2035,8 +2054,8 @@ const saveProfile = (e) => {
                                                 <div className="w-full h-full bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.3),_rgba(15,23,42,0.95))] flex flex-col items-center justify-center gap-4 p-6 text-center">
                                                     <div className="w-16 h-16 rounded-full border border-[var(--metal-gold)]/40 bg-slate-950/70 flex items-center justify-center text-[color:color-mix(in_srgb,var(--metal-gold)_72%,white)] text-2xl">▶</div>
                                                     <div>
-                                                        <p className="text-sm font-black uppercase tracking-[0.3em] text-white">Video</p>
-                                                        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 mt-2">{embedInfo.provider}</p>
+                                                        <p className="font-title text-sm font-semibold tracking-[0.1em] text-white">Video</p>
+                                                        <p className="font-title text-[10px] font-medium tracking-[0.08em] text-slate-400 mt-2">{embedInfo.provider}</p>
                                                     </div>
                                                 </div>
                                             );
@@ -2050,7 +2069,7 @@ const saveProfile = (e) => {
                                                 <p className="text-lg font-black italic text-white tracking-tighter leading-none">{photo.nombre}</p>
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-[var(--metal-gold)] mt-2">{photo.profesion}</p>
                                                 {photo.nacionalidad && (
-                                                    <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400 mt-1">{photo.nacionalidad}</p>
+                                                    <p className="font-title text-[9px] font-medium tracking-[0.06em] text-slate-400 mt-1">{photo.nacionalidad}</p>
                                                 )}
                                             </div>
                                             <div className="flex flex-col items-end gap-2">
@@ -2271,8 +2290,8 @@ const saveProfile = (e) => {
                 <img src={p.fotos?.[0] || 'https://via.placeholder.com/400x500'} className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" onError={applyCryingEmojiFallback} />
             </div>
             <div>
-                <p className="font-black text-white text-sm uppercase tracking-tighter">{p.nombre} {getEmoji(p.profesion)}</p>
-                <p className="text-[10px] font-bold text-slate-500 uppercase">{p.profesion}</p>
+                <p className="font-title font-black text-white text-sm tracking-[0.06em] flex items-center gap-2">{p.nombre} <HeraldicGlyph variant={getGlyph(p.profesion)} size={14} className="text-cyan-300" /></p>
+                <p className="font-title text-[10px] font-medium text-slate-500 tracking-[0.06em]">{p.profesion}</p>
             </div>
         </div>
     </td>
