@@ -12,32 +12,50 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Inter', 'Lora', sans-serif;
             margin: 0;
             padding: 0;
             overflow: hidden;
             background-color: #020617;
+            background-image:
+                radial-gradient(circle at 15% 20%, rgba(120, 113, 108, 0.2), transparent 45%),
+                radial-gradient(circle at 80% 0%, rgba(113, 63, 18, 0.12), transparent 40%),
+                linear-gradient(155deg, #020617 0%, #111827 55%, #1f2937 100%);
             color: #f1f5f9;
+            text-rendering: optimizeLegibility;
+        }
+
+        h1, h2, h3, h4, h5, h6,
+        .font-title {
+            font-family: 'Cinzel', 'MedievalSharp', serif;
+            letter-spacing: 0.04em;
         }
 
         .text-bubble {
-            background: rgba(15, 23, 42, 0.4); /* Más transparente, como me gusta a mí */
-            backdrop-filter: blur(4px); /* Menos desenfoque para que se vea lo de atrás */
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0.5rem 1rem; /* Más petisito, para que no tape */
+            background:
+                linear-gradient(155deg, rgba(30, 41, 59, 0.72), rgba(15, 23, 42, 0.82)),
+                radial-gradient(circle at top, rgba(148, 163, 184, 0.1), transparent 65%);
+            backdrop-filter: blur(3px);
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            box-shadow: inset 0 1px 0 rgba(203, 213, 225, 0.12), 0 3px 18px rgba(2, 6, 23, 0.35);
+            padding: 0.5rem 1rem;
             border-radius: 1.2rem;
         }
 
         .glass-effect {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(16px);
+            background:
+                linear-gradient(165deg, rgba(17, 24, 39, 0.9), rgba(3, 7, 18, 0.95)),
+                radial-gradient(circle at top right, rgba(180, 83, 9, 0.08), transparent 45%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.15), 0 8px 24px rgba(0, 0, 0, 0.35);
         }
 
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-track { background: linear-gradient(180deg, #020617 0%, #0f172a 100%); }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
 
         .profile-card:hover img {
@@ -53,11 +71,12 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: #020617;
+            background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
         }
         #root:empty::after {
-            content: "Cargando G2 Elite...";
-            font-weight: 800;
+            content: "Abriendo el códice...";
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
             color: #22d3ee;
             letter-spacing: 0.2em;
             text-transform: uppercase;
@@ -74,27 +93,27 @@
         /* La lencería de gala para tu podio */
         .podium-1 {
             background: linear-gradient(90deg,
-                rgba(255, 215, 0, 0.25) 0%,
-                rgba(255, 215, 0, 0.1) 50%,
-                rgba(255, 215, 0, 0.2) 100%) !important;
+                rgba(255, 215, 0, 0.16) 0%,
+                rgba(120, 95, 24, 0.18) 50%,
+                rgba(255, 215, 0, 0.12) 100%) !important;
             border-left: 8px solid #ffd700 !important;
-            box-shadow: inset 0 0 40px rgba(255, 215, 0, 0.15);
+            box-shadow: inset 0 0 24px rgba(120, 95, 24, 0.25), inset 2px 0 0 rgba(255, 245, 181, 0.25);
         }
         .podium-2 {
             background: linear-gradient(90deg,
-                rgba(192, 192, 192, 0.2) 0%,
-                rgba(192, 192, 192, 0.08) 50%,
-                rgba(192, 192, 192, 0.15) 100%) !important;
+                rgba(192, 192, 192, 0.14) 0%,
+                rgba(107, 114, 128, 0.16) 50%,
+                rgba(192, 192, 192, 0.12) 100%) !important;
             border-left: 6px solid #c0c0c0 !important;
-            box-shadow: inset 0 0 30px rgba(192, 192, 192, 0.1);
+            box-shadow: inset 0 0 22px rgba(100, 116, 139, 0.22), inset 2px 0 0 rgba(226, 232, 240, 0.2);
         }
         .podium-3 {
             background: linear-gradient(90deg,
-                rgba(205, 127, 50, 0.18) 0%,
-                rgba(205, 127, 50, 0.06) 50%,
-                rgba(205, 127, 50, 0.12) 100%) !important;
+                rgba(205, 127, 50, 0.16) 0%,
+                rgba(120, 53, 15, 0.16) 50%,
+                rgba(205, 127, 50, 0.1) 100%) !important;
             border-left: 5px solid #cd7f32 !important;
-            box-shadow: inset 0 0 25px rgba(205, 127, 50, 0.08);
+            box-shadow: inset 0 0 22px rgba(120, 53, 15, 0.25), inset 2px 0 0 rgba(254, 215, 170, 0.2);
         }
         /* Quitamos el límite de ancho para que el brillo no se corte */
         tr.podium-1 td, tr.podium-2 td, tr.podium-3 td {
@@ -114,9 +133,18 @@
         }
 
         /* Colores específicos para los números del ranking */
-        .text-gold { color: #ffd700 !important; filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6)); }
-        .text-silver { color: #c0c0c0 !important; filter: drop-shadow(0 0 6px rgba(192, 192, 192, 0.5)); }
-        .text-bronze { color: #cd7f32 !important; filter: drop-shadow(0 0 6px rgba(205, 127, 50, 0.5)); }
+        .text-gold {
+            color: #ffd700 !important;
+            text-shadow: 0 1px 0 rgba(255, 248, 196, 0.35), 0 2px 8px rgba(120, 95, 24, 0.45);
+        }
+        .text-silver {
+            color: #c0c0c0 !important;
+            text-shadow: 0 1px 0 rgba(241, 245, 249, 0.3), 0 2px 7px rgba(100, 116, 139, 0.45);
+        }
+        .text-bronze {
+            color: #cd7f32 !important;
+            text-shadow: 0 1px 0 rgba(254, 215, 170, 0.35), 0 2px 7px rgba(120, 53, 15, 0.45);
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
