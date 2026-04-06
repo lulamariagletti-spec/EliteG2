@@ -12,34 +12,50 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Inter', 'Lora', sans-serif;
             margin: 0;
             padding: 0;
             overflow: hidden;
             background-color: #020617;
+            background-image:
+                radial-gradient(circle at 15% 20%, rgba(120, 113, 108, 0.2), transparent 45%),
+                radial-gradient(circle at 80% 0%, rgba(113, 63, 18, 0.12), transparent 40%),
+                linear-gradient(155deg, #020617 0%, #111827 55%, #1f2937 100%);
             color: #f1f5f9;
+            text-rendering: optimizeLegibility;
+        }
+
+        h1, h2, h3, h4, h5, h6,
+        .font-title {
+            font-family: 'Cinzel', 'MedievalSharp', serif;
+            letter-spacing: 0.04em;
         }
 
         .text-bubble {
-            background: rgba(15, 23, 42, 0.4); /* Más transparente, como me gusta a mí */
-            backdrop-filter: blur(4px); /* Menos desenfoque para que se vea lo de atrás */
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0.5rem 1rem; /* Más petisito, para que no tape */
+            background:
+                linear-gradient(155deg, rgba(30, 41, 59, 0.72), rgba(15, 23, 42, 0.82)),
+                radial-gradient(circle at top, rgba(148, 163, 184, 0.1), transparent 65%);
+            backdrop-filter: blur(3px);
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            box-shadow: inset 0 1px 0 rgba(203, 213, 225, 0.12), 0 3px 18px rgba(2, 6, 23, 0.35);
+            padding: 0.5rem 1rem;
             border-radius: 1.2rem;
         }
 
-        .panel-frosted {
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.92) 100%);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-            box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.18), 0 14px 28px rgba(2, 6, 23, 0.35);
+        .glass-effect {
+            background:
+                linear-gradient(165deg, rgba(17, 24, 39, 0.9), rgba(3, 7, 18, 0.95)),
+                radial-gradient(circle at top right, rgba(180, 83, 9, 0.08), transparent 45%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.15), 0 8px 24px rgba(0, 0, 0, 0.35);
         }
 
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-track { background: linear-gradient(180deg, #020617 0%, #0f172a 100%); }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
 
         .profile-card:hover img {
@@ -55,11 +71,12 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: #020617;
+            background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
         }
         #root:empty::after {
-            content: "Cargando G2 Elite...";
-            font-weight: 800;
+            content: "Abriendo el códice...";
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
             color: #22d3ee;
             letter-spacing: 0.2em;
             text-transform: uppercase;
@@ -76,27 +93,27 @@
         /* La lencería de gala para tu podio */
         .podium-1 {
             background: linear-gradient(90deg,
-                rgba(255, 215, 0, 0.25) 0%,
-                rgba(255, 215, 0, 0.1) 50%,
-                rgba(255, 215, 0, 0.2) 100%) !important;
+                rgba(255, 215, 0, 0.16) 0%,
+                rgba(120, 95, 24, 0.18) 50%,
+                rgba(255, 215, 0, 0.12) 100%) !important;
             border-left: 8px solid #ffd700 !important;
-            box-shadow: inset 0 0 40px rgba(255, 215, 0, 0.15);
+            box-shadow: inset 0 0 24px rgba(120, 95, 24, 0.25), inset 2px 0 0 rgba(255, 245, 181, 0.25);
         }
         .podium-2 {
             background: linear-gradient(90deg,
-                rgba(192, 192, 192, 0.2) 0%,
-                rgba(192, 192, 192, 0.08) 50%,
-                rgba(192, 192, 192, 0.15) 100%) !important;
+                rgba(192, 192, 192, 0.14) 0%,
+                rgba(107, 114, 128, 0.16) 50%,
+                rgba(192, 192, 192, 0.12) 100%) !important;
             border-left: 6px solid #c0c0c0 !important;
-            box-shadow: inset 0 0 30px rgba(192, 192, 192, 0.1);
+            box-shadow: inset 0 0 22px rgba(100, 116, 139, 0.22), inset 2px 0 0 rgba(226, 232, 240, 0.2);
         }
         .podium-3 {
             background: linear-gradient(90deg,
-                rgba(205, 127, 50, 0.18) 0%,
-                rgba(205, 127, 50, 0.06) 50%,
-                rgba(205, 127, 50, 0.12) 100%) !important;
+                rgba(205, 127, 50, 0.16) 0%,
+                rgba(120, 53, 15, 0.16) 50%,
+                rgba(205, 127, 50, 0.1) 100%) !important;
             border-left: 5px solid #cd7f32 !important;
-            box-shadow: inset 0 0 25px rgba(205, 127, 50, 0.08);
+            box-shadow: inset 0 0 22px rgba(120, 53, 15, 0.25), inset 2px 0 0 rgba(254, 215, 170, 0.2);
         }
         /* Quitamos el límite de ancho para que el brillo no se corte */
         tr.podium-1 td, tr.podium-2 td, tr.podium-3 td {
@@ -116,9 +133,18 @@
         }
 
         /* Colores específicos para los números del ranking */
-        .text-gold { color: #ffd700 !important; filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6)); }
-        .text-silver { color: #c0c0c0 !important; filter: drop-shadow(0 0 6px rgba(192, 192, 192, 0.5)); }
-        .text-bronze { color: #cd7f32 !important; filter: drop-shadow(0 0 6px rgba(205, 127, 50, 0.5)); }
+        .text-gold {
+            color: #ffd700 !important;
+            text-shadow: 0 1px 0 rgba(255, 248, 196, 0.35), 0 2px 8px rgba(120, 95, 24, 0.45);
+        }
+        .text-silver {
+            color: #c0c0c0 !important;
+            text-shadow: 0 1px 0 rgba(241, 245, 249, 0.3), 0 2px 7px rgba(100, 116, 139, 0.45);
+        }
+        .text-bronze {
+            color: #cd7f32 !important;
+            text-shadow: 0 1px 0 rgba(254, 215, 170, 0.35), 0 2px 7px rgba(120, 53, 15, 0.45);
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -199,6 +225,22 @@
         const clampIndex = (index, total) => {
             if (!total) return 0;
             return (index + total) % total;
+        };
+        const getNextPlayableIndex = (currentIndex, items, useRandom = false) => {
+            const total = Array.isArray(items) ? items.length : 0;
+            if (!total) return null;
+            if (total === 1) return 0;
+
+            if (useRandom) {
+                const candidateIndexes = items
+                    .map((item, idx) => ({ item, idx }))
+                    .filter(({ item, idx }) => idx !== currentIndex && item && item.url)
+                    .map(({ idx }) => idx);
+                if (!candidateIndexes.length) return clampIndex((currentIndex ?? 0) + 1, total);
+                return candidateIndexes[Math.floor(Math.random() * candidateIndexes.length)];
+            }
+
+            return clampIndex((currentIndex ?? 0) + 1, total);
         };
         const getGalleryLabelStyle = (label) => GALLERY_LABEL_STYLES[label] || GALLERY_LABEL_STYLES.DEFAULT;
         const VIDEO_FILE_REGEX = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i;
@@ -399,13 +441,14 @@
                         right: 30px;
                         z-index: 2100;
                         background: rgba(15, 23, 42, 0.9);
-                        color: #f8fafc;
-                        border: 1px solid rgba(148, 163, 184, 0.4);
+                        color: #f87171;
+                        border: 1px solid rgba(248, 113, 113, 0.78);
                         border-radius: 999px;
                         width: 48px;
                         height: 48px;
                         cursor: pointer;
-                        font-size: 28px;
+                        font-size: 30px;
+                        font-weight: 900;
                         line-height: 1;
                     }
                     .viewer-stage {
@@ -451,7 +494,8 @@
                         align-items: center;
                         justify-content: center;
                         cursor: pointer;
-                        font-size: 24px;
+                        font-size: 28px;
+                        font-weight: 900;
                         line-height: 1;
                         transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
                     }
@@ -490,6 +534,31 @@
                         text-transform: uppercase;
                         pointer-events: none;
                     }
+                    .viewer-controls {
+                        position: fixed;
+                        top: 24px;
+                        left: 24px;
+                        z-index: 2100;
+                        display: flex;
+                        gap: 10px;
+                    }
+                    .viewer-control-btn {
+                        border: 1px solid rgba(56, 189, 248, 0.5);
+                        background: rgba(8, 47, 73, 0.52);
+                        color: #bae6fd;
+                        border-radius: 999px;
+                        padding: 8px 14px;
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.2em;
+                        font-weight: 900;
+                        cursor: pointer;
+                    }
+                    .viewer-control-btn.random-active {
+                        border-color: rgba(232, 121, 249, 0.85);
+                        color: #f5d0fe;
+                        background: rgba(192, 38, 211, 0.35);
+                    }
                     @media (max-width: 640px) {
                         .viewer-stage {
                             padding: 20px 16px 106px;
@@ -518,6 +587,16 @@
                             font-size: 10px;
                             max-width: calc(100vw - 120px);
                             text-align: center;
+                        }
+                        .viewer-controls {
+                            top: 14px;
+                            left: 14px;
+                            gap: 8px;
+                        }
+                        .viewer-control-btn {
+                            padding: 7px 10px;
+                            font-size: 9px;
+                            letter-spacing: 0.16em;
                         }
                     }
                 </style>
@@ -623,10 +702,14 @@
                 </div>
 
                 <div id="fullscreenViewer" class="fullscreen-viewer">
-                    <button class="viewer-close" onclick="closeFullscreenViewer()">×</button>
+                    <button class="viewer-close" onclick="closeFullscreenViewer()" aria-label="Cerrar visor">✕</button>
+                    <div class="viewer-controls">
+                        <button id="viewerPlayToggle" class="viewer-control-btn" type="button" onclick="toggleViewerAutoplay(event)">Play</button>
+                        <button id="viewerRandomToggle" class="viewer-control-btn" type="button" onclick="toggleViewerRandom(event)">Aleatorio OFF</button>
+                    </div>
                     ${fotosGaleria.length > 1 ? `
-                        <button class="viewer-nav prev" id="viewerPrev" onclick="showPreviousViewerPhoto(event)" aria-label="Foto anterior">‹</button>
-                        <button class="viewer-nav next" id="viewerNext" onclick="showNextViewerPhoto(event)" aria-label="Foto siguiente">›</button>
+                        <button class="viewer-nav prev" id="viewerPrev" onclick="showPreviousViewerPhoto(event)" aria-label="Foto anterior">←</button>
+                        <button class="viewer-nav next" id="viewerNext" onclick="showNextViewerPhoto(event)" aria-label="Foto siguiente">→</button>
                     ` : ''}
                     <div class="viewer-hint">Usá ← → para cambiar y Escape para salir</div>
                     <div class="viewer-stage" id="viewerStage">
@@ -652,7 +735,53 @@
                     const viewerSlides = Array.from(document.querySelectorAll('.viewer-slide'));
                     const viewerPrevButton = document.getElementById('viewerPrev');
                     const viewerNextButton = document.getElementById('viewerNext');
+                    const viewerPlayToggleButton = document.getElementById('viewerPlayToggle');
+                    const viewerRandomToggleButton = document.getElementById('viewerRandomToggle');
                     let currentViewerIndex = 0;
+                    let viewerAutoplay = false;
+                    let viewerRandom = false;
+                    let viewerAutoplayTimeout = null;
+
+                    function getNextViewerIndex() {
+                        if (viewerSlides.length <= 1) return 0;
+                        if (!viewerRandom) return (currentViewerIndex + 1) % viewerSlides.length;
+                        const candidates = viewerSlides.map((_, idx) => idx).filter((idx) => idx !== currentViewerIndex);
+                        return candidates[Math.floor(Math.random() * candidates.length)];
+                    }
+
+                    function clearViewerAutoplayTimer() {
+                        if (viewerAutoplayTimeout) {
+                            clearTimeout(viewerAutoplayTimeout);
+                            viewerAutoplayTimeout = null;
+                        }
+                    }
+
+                    function setViewerAutoplayState(nextState) {
+                        viewerAutoplay = !!nextState;
+                        if (viewerPlayToggleButton) {
+                            viewerPlayToggleButton.textContent = viewerAutoplay ? 'Pause' : 'Play';
+                        }
+                        scheduleViewerAutoplay();
+                    }
+
+                    function setViewerRandomState(nextState) {
+                        viewerRandom = !!nextState;
+                        if (viewerRandomToggleButton) {
+                            viewerRandomToggleButton.textContent = 'Aleatorio ' + (viewerRandom ? 'ON' : 'OFF');
+                            viewerRandomToggleButton.classList.toggle('random-active', viewerRandom);
+                        }
+                    }
+
+                    function scheduleViewerAutoplay() {
+                        clearViewerAutoplayTimer();
+                        if (!viewerAutoplay || !viewer.classList.contains('open') || viewerSlides.length <= 1) return;
+                        const currentSlide = viewerSlides[currentViewerIndex];
+                        const currentVideo = currentSlide ? currentSlide.querySelector('video') : null;
+                        if (currentVideo) return;
+                        viewerAutoplayTimeout = setTimeout(function() {
+                            renderViewerSlide(getNextViewerIndex());
+                        }, 7000);
+                    }
 
                     function syncViewerButtons() {
                         const disableNavigation = viewerSlides.length <= 1;
@@ -666,7 +795,36 @@
                         viewerSlides.forEach(function(slide, slideIndex) {
                             slide.classList.toggle('active', slideIndex === currentViewerIndex);
                         });
+                        const activeSlide = viewerSlides[currentViewerIndex];
+                        const activeImage = activeSlide ? activeSlide.querySelector('img') : null;
+                        const activeVideo = activeSlide ? activeSlide.querySelector('video') : null;
+                        if (activeVideo) {
+                            activeVideo.currentTime = 0;
+                            if (viewerAutoplay) {
+                                activeVideo.play().catch(function() {});
+                            }
+                        }
+                        if (activeImage) {
+                            activeImage.onerror = function() {
+                                if (viewerSlides.length > 1) {
+                                    renderViewerSlide(getNextViewerIndex());
+                                }
+                            };
+                        }
+                        if (activeVideo) {
+                            activeVideo.onerror = function() {
+                                if (viewerSlides.length > 1) {
+                                    renderViewerSlide(getNextViewerIndex());
+                                }
+                            };
+                            activeVideo.onended = function() {
+                                if (viewerAutoplay && viewerSlides.length > 1) {
+                                    renderViewerSlide(getNextViewerIndex());
+                                }
+                            };
+                        }
                         syncViewerButtons();
+                        scheduleViewerAutoplay();
                     }
 
                     function openFullscreenViewer(index) {
@@ -680,6 +838,7 @@
                     function closeFullscreenViewer() {
                         viewer.classList.remove('open');
                         document.body.style.overflow = '';
+                        clearViewerAutoplayTimer();
                     }
                     function showNextViewerPhoto(event) {
                         if (event) event.stopPropagation();
@@ -690,6 +849,14 @@
                         if (event) event.stopPropagation();
                         if (viewerSlides.length <= 1) return;
                         renderViewerSlide((currentViewerIndex - 1 + viewerSlides.length) % viewerSlides.length);
+                    }
+                    function toggleViewerAutoplay(event) {
+                        if (event) event.stopPropagation();
+                        setViewerAutoplayState(!viewerAutoplay);
+                    }
+                    function toggleViewerRandom(event) {
+                        if (event) event.stopPropagation();
+                        setViewerRandomState(!viewerRandom);
                     }
                     if (galleryGrid) {
                         galleryGrid.addEventListener('click', function(event) {
@@ -736,6 +903,8 @@
                             showPreviousViewerPhoto();
                         }
                     });
+                    setViewerAutoplayState(false);
+                    setViewerRandomState(false);
                     renderViewerSlide(0);
                 <\/script>
             </body>
@@ -790,6 +959,7 @@
             const [galleryFilterLabel, setGalleryFilterLabel] = useState('INICIAL');
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
             const [isGalleryPlaying, setIsGalleryPlaying] = useState(false);
+            const [isGalleryRandom, setIsGalleryRandom] = useState(false);
             const galleryPlaybackTimeoutRef = useRef(null);
 
             const [filters, setFilters] = useState({
@@ -1132,6 +1302,7 @@ const getInitialCatFormData = () => ({
             useEffect(() => {
                 if (selectedGalleryIndex === null) {
                     setIsGalleryPlaying(false);
+                    setIsGalleryRandom(false);
                 }
             }, [selectedGalleryIndex]);
 
@@ -1147,9 +1318,9 @@ const getInitialCatFormData = () => ({
                     return;
                 }
 
-                const timeoutDuration = selectedGalleryPhoto.isGif ? 25000 : 5000;
+                const timeoutDuration = 7000;
                 galleryPlaybackTimeoutRef.current = setTimeout(() => {
-                    setSelectedGalleryIndex((current) => clampIndex((current ?? 0) + 1, filteredGalleryPhotos.length));
+                    setSelectedGalleryIndex((current) => getNextPlayableIndex(current, filteredGalleryPhotos, isGalleryRandom));
                 }, timeoutDuration);
 
                 return () => {
@@ -1158,7 +1329,7 @@ const getInitialCatFormData = () => ({
                         galleryPlaybackTimeoutRef.current = null;
                     }
                 };
-            }, [isGalleryPlaying, selectedGalleryPhoto, filteredGalleryPhotos.length]);
+            }, [isGalleryPlaying, selectedGalleryPhoto, filteredGalleryPhotos, isGalleryRandom]);
 
             const openGalleryViewer = (index, autoplay = false) => {
                 setSelectedGalleryIndex(index);
@@ -1168,7 +1339,7 @@ const getInitialCatFormData = () => ({
                 setIsGalleryPlaying(false);
                 setSelectedGalleryIndex(null);
             };
-            const showNextGalleryPhoto = () => setSelectedGalleryIndex((current) => clampIndex((current ?? 0) + 1, filteredGalleryPhotos.length));
+            const showNextGalleryPhoto = () => setSelectedGalleryIndex((current) => getNextPlayableIndex(current, filteredGalleryPhotos, isGalleryRandom));
             const showPreviousGalleryPhoto = () => setSelectedGalleryIndex((current) => clampIndex((current ?? 0) - 1, filteredGalleryPhotos.length));
 
 const saveProfile = (e) => {
@@ -1659,7 +1830,7 @@ const saveProfile = (e) => {
                     Play galería general
                 </button>
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                    Fotos: 5s · GIF: 5 ciclos aprox · Videos: hasta terminar
+                    Fotos y GIF: 7s · Videos: hasta terminar
                 </p>
             </div>
 
@@ -1739,10 +1910,10 @@ const saveProfile = (e) => {
                     <button
                         type="button"
                         onClick={closeGalleryViewer}
-                        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-12 h-12 rounded-full border border-slate-700 bg-slate-900/80 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all"
+                        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-12 h-12 rounded-full border border-red-500/80 bg-slate-900/90 text-red-400 flex items-center justify-center hover:border-red-400 hover:text-red-300 transition-all"
                         aria-label="Cerrar visor"
                     >
-                        <LucideIcon name="x" size={22} />
+                        <span className="text-[26px] leading-none font-black">✕</span>
                     </button>
 
                     <div className="w-full max-w-6xl max-h-full flex flex-col gap-4" onClick={(event) => event.stopPropagation()}>
@@ -1753,13 +1924,22 @@ const saveProfile = (e) => {
                             </div>
                             <div className="flex items-center gap-3">
                                 {filteredGalleryPhotos.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsGalleryPlaying((prev) => !prev)}
-                                        className="px-4 py-2 rounded-full border border-cyan-500/60 bg-cyan-500/20 text-cyan-200 text-[10px] font-black uppercase tracking-[0.28em] hover:bg-cyan-500/35 hover:text-white transition-all"
-                                    >
-                                        {isGalleryPlaying ? 'Pause' : 'Play'}
-                                    </button>
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsGalleryPlaying((prev) => !prev)}
+                                            className="px-4 py-2 rounded-full border border-cyan-500/60 bg-cyan-500/20 text-cyan-200 text-[10px] font-black uppercase tracking-[0.28em] hover:bg-cyan-500/35 hover:text-white transition-all"
+                                        >
+                                            {isGalleryPlaying ? 'Pause' : 'Play'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsGalleryRandom((prev) => !prev)}
+                                            className={`px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-[0.28em] transition-all ${isGalleryRandom ? 'border-fuchsia-400/80 bg-fuchsia-500/30 text-fuchsia-100 hover:bg-fuchsia-500/45' : 'border-slate-700 bg-slate-900/80 text-slate-300 hover:border-fuchsia-400/70 hover:text-fuchsia-200'}`}
+                                        >
+                                            Aleatorio {isGalleryRandom ? 'ON' : 'OFF'}
+                                        </button>
+                                    </>
                                 )}
                                 <div className="px-3 py-2 rounded-full border border-slate-700 bg-slate-950/85 text-[10px] font-black uppercase tracking-[0.3em] text-slate-200">
                                     {selectedGalleryPhoto.type === 'video' ? 'VIDEO' : (selectedGalleryPhoto.isGif ? 'GIF' : 'IMG')}
@@ -1803,6 +1983,11 @@ const saveProfile = (e) => {
                                                 showNextGalleryPhoto();
                                             }
                                         }}
+                                        onError={() => {
+                                            if (filteredGalleryPhotos.length > 1) {
+                                                showNextGalleryPhoto();
+                                            }
+                                        }}
                                         className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
                                     />
                                 );
@@ -1810,6 +1995,11 @@ const saveProfile = (e) => {
                                 <img
                                     src={selectedGalleryPhoto.url}
                                     alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
+                                    onError={() => {
+                                        if (filteredGalleryPhotos.length > 1) {
+                                            showNextGalleryPhoto();
+                                        }
+                                    }}
                                     className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
                                     onError={applyCryingEmojiFallback}
                                 />
@@ -1823,7 +2013,7 @@ const saveProfile = (e) => {
                                         className="absolute left-4 bottom-4 sm:left-6 sm:bottom-6 w-10 h-10 rounded-full border border-slate-700 bg-slate-900/90 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all shadow-lg shadow-black/40"
                                         aria-label="Foto anterior"
                                     >
-                                        <LucideIcon name="chevron-left" size={20} />
+                                        <span className="text-[20px] leading-none font-black">←</span>
                                     </button>
                                     <button
                                         type="button"
@@ -1831,7 +2021,7 @@ const saveProfile = (e) => {
                                         className="absolute right-4 bottom-4 sm:right-6 sm:bottom-6 w-10 h-10 rounded-full border border-slate-700 bg-slate-900/90 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all shadow-lg shadow-black/40"
                                         aria-label="Foto siguiente"
                                     >
-                                        <LucideIcon name="chevron-right" size={20} />
+                                        <span className="text-[20px] leading-none font-black">→</span>
                                     </button>
                                 </>
                             )}
