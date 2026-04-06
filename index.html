@@ -1453,6 +1453,7 @@
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
             const [isGalleryPlaying, setIsGalleryPlaying] = useState(false);
             const [isGalleryRandom, setIsGalleryRandom] = useState(false);
+            const [isSidebarOpen, setIsSidebarOpen] = useState(true);
             const galleryPlaybackTimeoutRef = useRef(null);
 
             const [filters, setFilters] = useState({
@@ -2221,8 +2222,17 @@ const saveProfile = (e) => {
             });
             return (
                 <div className="flex h-screen overflow-hidden bg-[#020617] stone-wall-surface relative">
+                    {isSidebarOpen && (
                     <aside className="w-72 theme-surface-card stone-wall-surface border-r theme-border-secondary flex flex-col p-8 z-20 shadow-xl overflow-y-auto relative">
                         <div className="corner-ember-glow corner-ember-glow--left corner-ember-glow--top" aria-hidden="true"></div>
+                        <button
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="absolute top-4 right-4 btn-metal btn-metal--silver rounded-full p-2 text-slate-900"
+                            aria-label="Replegar menú lateral"
+                            title="Replegar menú lateral"
+                        >
+                            <LucideIcon name="panel-left-close" size={16} />
+                        </button>
                         <div className="mb-12 text-center flex-shrink-0">
                             <h1 className="text-5xl font-black text-[var(--metal-gold)] italic tracking-tighter leading-none">G2</h1>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-2">Elite Database</p>
@@ -2357,22 +2367,33 @@ const saveProfile = (e) => {
                             <LucideIcon name="plus" size={16} /> Nuevo Perfil
                         </button>
                     </aside>
+                    )}
 
                     <main className="flex-1 flex flex-col overflow-hidden bg-[#020617] stone-wall-surface relative">
                         <header className="h-24 panel-frosted stone-wall-surface border-b theme-border-secondary flex items-center px-12 justify-between z-10 flex-shrink-0 relative">
                             <div className="corner-ember-glow corner-ember-glow--left corner-ember-glow--top" aria-hidden="true"></div>
                             <div className="corner-ember-glow corner-ember-glow--right corner-ember-glow--top" aria-hidden="true"></div>
-                            <div className="relative w-full max-w-xl">
-                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[var(--metal-gold)]/50">
-                                    <LucideIcon name="search" size={20} />
-                                </span>
-                                <input
-                                    type="text"
-                                    placeholder="Buscar por nombre..."
-                                    className="w-full theme-surface-soft py-4 pl-16 pr-8 rounded-full text-sm text-white outline-none focus:ring-2 focus:ring-[var(--glow-gold)] border theme-border-secondary"
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                />
+                            <div className="flex items-center gap-4 w-full max-w-xl">
+                                <button
+                                    onClick={() => setIsSidebarOpen(prev => !prev)}
+                                    className="btn-metal btn-metal--silver rounded-full p-3 text-slate-900 flex-shrink-0"
+                                    aria-label={isSidebarOpen ? 'Replegar menú lateral' : 'Desplegar menú lateral'}
+                                    title={isSidebarOpen ? 'Replegar menú lateral' : 'Desplegar menú lateral'}
+                                >
+                                    <LucideIcon name={isSidebarOpen ? 'panel-left-close' : 'panel-left-open'} size={18} />
+                                </button>
+                                <div className="relative w-full">
+                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-[var(--metal-gold)]/50">
+                                        <LucideIcon name="search" size={20} />
+                                    </span>
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar por nombre..."
+                                        className="w-full theme-surface-soft py-4 pl-16 pr-8 rounded-full text-sm text-white outline-none focus:ring-2 focus:ring-[var(--glow-gold)] border theme-border-secondary"
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </header>
 
