@@ -456,6 +456,11 @@
             'Cuerpo', 'Cola', 'Pechos', 'Cintura', 'Piernas', 'Estatura',
             'Sensualidad', 'Carisma', 'Elegancia', 'Dulzura', 'Talento'
         ];
+        const ARENAS = [...CARACTERISTICAS];
+        const createZeroScores = () => CARACTERISTICAS.reduce((acc, item) => {
+            acc[item] = 0;
+            return acc;
+        }, {});
         const INITIAL_CATEGORIES = [];
         const PROFESIONES_CONFIG = {
             'Cantante': { glyph: 'crown', color: 'rgba(34, 211, 238, 0.8)', tailwind: 'cyan-400' },
@@ -1163,6 +1168,8 @@
                 const getGlyph = (prof) => getProfessionGlyph(prof);
             const [categorias, setCategorias] = useState(INITIAL_CATEGORIES);
             const [activeTab, setActiveTab] = useState('EXPLORAR');
+            const [selectedArena, setSelectedArena] = useState(null);
+            const [arenaBattleState, setArenaBattleState] = useState({});
             const [searchQuery, setSearchQuery] = useState('');
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [isCatModalOpen, setIsCatModalOpen] = useState(false);
@@ -1206,7 +1213,7 @@ const getInitialCatFormData = () => ({
         const [formData, setFormData] = useState({
                 nombre: '', nacionalidad: '', ciudad: '', profesion: '', fechaNacimiento: '', estaturaCm: '', fotos: [],
                 galeria: { fotos: [], gifs: [], videos: [] },
-                puntuaciones: { Ojos: 0, Rostro: 0, Busto: 0, Cola: 0, Cintura: 0, Cabello: 0, Estatura: 0, Sensualidad: 0, Dulzura: 0, Elegancia: 0 }
+                puntuaciones: createZeroScores()
             });
             const addGalleryImage = async ({ profileId, url, tag = 'fotos', label = '', type = 'image' }) => {
                 const normalizedUrl = (url || '').trim();
@@ -1576,8 +1583,8 @@ const saveProfile = (e) => {
                         .then(() => {
                             setIsModalOpen(false);
                             setFormData({
-                                nombre: '', alias: '', edad: '', ubicacion: '',
-                                rating: 5, categoria: 'Nuevas', fotos: [], notas: ''
+                                nombre: '', nacionalidad: '', ciudad: '', profesion: '', fechaNacimiento: '', estaturaCm: '', fotos: [],
+                                galeria: { fotos: [], gifs: [], videos: [] }, puntuaciones: createZeroScores()
                             });
                         })
                         .catch(err => console.error("No pudo entrar el perfil:", err));
@@ -1632,6 +1639,122 @@ const saveProfile = (e) => {
                     alert("No se pudo borrar el perfil. Probá de nuevo.");
                 }
             };
+            const getArenaStats = (arenaName, profileId) => {
+                const stats = arenaBattleState[arenaName]?.stats?.[profileId] || { wins: 0, battles: 0 };
+                const score = stats.battles ? Math.round((stats.wins / stats.battles) * 100) : 0;
+                return { ...stats, score };
+            };
+
+            const initArenaBattle = (arenaName) => {
+                const orderedProfiles = [...perfiles]
+                    .filter(p => p?.firebaseId && (p?.nombre || '').trim())
+                    .sort((a, b) => (a.nombre || '').localeCompare((b.nombre || ''), 'es', { sensitivity: 'base' }));
+
+                if (orderedProfiles.length < 2) return;
+
+                setArenaBattleState(prev => ({
+                    ...prev,
+                    [arenaName]: {
+                        orderedIds: orderedProfiles.map(p => p.firebaseId),
+                        stats: {},
+                        matchups: {},
+                        championId: orderedProfiles[0].firebaseId,
+                        challengerId: orderedProfiles[1].firebaseId,
+                        isFinished: false
+                    }
+                }));
+            };
+
+            const updateProfileArenaScore = async (profileId, arenaName, value) => {
+                if (!profileId) return;
+                try {
+                    await db.ref(`perfiles/${profileId}/puntuaciones/${arenaName}`).set(value);
+                } catch (error) {
+                    console.error('No se pudo actualizar score del arena:', error);
+                }
+            };
+
+            const registerBattleWinner = (arenaName, winnerId) => {
+                const state = arenaBattleState[arenaName];
+                if (!state || state.isFinished) return;
+
+                const { orderedIds = [], championId, challengerId, matchups = {}, stats = {} } = state;
+                const loserId = winnerId === championId ? challengerId : championId;
+                if (!winnerId || !loserId) return;
+
+                const pairKey = [winnerId, loserId].sort().join('__');
+                const updatedMatchups = { ...matchups, [pairKey]: true };
+
+                const prevWinner = stats[winnerId] || { wins: 0, battles: 0 };
+                const prevLoser = stats[loserId] || { wins: 0, battles: 0 };
+                const updatedStats = {
+                    ...stats,
+                    [winnerId]: { wins: prevWinner.wins + 1, battles: prevWinner.battles + 1 },
+                    [loserId]: { wins: prevLoser.wins, battles: prevLoser.battles + 1 }
+                };
+
+                const winnerScore = Math.round((updatedStats[winnerId].wins / updatedStats[winnerId].battles) * 100);
+                const loserScore = updatedStats[loserId].battles
+                    ? Math.round((updatedStats[loserId].wins / updatedStats[loserId].battles) * 100)
+                    : 0;
+
+                setPerfiles(prev => prev.map(profile => {
+                    if (profile.firebaseId === winnerId) {
+                        return {
+                            ...profile,
+                            puntuaciones: { ...(profile.puntuaciones || {}), [arenaName]: winnerScore }
+                        };
+                    }
+                    if (profile.firebaseId === loserId) {
+                        return {
+                            ...profile,
+                            puntuaciones: { ...(profile.puntuaciones || {}), [arenaName]: loserScore }
+                        };
+                    }
+                    return profile;
+                }));
+
+                updateProfileArenaScore(winnerId, arenaName, winnerScore);
+                updateProfileArenaScore(loserId, arenaName, loserScore);
+
+                const nextChampionId = winnerId;
+                const candidateId = orderedIds.find(id => id !== nextChampionId && !updatedMatchups[[id, nextChampionId].sort().join('__')]);
+
+                setArenaBattleState(prev => ({
+                    ...prev,
+                    [arenaName]: {
+                        ...state,
+                        stats: updatedStats,
+                        matchups: updatedMatchups,
+                        championId: nextChampionId,
+                        challengerId: candidateId || null,
+                        isFinished: !candidateId
+                    }
+                }));
+            };
+
+            const resetAllScores = async () => {
+                const confirmed = window.confirm('Esto va a poner TODAS las calificaciones en 0. ¿Continuar?');
+                if (!confirmed) return;
+
+                try {
+                    await Promise.all((perfiles || []).map(profile => {
+                        if (!profile?.firebaseId) return Promise.resolve();
+                        return db.ref(`perfiles/${profile.firebaseId}/puntuaciones`).set(createZeroScores());
+                    }));
+
+                    setPerfiles(prev => prev.map(profile => ({
+                        ...profile,
+                        puntuaciones: createZeroScores()
+                    })));
+                    setArenaBattleState({});
+                    alert('Calificaciones reiniciadas en 0 para todos los items.');
+                } catch (error) {
+                    console.error('No se pudieron resetear las calificaciones:', error);
+                    alert('No se pudo completar el reseteo.');
+                }
+            };
+
             const filteredProfiles = useMemo(() => {
                 let base = perfiles.filter(p => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -1675,7 +1798,7 @@ const saveProfile = (e) => {
                     return calcularPromedio(b) - calcularPromedio(a);
                 }
                 // Si elegimos un atributo específico (ej: 'rostro')
-                return (b.scores?.[sortBy] || 0) - (a.scores?.[sortBy] || 0);
+                return (b.puntuaciones?.[sortBy] || 0) - (a.puntuaciones?.[sortBy] || 0);
             });
             return (
                 <div className="flex h-screen overflow-hidden bg-[#020617]">
@@ -1688,12 +1811,13 @@ const saveProfile = (e) => {
                             {[
                                 { id: 'EXPLORAR', icon: 'layout-grid', label: 'Explorar' },
                                 { id: 'RANKING', icon: 'trending-up', label: 'Ranking' },
+                                { id: 'BATALLAS', icon: 'swords', label: 'Batallas' },
                                 { id: 'CATEGORIAS', icon: 'folder-heart', label: 'Categorías' },
                                 { id: 'GALERIA', icon: 'images', label: 'Galería' }
                             ].map(item => (
                                 <button
                                     key={item.id}
-                                    onClick={() => { setActiveTab(item.id); setSelectedCategory(null); }}
+                                    onClick={() => { setActiveTab(item.id); setSelectedCategory(null); if (item.id !== 'BATALLAS') setSelectedArena(null); }}
                                     className={`w-full flex items-center gap-4 px-6 py-4 rounded-[2rem] font-bold text-sm transition-all ${activeTab === item.id ? 'bg-[var(--metal-bronze)] text-white shadow-lg shadow-cyan-900/50' : 'text-slate-500 hover:bg-slate-800/50 hover:text-[var(--metal-gold)]'}`}
                                 >
                                     <LucideIcon name={item.icon} size={18} />
@@ -1808,7 +1932,7 @@ const saveProfile = (e) => {
                         <button
                             onClick={() => {
                                 setEditingId(null);
-                                setFormData({nombre:'', nacionalidad:'', ciudad:'', profesion:'', fechaNacimiento:'', estaturaCm:'', fotos:[], galeria:{ fotos: [], gifs: [], videos: [] }, puntuaciones:{Ojos:0, Rostro:0, Busto:0, Cola:0, Cintura:0, Cabello:0, Estatura:0, Sensualidad:0, Dulzura:0, Elegancia:0}});
+                                setFormData({nombre:'', nacionalidad:'', ciudad:'', profesion:'', fechaNacimiento:'', estaturaCm:'', fotos:[], galeria:{ fotos: [], gifs: [], videos: [] }, puntuaciones:createZeroScores()});
                                 setIsModalOpen(true);
                             }}
                             className="bg-[var(--metal-bronze)] text-white py-5 rounded-[2.2rem] font-black uppercase text-[11px] tracking-widest hover:bg-[var(--metal-gold)] transition-all flex items-center justify-center gap-2 flex-shrink-0 shadow-lg shadow-cyan-900/20"
@@ -2245,7 +2369,111 @@ const saveProfile = (e) => {
         </div>
     )}
 
-    {/* 3. VISTA RANKING (SOLO TABLA) */}
+    {/* 3. VISTA BATALLAS */}
+    {activeTab === 'BATALLAS' && !selectedCategory && !selectedArena && (
+        <div className="space-y-10 animate-in fade-in duration-500">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                <div>
+                    <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Arenas</h2>
+                    <p className="text-xs font-bold text-[var(--metal-gold)] uppercase tracking-widest mt-1">Elegí uno de los 15 ítems para iniciar las batallas</p>
+                </div>
+                <button
+                    onClick={resetAllScores}
+                    className="bg-red-600/20 text-red-300 border border-red-400/40 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.18em] hover:bg-red-600 hover:text-white transition-all"
+                >
+                    Resetear calificaciones
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {ARENAS.map((arenaName) => (
+                    <button
+                        key={arenaName}
+                        onClick={() => {
+                            setSelectedArena(arenaName);
+                            if (!arenaBattleState[arenaName]) initArenaBattle(arenaName);
+                        }}
+                        className="theme-surface-card border theme-border-secondary rounded-2xl p-6 text-left hover:border-[var(--metal-gold)] hover:shadow-[0_0_20px_rgba(201,163,90,0.2)] transition-all"
+                    >
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">Item</p>
+                        <h3 className="text-2xl font-black italic text-white mt-2">{arenaName}</h3>
+                    </button>
+                ))}
+            </div>
+        </div>
+    )}
+
+    {activeTab === 'BATALLAS' && selectedArena && (() => {
+        const arenaState = arenaBattleState[selectedArena];
+        const champion = perfiles.find(p => p.firebaseId === arenaState?.championId);
+        const challenger = perfiles.find(p => p.firebaseId === arenaState?.challengerId);
+        const championStats = champion ? getArenaStats(selectedArena, champion.firebaseId) : null;
+        const challengerStats = challenger ? getArenaStats(selectedArena, challenger.firebaseId) : null;
+
+        return (
+            <div className="space-y-8 animate-in fade-in duration-500">
+                <div className="flex items-center justify-between bg-slate-900/40 p-6 rounded-2xl border theme-border-secondary">
+                    <button
+                        onClick={() => setSelectedArena(null)}
+                        className="group flex items-center gap-3 text-[var(--metal-gold)] font-black text-xs uppercase tracking-widest"
+                    >
+                        <div className="bg-[var(--metal-bronze)]/10 p-2 rounded-xl group-hover:bg-[var(--metal-bronze)] group-hover:text-white transition-all">
+                            <i data-lucide="arrow-left" className="w-4 h-4"></i>
+                        </div>
+                        Volver a arenas
+                    </button>
+                    <h2 className="font-title text-4xl font-black italic text-white tracking-[0.08em] leading-none">{selectedArena}</h2>
+                </div>
+
+                {!arenaState && (
+                    <div className="theme-surface-card border theme-border-secondary rounded-2xl p-8 text-center">
+                        <p className="text-sm text-slate-300">Presioná para iniciar esta arena.</p>
+                        <button
+                            onClick={() => initArenaBattle(selectedArena)}
+                            className="mt-4 bg-[var(--metal-bronze)] text-white px-5 py-3 rounded-xl font-black uppercase text-xs tracking-[0.2em]"
+                        >
+                            Iniciar batallas
+                        </button>
+                    </div>
+                )}
+
+                {arenaState && arenaState.isFinished && (
+                    <div className="theme-surface-card border theme-border-secondary rounded-2xl p-8 text-center">
+                        <h3 className="text-2xl font-black italic text-white">Arena completada</h3>
+                        <p className="text-slate-400 mt-2">No quedan combates nuevos para este item.</p>
+                    </div>
+                )}
+
+                {arenaState && champion && challenger && !arenaState.isFinished && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                        <button
+                            onClick={() => registerBattleWinner(selectedArena, champion.firebaseId)}
+                            className="theme-surface-card border theme-border-secondary rounded-2xl p-8 hover:border-[var(--metal-gold)] transition-all text-left"
+                        >
+                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
+                            <h3 className="text-3xl font-black italic text-white mt-2">{champion.nombre}</h3>
+                            <p className="text-xs text-[var(--metal-gold)] mt-3">Victorias: {championStats?.wins || 0} · Batallas: {championStats?.battles || 0}</p>
+                            <p className="text-xs text-white/80 mt-1">Puntaje final: {championStats?.score || 0}</p>
+                        </button>
+
+                        <div className="flex items-center justify-center font-title text-4xl text-[var(--metal-gold)] font-black">VS</div>
+
+                        <button
+                            onClick={() => registerBattleWinner(selectedArena, challenger.firebaseId)}
+                            className="theme-surface-card border theme-border-secondary rounded-2xl p-8 hover:border-[var(--metal-gold)] transition-all text-left"
+                        >
+                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
+                            <h3 className="text-3xl font-black italic text-white mt-2">{challenger.nombre}</h3>
+                            <p className="text-xs text-[var(--metal-gold)] mt-3">Victorias: {challengerStats?.wins || 0} · Batallas: {challengerStats?.battles || 0}</p>
+                            <p className="text-xs text-white/80 mt-1">Puntaje final: {challengerStats?.score || 0}</p>
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    })()}
+
+    {/* 4. VISTA RANKING (SOLO TABLA) */}
     {activeTab === 'RANKING' && !selectedCategory && (
         <div className="theme-surface-card rounded-2xl border theme-border-secondary overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
             <table className="w-full text-left border-collapse">
@@ -2284,7 +2512,7 @@ const saveProfile = (e) => {
                 </thead>
                 <tbody>
                     {sortedProfiles.map((p, idx) => (
-<tr key={p.id} onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }}
+<tr key={p.firebaseId || p.nombre} onClick={() => { setFormData(p); setEditingId(p.firebaseId); setIsModalOpen(true); }}
     className={`cursor-pointer border-b theme-border-secondary last:border-0 transition-all duration-300 group ${idx === 0 ? 'podium-1' : idx === 1 ? 'podium-2' : idx === 2 ? 'podium-3' : 'hover:bg-white/5'}`}>
 
     <td className="px-8 py-5">
@@ -2437,7 +2665,7 @@ const saveProfile = (e) => {
 
                     {isModalOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm">
-                            <div className={`bg-[linear-gradient(180deg,#0b1222_0%,#050a16_100%)] w-full ${editingId || activeTab === 'CALIFICAR' ? 'max-w-5xl' : 'max-w-2xl'} rounded-3xl overflow-hidden shadow-[inset_0_1px_0_rgba(148,163,184,0.22),0_24px_60px_rgba(2,6,23,0.65)] border theme-border-secondary max-h-[90vh] flex flex-col relative animate-in zoom-in-95 duration-300`}>
+                            <div className="bg-[linear-gradient(180deg,#0b1222_0%,#050a16_100%)] w-full max-w-2xl rounded-3xl overflow-hidden shadow-[inset_0_1px_0_rgba(148,163,184,0.22),0_24px_60px_rgba(2,6,23,0.65)] border theme-border-secondary max-h-[90vh] flex flex-col relative animate-in zoom-in-95 duration-300">
                                <button
     onClick={() => setIsModalOpen(false)}
     className="p-2 hover:bg-slate-800 rounded-full transition-colors"
@@ -2446,7 +2674,7 @@ const saveProfile = (e) => {
 </button>
                                 <form onSubmit={saveProfile} className="flex-1 overflow-y-auto p-12 space-y-12">
 
-                                    <div className={`grid grid-cols-1 ${editingId || activeTab === 'CALIFICAR' ? 'lg:grid-cols-2' : ''} gap-16`}>
+                                    <div className="grid grid-cols-1 gap-16">
     <div className="space-y-8">
         {/* CABECERA Y VISTA PREVIA */}
         <div className="flex flex-col items-center gap-6">
@@ -2629,46 +2857,6 @@ const saveProfile = (e) => {
         </div>
     </div>
 
-    {(editingId || activeTab === 'CALIFICAR') && (
-        <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-            <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-slate-900 border theme-border-secondary rounded-2xl flex items-center justify-center text-[var(--metal-gold)] shadow-lg">
-                    <LucideIcon name="crown" />
-                </div>
-                <h3 className="text-xl font-black italic tracking-tighter text-white">Juicio del Oráculo G2</h3>
-            </div>
-
-            <div className="space-y-8">
-                {[
-                    { titulo: "Rostro", items: ['Rostro', 'Ojos', 'Boca', 'Cabello'] },
-                    { titulo: "Cuerpo", items: ['Cuerpo', 'Cola', 'Pechos', 'Cintura', 'Piernas', 'Estatura'] },
-                    { titulo: "Actitud", items: ['Sensualidad', 'Carisma', 'Elegancia', 'Dulzura', 'Talento'] }
-                ].map(grupo => (
-                    <div key={grupo.titulo} className="space-y-3">
-                        <h4 className="text-[10px] font-black text-[var(--metal-gold)] uppercase tracking-[0.2em] border-b border-cyan-500/20 pb-1">
-                            {grupo.titulo}
-                        </h4>
-                        <div className="grid grid-cols-2 gap-3">
-                            {grupo.items.map(cat => (
-                                <div key={cat} className="bg-slate-950/50 p-3 rounded-2xl border theme-border-secondary hover:border-[color:color-mix(in_srgb,var(--metal-gold)_30%,transparent)] transition-colors">
-                                    <div className="flex justify-between text-[9px] font-black text-slate-500 mb-1 uppercase">
-                                        <span>{cat}</span>
-                                        <span className="text-[var(--metal-gold)]">{formData.puntuaciones[cat] || 0}</span>
-                                    </div>
-                                    <input
-                                        type="range" min="0" max="100"
-                                        className="w-full h-1 bg-slate-800 rounded-full appearance-none cursor-pointer accent-cyan-500"
-                                        value={formData.puntuaciones[cat] || 0}
-                                        onChange={e => setFormData({...formData, puntuaciones: {...formData.puntuaciones, [cat]: parseInt(e.target.value)}})}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    )}
 </div>
                                     <div className="flex gap-4">
                                         {editingId && (
