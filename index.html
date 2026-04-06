@@ -2518,17 +2518,26 @@ const saveProfile = (e) => {
     {/* 3. VISTA BATALLAS */}
     {activeTab === 'BATALLAS' && !selectedCategory && !selectedArena && (
         <div className="space-y-10 animate-in fade-in duration-500">
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                    <button
+                        onClick={() => setActiveTab('EXPLORAR')}
+                        className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl border theme-border-secondary text-[11px] font-black uppercase tracking-[0.16em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] hover:bg-[var(--metal-bronze)]/10 transition-all"
+                    >
+                        <i data-lucide="chevron-left" className="w-4 h-4"></i>
+                        Volver a Explorar
+                    </button>
+                    <button
+                        onClick={resetAllScores}
+                        className="bg-red-600/20 text-red-300 border border-red-400/40 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.18em] hover:bg-red-600 hover:text-white transition-all"
+                    >
+                        Resetear calificaciones
+                    </button>
+                </div>
                 <div>
                     <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Arenas</h2>
                     <p className="text-xs font-bold text-[var(--metal-gold)] uppercase tracking-widest mt-1">Elegí uno de los 15 ítems para iniciar las batallas</p>
                 </div>
-                <button
-                    onClick={resetAllScores}
-                    className="bg-red-600/20 text-red-300 border border-red-400/40 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.18em] hover:bg-red-600 hover:text-white transition-all"
-                >
-                    Resetear calificaciones
-                </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -2558,17 +2567,31 @@ const saveProfile = (e) => {
 
         return (
             <div className="space-y-8 animate-in fade-in duration-500">
-                <div className="flex items-center justify-between bg-slate-900/40 p-6 rounded-2xl border theme-border-secondary">
-                    <button
-                        onClick={() => setSelectedArena(null)}
-                        className="group flex items-center gap-3 text-[var(--metal-gold)] font-black text-xs uppercase tracking-widest"
-                    >
-                        <div className="bg-[var(--metal-bronze)]/10 p-2 rounded-xl group-hover:bg-[var(--metal-bronze)] group-hover:text-white transition-all">
+                <div className="sticky top-4 z-20 bg-slate-900/95 backdrop-blur-sm p-4 sm:p-6 rounded-2xl border theme-border-secondary space-y-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button
+                            onClick={() => setSelectedArena(null)}
+                            className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl border theme-border-secondary text-[11px] font-black uppercase tracking-[0.16em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] hover:bg-[var(--metal-bronze)]/10 transition-all"
+                        >
                             <i data-lucide="arrow-left" className="w-4 h-4"></i>
-                        </div>
-                        Volver a arenas
-                    </button>
-                    <h2 className="font-title text-4xl font-black italic text-white tracking-[0.08em] leading-none">{selectedArena}</h2>
+                            Volver a arenas
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('EXPLORAR')}
+                            className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl border theme-border-secondary text-[11px] font-black uppercase tracking-[0.16em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] hover:bg-[var(--metal-bronze)]/10 transition-all"
+                        >
+                            <i data-lucide="layout-grid" className="w-4 h-4"></i>
+                            Ir a Explorar
+                        </button>
+                    </div>
+                    <div className="min-w-0">
+                        <h2 className="font-title text-2xl sm:text-3xl lg:text-4xl font-black italic text-white tracking-[0.08em] break-words leading-tight">
+                            {selectedArena}
+                        </h2>
+                        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mt-1">
+                            Arena activa
+                        </p>
+                    </div>
                 </div>
 
                 {!arenaState && (
