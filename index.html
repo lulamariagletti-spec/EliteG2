@@ -12,32 +12,50 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Inter', 'Lora', sans-serif;
             margin: 0;
             padding: 0;
             overflow: hidden;
             background-color: #020617;
+            background-image:
+                radial-gradient(circle at 15% 20%, rgba(120, 113, 108, 0.2), transparent 45%),
+                radial-gradient(circle at 80% 0%, rgba(113, 63, 18, 0.12), transparent 40%),
+                linear-gradient(155deg, #020617 0%, #111827 55%, #1f2937 100%);
             color: #f1f5f9;
+            text-rendering: optimizeLegibility;
+        }
+
+        h1, h2, h3, h4, h5, h6,
+        .font-title {
+            font-family: 'Cinzel', 'MedievalSharp', serif;
+            letter-spacing: 0.04em;
         }
 
         .text-bubble {
-            background: rgba(15, 23, 42, 0.4); /* Más transparente, como me gusta a mí */
-            backdrop-filter: blur(4px); /* Menos desenfoque para que se vea lo de atrás */
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0.5rem 1rem; /* Más petisito, para que no tape */
+            background:
+                linear-gradient(155deg, rgba(30, 41, 59, 0.72), rgba(15, 23, 42, 0.82)),
+                radial-gradient(circle at top, rgba(148, 163, 184, 0.1), transparent 65%);
+            backdrop-filter: blur(3px);
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            box-shadow: inset 0 1px 0 rgba(203, 213, 225, 0.12), 0 3px 18px rgba(2, 6, 23, 0.35);
+            padding: 0.5rem 1rem;
             border-radius: 1.2rem;
         }
 
         .glass-effect {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(16px);
+            background:
+                linear-gradient(165deg, rgba(17, 24, 39, 0.9), rgba(3, 7, 18, 0.95)),
+                radial-gradient(circle at top right, rgba(180, 83, 9, 0.08), transparent 45%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.15), 0 8px 24px rgba(0, 0, 0, 0.35);
         }
 
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-track { background: linear-gradient(180deg, #020617 0%, #0f172a 100%); }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
 
         .profile-card:hover img {
@@ -53,11 +71,12 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: #020617;
+            background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
         }
         #root:empty::after {
-            content: "Cargando G2 Elite...";
-            font-weight: 800;
+            content: "Abriendo el códice...";
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
             color: #22d3ee;
             letter-spacing: 0.2em;
             text-transform: uppercase;
@@ -74,27 +93,27 @@
         /* La lencería de gala para tu podio */
         .podium-1 {
             background: linear-gradient(90deg,
-                rgba(255, 215, 0, 0.25) 0%,
-                rgba(255, 215, 0, 0.1) 50%,
-                rgba(255, 215, 0, 0.2) 100%) !important;
+                rgba(255, 215, 0, 0.16) 0%,
+                rgba(120, 95, 24, 0.18) 50%,
+                rgba(255, 215, 0, 0.12) 100%) !important;
             border-left: 8px solid #ffd700 !important;
-            box-shadow: inset 0 0 40px rgba(255, 215, 0, 0.15);
+            box-shadow: inset 0 0 24px rgba(120, 95, 24, 0.25), inset 2px 0 0 rgba(255, 245, 181, 0.25);
         }
         .podium-2 {
             background: linear-gradient(90deg,
-                rgba(192, 192, 192, 0.2) 0%,
-                rgba(192, 192, 192, 0.08) 50%,
-                rgba(192, 192, 192, 0.15) 100%) !important;
+                rgba(192, 192, 192, 0.14) 0%,
+                rgba(107, 114, 128, 0.16) 50%,
+                rgba(192, 192, 192, 0.12) 100%) !important;
             border-left: 6px solid #c0c0c0 !important;
-            box-shadow: inset 0 0 30px rgba(192, 192, 192, 0.1);
+            box-shadow: inset 0 0 22px rgba(100, 116, 139, 0.22), inset 2px 0 0 rgba(226, 232, 240, 0.2);
         }
         .podium-3 {
             background: linear-gradient(90deg,
-                rgba(205, 127, 50, 0.18) 0%,
-                rgba(205, 127, 50, 0.06) 50%,
-                rgba(205, 127, 50, 0.12) 100%) !important;
+                rgba(205, 127, 50, 0.16) 0%,
+                rgba(120, 53, 15, 0.16) 50%,
+                rgba(205, 127, 50, 0.1) 100%) !important;
             border-left: 5px solid #cd7f32 !important;
-            box-shadow: inset 0 0 25px rgba(205, 127, 50, 0.08);
+            box-shadow: inset 0 0 22px rgba(120, 53, 15, 0.25), inset 2px 0 0 rgba(254, 215, 170, 0.2);
         }
         /* Quitamos el límite de ancho para que el brillo no se corte */
         tr.podium-1 td, tr.podium-2 td, tr.podium-3 td {
@@ -114,9 +133,18 @@
         }
 
         /* Colores específicos para los números del ranking */
-        .text-gold { color: #ffd700 !important; filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6)); }
-        .text-silver { color: #c0c0c0 !important; filter: drop-shadow(0 0 6px rgba(192, 192, 192, 0.5)); }
-        .text-bronze { color: #cd7f32 !important; filter: drop-shadow(0 0 6px rgba(205, 127, 50, 0.5)); }
+        .text-gold {
+            color: #ffd700 !important;
+            text-shadow: 0 1px 0 rgba(255, 248, 196, 0.35), 0 2px 8px rgba(120, 95, 24, 0.45);
+        }
+        .text-silver {
+            color: #c0c0c0 !important;
+            text-shadow: 0 1px 0 rgba(241, 245, 249, 0.3), 0 2px 7px rgba(100, 116, 139, 0.45);
+        }
+        .text-bronze {
+            color: #cd7f32 !important;
+            text-shadow: 0 1px 0 rgba(254, 215, 170, 0.35), 0 2px 7px rgba(120, 53, 15, 0.45);
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -197,6 +225,22 @@
         const clampIndex = (index, total) => {
             if (!total) return 0;
             return (index + total) % total;
+        };
+        const getNextPlayableIndex = (currentIndex, items, useRandom = false) => {
+            const total = Array.isArray(items) ? items.length : 0;
+            if (!total) return null;
+            if (total === 1) return 0;
+
+            if (useRandom) {
+                const candidateIndexes = items
+                    .map((item, idx) => ({ item, idx }))
+                    .filter(({ item, idx }) => idx !== currentIndex && item && item.url)
+                    .map(({ idx }) => idx);
+                if (!candidateIndexes.length) return clampIndex((currentIndex ?? 0) + 1, total);
+                return candidateIndexes[Math.floor(Math.random() * candidateIndexes.length)];
+            }
+
+            return clampIndex((currentIndex ?? 0) + 1, total);
         };
         const getGalleryLabelStyle = (label) => GALLERY_LABEL_STYLES[label] || GALLERY_LABEL_STYLES.DEFAULT;
         const VIDEO_FILE_REGEX = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i;
@@ -329,7 +373,7 @@
                         flex-direction: column;
                         align-items: center;
                     }
-                    .btn-neon-red {
+                    .btn-critical-plate {
                         position: fixed;
                         top: 20px;
                         right: 30px;
@@ -341,18 +385,18 @@
                         letter-spacing: 2px;
                         background: #020617;
                         border: 2px solid #ff3131;
-                        border-radius: 8px;
+                        border-radius: 12px;
                         cursor: pointer;
-                        box-shadow: 0 0 15px rgba(255, 49, 49, 0.4), inset 0 0 5px rgba(255, 49, 49, 0.4), 4px 4px 0px #660000;
+                        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 0 0 2px rgba(255, 49, 49, 0.22), 4px 4px 0px #660000;
                         transition: all 0.3s ease;
                         text-shadow: 0 0 8px #ff3131;
                         z-index: 999;
                     }
-                    .btn-neon-red:hover {
+                    .btn-critical-plate:hover {
                         background: #ff3131;
                         color: white;
-                        box-shadow: 0 0 30px #ff3131;
-                        transform: scale(1.05);
+                        box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 0 20px rgba(255,49,49,0.5);
+                        transform: translateY(-1px);
                     }
                     .modal-url {
                         display: none;
@@ -362,9 +406,9 @@
                         transform: translate(-50%, -50%);
                         background: #0f172a;
                         padding: 30px;
-                        border-radius: 20px;
-                        border: 1px solid #1e293b;
-                        box-shadow: 0 0 50px rgba(0,0,0,0.5);
+                        border-radius: 18px;
+                        border: 1px solid rgba(100, 116, 139, 0.45);
+                        box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.18), 0 24px 48px rgba(0,0,0,0.55);
                         z-index: 1000;
                         width: 350px;
                     }
@@ -397,13 +441,14 @@
                         right: 30px;
                         z-index: 2100;
                         background: rgba(15, 23, 42, 0.9);
-                        color: #f8fafc;
-                        border: 1px solid rgba(148, 163, 184, 0.4);
+                        color: #f87171;
+                        border: 1px solid rgba(248, 113, 113, 0.78);
                         border-radius: 999px;
                         width: 48px;
                         height: 48px;
                         cursor: pointer;
-                        font-size: 28px;
+                        font-size: 30px;
+                        font-weight: 900;
                         line-height: 1;
                     }
                     .viewer-stage {
@@ -449,7 +494,8 @@
                         align-items: center;
                         justify-content: center;
                         cursor: pointer;
-                        font-size: 24px;
+                        font-size: 28px;
+                        font-weight: 900;
                         line-height: 1;
                         transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
                     }
@@ -488,6 +534,31 @@
                         text-transform: uppercase;
                         pointer-events: none;
                     }
+                    .viewer-controls {
+                        position: fixed;
+                        top: 24px;
+                        left: 24px;
+                        z-index: 2100;
+                        display: flex;
+                        gap: 10px;
+                    }
+                    .viewer-control-btn {
+                        border: 1px solid rgba(56, 189, 248, 0.5);
+                        background: rgba(8, 47, 73, 0.52);
+                        color: #bae6fd;
+                        border-radius: 999px;
+                        padding: 8px 14px;
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.2em;
+                        font-weight: 900;
+                        cursor: pointer;
+                    }
+                    .viewer-control-btn.random-active {
+                        border-color: rgba(232, 121, 249, 0.85);
+                        color: #f5d0fe;
+                        background: rgba(192, 38, 211, 0.35);
+                    }
                     @media (max-width: 640px) {
                         .viewer-stage {
                             padding: 20px 16px 106px;
@@ -517,12 +588,22 @@
                             max-width: calc(100vw - 120px);
                             text-align: center;
                         }
+                        .viewer-controls {
+                            top: 14px;
+                            left: 14px;
+                            gap: 8px;
+                        }
+                        .viewer-control-btn {
+                            padding: 7px 10px;
+                            font-size: 9px;
+                            letter-spacing: 0.16em;
+                        }
                     }
                 </style>
             </head>
             <body>
                 <h1>Galería de ${profileName}</h1>
-                <button class="btn-neon-red" onclick="document.getElementById('miModal').style.display='block'">
+                <button class="btn-critical-plate" onclick="document.getElementById('miModal').style.display='block'">
                     AGREGAR ARCHIVO
                 </button>
 
@@ -621,10 +702,14 @@
                 </div>
 
                 <div id="fullscreenViewer" class="fullscreen-viewer">
-                    <button class="viewer-close" onclick="closeFullscreenViewer()">×</button>
+                    <button class="viewer-close" onclick="closeFullscreenViewer()" aria-label="Cerrar visor">✕</button>
+                    <div class="viewer-controls">
+                        <button id="viewerPlayToggle" class="viewer-control-btn" type="button" onclick="toggleViewerAutoplay(event)">Play</button>
+                        <button id="viewerRandomToggle" class="viewer-control-btn" type="button" onclick="toggleViewerRandom(event)">Aleatorio OFF</button>
+                    </div>
                     ${fotosGaleria.length > 1 ? `
-                        <button class="viewer-nav prev" id="viewerPrev" onclick="showPreviousViewerPhoto(event)" aria-label="Foto anterior">‹</button>
-                        <button class="viewer-nav next" id="viewerNext" onclick="showNextViewerPhoto(event)" aria-label="Foto siguiente">›</button>
+                        <button class="viewer-nav prev" id="viewerPrev" onclick="showPreviousViewerPhoto(event)" aria-label="Foto anterior">←</button>
+                        <button class="viewer-nav next" id="viewerNext" onclick="showNextViewerPhoto(event)" aria-label="Foto siguiente">→</button>
                     ` : ''}
                     <div class="viewer-hint">Usá ← → para cambiar y Escape para salir</div>
                     <div class="viewer-stage" id="viewerStage">
@@ -650,7 +735,53 @@
                     const viewerSlides = Array.from(document.querySelectorAll('.viewer-slide'));
                     const viewerPrevButton = document.getElementById('viewerPrev');
                     const viewerNextButton = document.getElementById('viewerNext');
+                    const viewerPlayToggleButton = document.getElementById('viewerPlayToggle');
+                    const viewerRandomToggleButton = document.getElementById('viewerRandomToggle');
                     let currentViewerIndex = 0;
+                    let viewerAutoplay = false;
+                    let viewerRandom = false;
+                    let viewerAutoplayTimeout = null;
+
+                    function getNextViewerIndex() {
+                        if (viewerSlides.length <= 1) return 0;
+                        if (!viewerRandom) return (currentViewerIndex + 1) % viewerSlides.length;
+                        const candidates = viewerSlides.map((_, idx) => idx).filter((idx) => idx !== currentViewerIndex);
+                        return candidates[Math.floor(Math.random() * candidates.length)];
+                    }
+
+                    function clearViewerAutoplayTimer() {
+                        if (viewerAutoplayTimeout) {
+                            clearTimeout(viewerAutoplayTimeout);
+                            viewerAutoplayTimeout = null;
+                        }
+                    }
+
+                    function setViewerAutoplayState(nextState) {
+                        viewerAutoplay = !!nextState;
+                        if (viewerPlayToggleButton) {
+                            viewerPlayToggleButton.textContent = viewerAutoplay ? 'Pause' : 'Play';
+                        }
+                        scheduleViewerAutoplay();
+                    }
+
+                    function setViewerRandomState(nextState) {
+                        viewerRandom = !!nextState;
+                        if (viewerRandomToggleButton) {
+                            viewerRandomToggleButton.textContent = 'Aleatorio ' + (viewerRandom ? 'ON' : 'OFF');
+                            viewerRandomToggleButton.classList.toggle('random-active', viewerRandom);
+                        }
+                    }
+
+                    function scheduleViewerAutoplay() {
+                        clearViewerAutoplayTimer();
+                        if (!viewerAutoplay || !viewer.classList.contains('open') || viewerSlides.length <= 1) return;
+                        const currentSlide = viewerSlides[currentViewerIndex];
+                        const currentVideo = currentSlide ? currentSlide.querySelector('video') : null;
+                        if (currentVideo) return;
+                        viewerAutoplayTimeout = setTimeout(function() {
+                            renderViewerSlide(getNextViewerIndex());
+                        }, 7000);
+                    }
 
                     function syncViewerButtons() {
                         const disableNavigation = viewerSlides.length <= 1;
@@ -664,7 +795,36 @@
                         viewerSlides.forEach(function(slide, slideIndex) {
                             slide.classList.toggle('active', slideIndex === currentViewerIndex);
                         });
+                        const activeSlide = viewerSlides[currentViewerIndex];
+                        const activeImage = activeSlide ? activeSlide.querySelector('img') : null;
+                        const activeVideo = activeSlide ? activeSlide.querySelector('video') : null;
+                        if (activeVideo) {
+                            activeVideo.currentTime = 0;
+                            if (viewerAutoplay) {
+                                activeVideo.play().catch(function() {});
+                            }
+                        }
+                        if (activeImage) {
+                            activeImage.onerror = function() {
+                                if (viewerSlides.length > 1) {
+                                    renderViewerSlide(getNextViewerIndex());
+                                }
+                            };
+                        }
+                        if (activeVideo) {
+                            activeVideo.onerror = function() {
+                                if (viewerSlides.length > 1) {
+                                    renderViewerSlide(getNextViewerIndex());
+                                }
+                            };
+                            activeVideo.onended = function() {
+                                if (viewerAutoplay && viewerSlides.length > 1) {
+                                    renderViewerSlide(getNextViewerIndex());
+                                }
+                            };
+                        }
                         syncViewerButtons();
+                        scheduleViewerAutoplay();
                     }
 
                     function openFullscreenViewer(index) {
@@ -678,6 +838,7 @@
                     function closeFullscreenViewer() {
                         viewer.classList.remove('open');
                         document.body.style.overflow = '';
+                        clearViewerAutoplayTimer();
                     }
                     function showNextViewerPhoto(event) {
                         if (event) event.stopPropagation();
@@ -688,6 +849,14 @@
                         if (event) event.stopPropagation();
                         if (viewerSlides.length <= 1) return;
                         renderViewerSlide((currentViewerIndex - 1 + viewerSlides.length) % viewerSlides.length);
+                    }
+                    function toggleViewerAutoplay(event) {
+                        if (event) event.stopPropagation();
+                        setViewerAutoplayState(!viewerAutoplay);
+                    }
+                    function toggleViewerRandom(event) {
+                        if (event) event.stopPropagation();
+                        setViewerRandomState(!viewerRandom);
                     }
                     if (galleryGrid) {
                         galleryGrid.addEventListener('click', function(event) {
@@ -734,6 +903,8 @@
                             showPreviousViewerPhoto();
                         }
                     });
+                    setViewerAutoplayState(false);
+                    setViewerRandomState(false);
                     renderViewerSlide(0);
                 <\/script>
             </body>
@@ -788,6 +959,7 @@
             const [galleryFilterLabel, setGalleryFilterLabel] = useState('INICIAL');
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
             const [isGalleryPlaying, setIsGalleryPlaying] = useState(false);
+            const [isGalleryRandom, setIsGalleryRandom] = useState(false);
             const galleryPlaybackTimeoutRef = useRef(null);
 
             const [filters, setFilters] = useState({
@@ -1130,6 +1302,7 @@ const getInitialCatFormData = () => ({
             useEffect(() => {
                 if (selectedGalleryIndex === null) {
                     setIsGalleryPlaying(false);
+                    setIsGalleryRandom(false);
                 }
             }, [selectedGalleryIndex]);
 
@@ -1145,9 +1318,9 @@ const getInitialCatFormData = () => ({
                     return;
                 }
 
-                const timeoutDuration = selectedGalleryPhoto.isGif ? 25000 : 5000;
+                const timeoutDuration = 7000;
                 galleryPlaybackTimeoutRef.current = setTimeout(() => {
-                    setSelectedGalleryIndex((current) => clampIndex((current ?? 0) + 1, filteredGalleryPhotos.length));
+                    setSelectedGalleryIndex((current) => getNextPlayableIndex(current, filteredGalleryPhotos, isGalleryRandom));
                 }, timeoutDuration);
 
                 return () => {
@@ -1156,7 +1329,7 @@ const getInitialCatFormData = () => ({
                         galleryPlaybackTimeoutRef.current = null;
                     }
                 };
-            }, [isGalleryPlaying, selectedGalleryPhoto, filteredGalleryPhotos.length]);
+            }, [isGalleryPlaying, selectedGalleryPhoto, filteredGalleryPhotos, isGalleryRandom]);
 
             const openGalleryViewer = (index, autoplay = false) => {
                 setSelectedGalleryIndex(index);
@@ -1166,7 +1339,7 @@ const getInitialCatFormData = () => ({
                 setIsGalleryPlaying(false);
                 setSelectedGalleryIndex(null);
             };
-            const showNextGalleryPhoto = () => setSelectedGalleryIndex((current) => clampIndex((current ?? 0) + 1, filteredGalleryPhotos.length));
+            const showNextGalleryPhoto = () => setSelectedGalleryIndex((current) => getNextPlayableIndex(current, filteredGalleryPhotos, isGalleryRandom));
             const showPreviousGalleryPhoto = () => setSelectedGalleryIndex((current) => clampIndex((current ?? 0) - 1, filteredGalleryPhotos.length));
 
 const saveProfile = (e) => {
@@ -1314,7 +1487,7 @@ const saveProfile = (e) => {
                         </nav>
 
                         {activeTab === 'GALERIA' && (
-                            <div className="space-y-5 mb-8 p-6 bg-slate-900/50 rounded-[2.5rem] border border-slate-800 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="space-y-5 mb-8 p-6 bg-slate-900/50 rounded-2xl border border-slate-800 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                 <div>
                                     <h4 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
                                         <LucideIcon name="images" size={12} /> Filtros de Galería
@@ -1367,7 +1540,7 @@ const saveProfile = (e) => {
                         )}
 
                         {activeTab === 'RANKING' && (
-                            <div className="space-y-6 mb-8 p-6 bg-slate-900/50 rounded-[2.5rem] border border-slate-800 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="space-y-6 mb-8 p-6 bg-slate-900/50 rounded-2xl border border-slate-800 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                 <h4 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
                                     <LucideIcon name="filter" size={12} /> Filtros de Ranking
                                 </h4>
@@ -1429,7 +1602,7 @@ const saveProfile = (e) => {
                     </aside>
 
                     <main className="flex-1 flex flex-col overflow-hidden bg-[#020617]">
-                        <header className="h-24 glass-effect border-b border-slate-800 flex items-center px-12 justify-between z-10 flex-shrink-0">
+                        <header className="h-24 panel-frosted border-b border-slate-800 flex items-center px-12 justify-between z-10 flex-shrink-0">
                             <div className="relative w-full max-w-xl">
                                 <span className="absolute left-6 top-1/2 -translate-y-1/2 text-cyan-500/50">
                                     <LucideIcon name="search" size={20} />
@@ -1475,7 +1648,7 @@ const saveProfile = (e) => {
                                         <div
                                             key={prof}
                                             onClick={() => setSelectedCategory(prof)}
-                                            className="bg-[#0a0f1e] rounded-[3.5rem] border border-slate-800 p-8 text-center cursor-pointer hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:border-cyan-500/50 transition-all group relative overflow-hidden active:scale-95"
+                                            className="bg-[#0a0f1e] rounded-2xl border border-slate-800 p-8 text-center cursor-pointer hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:border-cyan-500/50 transition-all group relative overflow-hidden active:scale-95"
                                         >
                                             <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                                 <span className="text-9xl">{getEmoji(prof)}</span>
@@ -1497,7 +1670,7 @@ const saveProfile = (e) => {
     {/* 2. VISTA DE PERFILES (CUANDO ENTRAS A UNA CARPETA) */}
     {selectedCategory && (
         <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between bg-slate-900/40 p-6 rounded-[2.5rem] border border-slate-800/50">
+            <div className="flex items-center justify-between bg-slate-900/40 p-6 rounded-2xl border border-slate-800/50">
                 <button
                     onClick={() => setSelectedCategory(null)}
                     className="group flex items-center gap-3 text-cyan-500 font-black text-xs uppercase tracking-widest"
@@ -1539,7 +1712,7 @@ const saveProfile = (e) => {
                                 if (typeof setEditingId === 'function') setEditingId(p.firebaseId);
                                 if (typeof setIsModalOpen === 'function') setIsModalOpen(true);
                             }}
-                            className="profile-card group relative bg-slate-900 rounded-[3.5rem] overflow-hidden border-4 cursor-pointer transition-all duration-500 hover:scale-[1.02]"
+                            className="profile-card group relative bg-slate-900 rounded-2xl overflow-hidden border-4 cursor-pointer transition-all duration-500 hover:scale-[1.02]"
                             style={{ borderColor: neonClass.color, boxShadow: `0 0 20px ${neonClass.sombra}` }}
                         >
                             <div className="aspect-[4/5] bg-slate-950 relative overflow-hidden">
@@ -1657,12 +1830,12 @@ const saveProfile = (e) => {
                     Play galería general
                 </button>
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                    Fotos: 5s · GIF: 5 ciclos aprox · Videos: hasta terminar
+                    Fotos y GIF: 7s · Videos: hasta terminar
                 </p>
             </div>
 
             {filteredGalleryPhotos.length === 0 ? (
-                <div className="py-24 border border-dashed border-slate-800 rounded-[3rem] text-center bg-slate-950/30">
+                <div className="py-24 border border-dashed border-slate-800 rounded-2xl text-center bg-slate-950/30">
                     <div className="w-20 h-20 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto mb-6">
                         <LucideIcon name="image-off" size={28} className="text-slate-600" />
                     </div>
@@ -1737,10 +1910,10 @@ const saveProfile = (e) => {
                     <button
                         type="button"
                         onClick={closeGalleryViewer}
-                        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-12 h-12 rounded-full border border-slate-700 bg-slate-900/80 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all"
+                        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-12 h-12 rounded-full border border-red-500/80 bg-slate-900/90 text-red-400 flex items-center justify-center hover:border-red-400 hover:text-red-300 transition-all"
                         aria-label="Cerrar visor"
                     >
-                        <LucideIcon name="x" size={22} />
+                        <span className="text-[26px] leading-none font-black">✕</span>
                     </button>
 
                     <div className="w-full max-w-6xl max-h-full flex flex-col gap-4" onClick={(event) => event.stopPropagation()}>
@@ -1751,13 +1924,22 @@ const saveProfile = (e) => {
                             </div>
                             <div className="flex items-center gap-3">
                                 {filteredGalleryPhotos.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsGalleryPlaying((prev) => !prev)}
-                                        className="px-4 py-2 rounded-full border border-cyan-500/60 bg-cyan-500/20 text-cyan-200 text-[10px] font-black uppercase tracking-[0.28em] hover:bg-cyan-500/35 hover:text-white transition-all"
-                                    >
-                                        {isGalleryPlaying ? 'Pause' : 'Play'}
-                                    </button>
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsGalleryPlaying((prev) => !prev)}
+                                            className="px-4 py-2 rounded-full border border-cyan-500/60 bg-cyan-500/20 text-cyan-200 text-[10px] font-black uppercase tracking-[0.28em] hover:bg-cyan-500/35 hover:text-white transition-all"
+                                        >
+                                            {isGalleryPlaying ? 'Pause' : 'Play'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsGalleryRandom((prev) => !prev)}
+                                            className={`px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-[0.28em] transition-all ${isGalleryRandom ? 'border-fuchsia-400/80 bg-fuchsia-500/30 text-fuchsia-100 hover:bg-fuchsia-500/45' : 'border-slate-700 bg-slate-900/80 text-slate-300 hover:border-fuchsia-400/70 hover:text-fuchsia-200'}`}
+                                        >
+                                            Aleatorio {isGalleryRandom ? 'ON' : 'OFF'}
+                                        </button>
+                                    </>
                                 )}
                                 <div className="px-3 py-2 rounded-full border border-slate-700 bg-slate-950/85 text-[10px] font-black uppercase tracking-[0.3em] text-slate-200">
                                     {selectedGalleryPhoto.type === 'video' ? 'VIDEO' : (selectedGalleryPhoto.isGif ? 'GIF' : 'IMG')}
@@ -1801,6 +1983,11 @@ const saveProfile = (e) => {
                                                 showNextGalleryPhoto();
                                             }
                                         }}
+                                        onError={() => {
+                                            if (filteredGalleryPhotos.length > 1) {
+                                                showNextGalleryPhoto();
+                                            }
+                                        }}
                                         className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
                                     />
                                 );
@@ -1808,6 +1995,11 @@ const saveProfile = (e) => {
                                 <img
                                     src={selectedGalleryPhoto.url}
                                     alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
+                                    onError={() => {
+                                        if (filteredGalleryPhotos.length > 1) {
+                                            showNextGalleryPhoto();
+                                        }
+                                    }}
                                     className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
                                     onError={applyCryingEmojiFallback}
                                 />
@@ -1821,7 +2013,7 @@ const saveProfile = (e) => {
                                         className="absolute left-4 bottom-4 sm:left-6 sm:bottom-6 w-10 h-10 rounded-full border border-slate-700 bg-slate-900/90 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all shadow-lg shadow-black/40"
                                         aria-label="Foto anterior"
                                     >
-                                        <LucideIcon name="chevron-left" size={20} />
+                                        <span className="text-[20px] leading-none font-black">←</span>
                                     </button>
                                     <button
                                         type="button"
@@ -1829,7 +2021,7 @@ const saveProfile = (e) => {
                                         className="absolute right-4 bottom-4 sm:right-6 sm:bottom-6 w-10 h-10 rounded-full border border-slate-700 bg-slate-900/90 text-white flex items-center justify-center hover:border-cyan-400 hover:text-cyan-300 transition-all shadow-lg shadow-black/40"
                                         aria-label="Foto siguiente"
                                     >
-                                        <LucideIcon name="chevron-right" size={20} />
+                                        <span className="text-[20px] leading-none font-black">→</span>
                                     </button>
                                 </>
                             )}
@@ -1851,7 +2043,7 @@ const saveProfile = (e) => {
 
     {/* 3. VISTA RANKING (SOLO TABLA) */}
     {activeTab === 'RANKING' && !selectedCategory && (
-        <div className="bg-[#0a0f1e] rounded-[2.5rem] border border-slate-800 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+        <div className="bg-[#0a0f1e] rounded-2xl border border-slate-800 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
             <table className="w-full text-left border-collapse">
                 <thead className="bg-slate-900/50 border-b border-slate-800">
                     <tr>
@@ -1962,18 +2154,18 @@ const saveProfile = (e) => {
                     <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">Mis Archivos del Reino</h2>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Crónicas personalizadas del santuario</p>
                 </div>
-                <button onClick={() => { resetCatForm(); setIsCatModalOpen(true); }} className="bg-cyan-500 text-black px-8 py-3 rounded-full font-black text-xs uppercase hover:bg-white transition-all">
-                    NUEVO ARCHIVO DEL REINO
+                <button onClick={() => { resetCatForm(); setIsCatModalOpen(true); }} className="bg-cyan-500 text-slate-950 px-8 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] border border-cyan-300/35 hover:bg-cyan-400 transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_24px_rgba(34,211,238,0.2)]">
+                    NUEVA CATEGORÍA
                 </button>
             </div>
             {categorias.length === 0 ? (
-                <div className="py-20 border-2 border-dashed border-slate-800 rounded-[3.5rem] text-center">
-                    <p className="text-slate-600 font-black italic uppercase">No hay archivos del reino forjados</p>
+                <div className="py-20 border-2 border-dashed border-slate-800 rounded-2xl text-center">
+                    <p className="text-slate-600 font-black italic uppercase">No hay categorías personalizadas</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
 {categorias.map(cat => (
-<div key={cat.firebaseId} onClick={() => setSelectedCategory(cat.firebaseId)} className="group relative bg-[#0a0f1e] rounded-[2.5rem] overflow-hidden border border-slate-800 cursor-pointer hover:border-cyan-500 transition-all duration-500 shadow-2xl aspect-[3/4]">
+<div key={cat.firebaseId} onClick={() => setSelectedCategory(cat.firebaseId)} className="group relative bg-[linear-gradient(180deg,#0b1222_0%,#050a16_100%)] rounded-xl overflow-hidden border border-slate-700/90 cursor-pointer hover:border-cyan-400/70 transition-all duration-500 shadow-[inset_0_1px_0_rgba(148,163,184,0.2),0_18px_30px_rgba(2,6,23,0.55)] aspect-[3/4]">
         {/* BOTONES DE ACCIÓN: EDITAR Y ELIMINAR */}
         <div className="absolute top-5 right-5 z-50 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
             <button
@@ -1991,7 +2183,7 @@ const saveProfile = (e) => {
         });
         setIsCatModalOpen(true); // Abrimos el modal
     }}
-    className="w-8 h-8 flex items-center justify-center bg-slate-900/90 hover:bg-cyan-500 text-white rounded-full border border-white/10 transition-colors shadow-xl"
+    className="w-8 h-8 flex items-center justify-center bg-slate-900/95 hover:bg-cyan-500 text-white rounded-lg border border-slate-600/70 transition-colors shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_6px_16px_rgba(2,6,23,0.45)]"
 >
     <LucideIcon name="pencil" size={14} />
 </button>
@@ -2002,7 +2194,7 @@ const saveProfile = (e) => {
                         deleteCategory(cat.firebaseId);
                     }
                 }}
-                className="w-8 h-8 flex items-center justify-center bg-slate-900/90 hover:bg-red-600 text-white rounded-full border border-white/10 transition-colors shadow-xl"
+                className="w-8 h-8 flex items-center justify-center bg-slate-900/95 hover:bg-red-600 text-white rounded-lg border border-slate-600/70 transition-colors shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_6px_16px_rgba(2,6,23,0.45)]"
             >
                 <LucideIcon name="x" size={14} />
             </button>
@@ -2040,7 +2232,7 @@ const saveProfile = (e) => {
 
                     {isModalOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm">
-                            <div className={`bg-[#0a0f1e] w-full ${editingId || activeTab === 'CALIFICAR' ? 'max-w-5xl' : 'max-w-2xl'} rounded-[4rem] overflow-hidden shadow-2xl border border-slate-800 max-h-[90vh] flex flex-col relative animate-in zoom-in-95 duration-300`}>
+                            <div className={`bg-[linear-gradient(180deg,#0b1222_0%,#050a16_100%)] w-full ${editingId || activeTab === 'CALIFICAR' ? 'max-w-5xl' : 'max-w-2xl'} rounded-3xl overflow-hidden shadow-[inset_0_1px_0_rgba(148,163,184,0.22),0_24px_60px_rgba(2,6,23,0.65)] border border-slate-700/80 max-h-[90vh] flex flex-col relative animate-in zoom-in-95 duration-300`}>
                                <button
     onClick={() => setIsModalOpen(false)}
     className="p-2 hover:bg-slate-800 rounded-full transition-colors"
@@ -2089,7 +2281,7 @@ const saveProfile = (e) => {
             </div>
 
             {/* CUADRO VISTA PREVIA NEÓN */}
-            <div className="w-48 h-60 rounded-[2.5rem] border-2 border-cyan-500 shadow-[0_0_20px_rgba(34,211,238,0.4)] overflow-hidden bg-slate-900 flex items-center justify-center relative group">
+            <div className="w-48 h-60 rounded-2xl border-2 border-cyan-500 shadow-[0_0_20px_rgba(34,211,238,0.4)] overflow-hidden bg-slate-900 flex items-center justify-center relative group">
                 {formData.fotos.length > 0 && formData.fotos[0] !== "" ? (
                     <img src={formData.fotos[0]} className="w-full h-full object-cover" alt="Preview" onError={applyCryingEmojiFallback} />
                 ) : (
@@ -2140,13 +2332,13 @@ const saveProfile = (e) => {
         {/* CAMPOS DE TEXTO */}
         <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-                <input required placeholder="Nombre Artístico" className="col-span-2 w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} />
+                <input required placeholder="Nombre Artístico" className="col-span-2 w-full bg-slate-900/50 border border-slate-800 p-5 rounded-xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} />
 
                 <div className="col-span-2 space-y-1">
                     <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">URL de la Foto (Avatar)</label>
                     <input
                         placeholder="https://imagen.com/foto.jpg"
-                        className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold text-xs"
+                        className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold text-xs"
                         value={formData.fotos[0] || ''}
                         onChange={e => setFormData({...formData, fotos: [e.target.value]})}
                     />
@@ -2158,14 +2350,14 @@ const saveProfile = (e) => {
                         <div className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(180px,0.7fr)_minmax(190px,0.8fr)]">
                             <input
                                 placeholder={galleryMediaType === 'video' ? "https://video.com/video.mp4 o https://youtube.com/..." : "https://imagen.com/galeria.jpg"}
-                                className="min-w-0 bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold text-xs"
+                                className="min-w-0 bg-slate-900/50 border border-slate-800 p-5 rounded-xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-bold text-xs"
                                 value={urlInput}
                                 onChange={e => setUrlInput(e.target.value)}
                             />
                             <select
                                 value={galleryMediaType}
                                 onChange={e => setGalleryMediaType(e.target.value)}
-                                className="w-full bg-slate-900/50 border border-slate-800 px-5 py-4 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-black text-xs uppercase tracking-[0.25em]"
+                                className="w-full bg-slate-900/50 border border-slate-800 px-5 py-4 rounded-xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-black text-xs uppercase tracking-[0.25em]"
                             >
                                 <option value="image">Imagen</option>
                                 <option value="video">Video</option>
@@ -2174,7 +2366,7 @@ const saveProfile = (e) => {
                                 <select
                                     value={galleryLabel}
                                     onChange={e => setGalleryLabel(e.target.value)}
-                                    className="w-full bg-slate-900/50 border border-slate-800 px-5 py-4 rounded-3xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-black text-xs uppercase tracking-[0.25em]"
+                                    className="w-full bg-slate-900/50 border border-slate-800 px-5 py-4 rounded-xl outline-none focus:ring-2 focus:ring-cyan-500/30 text-white font-black text-xs uppercase tracking-[0.25em]"
                                 >
                                     {GALLERY_LABELS.map(label => (
                                         <option key={label} value={label}>Etiqueta {label}</option>
@@ -2183,7 +2375,7 @@ const saveProfile = (e) => {
                                 <button
                                     type="button"
                                     onClick={() => submitGalleryImage({ successMessage: '¡Foto guardada! Sos un genio.' })}
-                                    className="w-full sm:w-auto bg-cyan-500 text-white px-6 py-4 rounded-3xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-cyan-400 transition-all sm:min-w-[210px]"
+                                    className="w-full sm:w-auto bg-cyan-500 text-slate-950 px-6 py-4 rounded-xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-cyan-400 border border-cyan-300/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_24px_rgba(34,211,238,0.2)] transition-all sm:min-w-[210px]"
                                 >
                                     Guardar en galería
                                 </button>
@@ -2194,14 +2386,14 @@ const saveProfile = (e) => {
 
                 <div className="space-y-1">
                     <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">Nacimiento</label>
-                    <input type="date" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.fechaNacimiento} onChange={e => setFormData({...formData, fechaNacimiento: e.target.value})} />
+                    <input type="date" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-xl outline-none text-white font-bold" value={formData.fechaNacimiento} onChange={e => setFormData({...formData, fechaNacimiento: e.target.value})} />
                 </div>
                 <div className="space-y-1">
                     <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">Estatura (cm)</label>
-                    <input placeholder="170" type="number" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.estaturaCm} onChange={e => setFormData({...formData, estaturaCm: e.target.value})} />
+                    <input placeholder="170" type="number" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-xl outline-none text-white font-bold" value={formData.estaturaCm} onChange={e => setFormData({...formData, estaturaCm: e.target.value})} />
                 </div>
-                <input placeholder="Nacionalidad" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.nacionalidad} onChange={e => setFormData({...formData, nacionalidad: e.target.value})} />
-                <input placeholder="Ciudad" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold" value={formData.ciudad} onChange={e => setFormData({...formData, ciudad: e.target.value})} />
+                <input placeholder="Nacionalidad" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-xl outline-none text-white font-bold" value={formData.nacionalidad} onChange={e => setFormData({...formData, nacionalidad: e.target.value})} />
+                <input placeholder="Ciudad" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-xl outline-none text-white font-bold" value={formData.ciudad} onChange={e => setFormData({...formData, ciudad: e.target.value})} />
 
                 <div className="col-span-2 space-y-1 group">
                     <label className="text-[9px] font-black text-cyan-500/60 ml-4 uppercase tracking-widest transition-colors group-focus-within:text-cyan-400">
@@ -2209,7 +2401,7 @@ const saveProfile = (e) => {
                     </label>
                     <select
                         required
-                        className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold appearance-none cursor-pointer transition-all duration-300 focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(34,211,238,0.2)] focus:bg-slate-900"
+                        className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-xl outline-none text-white font-bold appearance-none cursor-pointer transition-all duration-300 focus:border-cyan-500 focus:shadow-[0_0_15px_rgba(34,211,238,0.2)] focus:bg-slate-900"
                         value={formData.profesion}
                         onChange={e => setFormData({...formData, profesion: e.target.value})}
                     >
@@ -2275,11 +2467,11 @@ const saveProfile = (e) => {
 </div>
                                     <div className="flex gap-4">
                                         {editingId && (
-                                            <button type="button" onClick={deleteProfile} className="bg-red-500/10 text-red-500 px-10 py-8 rounded-[3rem] font-black uppercase text-xs tracking-widest hover:bg-red-500 hover:text-white transition-all border border-red-500/20">
+                                            <button type="button" onClick={deleteProfile} className="bg-red-500/10 text-red-400 px-10 py-8 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-red-500 hover:text-white transition-all border border-red-400/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_10px_24px_rgba(127,29,29,0.35)]">
                                                 <LucideIcon name="trash-2" size={20} />
                                             </button>
                                         )}
-                                        <button type="submit" className="flex-1 bg-cyan-500 text-white py-8 rounded-[3rem] font-black uppercase text-xs tracking-widest hover:bg-cyan-400 shadow-xl shadow-cyan-900/20 transition-all active:scale-[0.98]">
+                                        <button type="submit" className="flex-1 bg-cyan-500 text-slate-950 py-8 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-cyan-400 border border-cyan-300/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_12px_24px_rgba(34,211,238,0.2)] transition-all active:scale-[0.98]">
                                             {editingId ? 'Actualizar Registro' : 'Guardar Perfil'}
                                         </button>
                                     </div>
@@ -2290,7 +2482,7 @@ const saveProfile = (e) => {
 
                     {isCatModalOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm">
-                            <div className="bg-[#0a0f1e] w-full max-w-5xl rounded-[4rem] overflow-hidden shadow-2xl border border-slate-800 max-h-[90vh] flex flex-col relative animate-in zoom-in-95 duration-300">
+                            <div className="bg-[linear-gradient(180deg,#0b1222_0%,#050a16_100%)] w-full max-w-5xl rounded-3xl overflow-hidden shadow-[inset_0_1px_0_rgba(148,163,184,0.22),0_24px_60px_rgba(2,6,23,0.65)] border border-slate-700/80 max-h-[90vh] flex flex-col relative animate-in zoom-in-95 duration-300">
                                 <button
     type="button"
     onClick={() => { resetCatForm(); setIsCatModalOpen(false); }}
@@ -2308,13 +2500,13 @@ const saveProfile = (e) => {
                                                 <h3 className="text-xl font-black italic text-white">Nuevo Archivo del Reino</h3>
                                             </div>
                                             <div className="space-y-4">
-                                                <input required placeholder="Nombre del Archivo del Reino" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none font-bold text-lg text-white" value={catFormData.label} onChange={e => setCatFormData({...catFormData, label: e.target.value})} />
+                                                <input required placeholder="Nombre de la Carpeta" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-xl outline-none font-bold text-lg text-white" value={catFormData.label} onChange={e => setCatFormData({...catFormData, label: e.target.value})} />
                                                 <div className="w-full">
                                                     <div className="space-y-1 w-full">
                                                         <label className="text-[9px] font-black text-slate-500 ml-4 uppercase">URL de Portada</label>
                                                         <input
                                                             placeholder="https://..."
-                                                            className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-3xl outline-none text-white font-bold text-xs"
+                                                            className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-xl outline-none text-white font-bold text-xs"
                                                             value={catFormData.coverImg}
                                                             onChange={e => setCatFormData({...catFormData, coverImg: e.target.value})}
                                                         />
@@ -2328,7 +2520,7 @@ const saveProfile = (e) => {
                                                 <LucideIcon name="shield" size={12} /> Mandatos de Clasificación del Consejo
                                             </h4>
 
-                                            <div className="p-8 bg-slate-950/50 border border-slate-800 rounded-[2.5rem] space-y-6">
+                                            <div className="p-8 bg-slate-950/50 border border-slate-800 rounded-2xl space-y-6">
                                                 <div className="grid grid-cols-2 gap-4">
 {/* Filtro Nacionalidades Acumulable */}
                                                     <div className="space-y-1">
@@ -2417,7 +2609,7 @@ const saveProfile = (e) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <button type="submit" className="w-full bg-cyan-500 text-white py-8 rounded-[3rem] font-black uppercase text-xs tracking-widest hover:bg-white hover:text-cyan-500 shadow-xl transition-all">
+                                    <button type="submit" className="w-full bg-cyan-500 text-slate-950 py-8 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-cyan-400 border border-cyan-300/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_12px_24px_rgba(34,211,238,0.2)] transition-all">
                                         CREAR CARPETA INTELIGENTE
                                     </button>
                                 </form>
