@@ -225,6 +225,94 @@
             background-position: right 1rem center;
             background-size: 1em;
         }
+
+        .btn-metal {
+            --btn-metal-top: #4b5563;
+            --btn-metal-mid: #374151;
+            --btn-metal-bottom: #1f2937;
+            --btn-metal-ring: rgba(203, 213, 225, 0.55);
+            --btn-metal-filet: rgba(148, 163, 184, 0.42);
+            --btn-metal-text: #f8fafc;
+            --btn-metal-glint: rgba(255, 255, 255, 0.56);
+            --btn-metal-shade: rgba(2, 6, 23, 0.72);
+            position: relative;
+            isolation: isolate;
+            background:
+                linear-gradient(180deg, var(--btn-metal-top) 0%, var(--btn-metal-mid) 48%, var(--btn-metal-bottom) 100%);
+            border: 1.5px solid var(--btn-metal-ring);
+            box-shadow:
+                inset 0 1px 0 var(--btn-metal-glint),
+                inset 0 -2px 0 var(--btn-metal-shade),
+                inset 0 0 0 2px var(--btn-metal-filet),
+                0 8px 20px rgba(2, 6, 23, 0.42);
+            color: var(--btn-metal-text);
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.46);
+            transition: transform 160ms ease, box-shadow 220ms ease, filter 220ms ease, color 160ms ease;
+        }
+        .btn-metal::after {
+            content: "";
+            position: absolute;
+            inset: 1px;
+            border-radius: inherit;
+            pointer-events: none;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 34%, rgba(0, 0, 0, 0.12) 100%);
+            z-index: -1;
+        }
+        .btn-metal:hover:not(:disabled) {
+            filter: brightness(1.08) saturate(1.1);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.74),
+                inset 0 -2px 0 rgba(2, 6, 23, 0.82),
+                inset 0 0 0 2px var(--btn-metal-filet),
+                0 0 0 1px rgba(255, 255, 255, 0.15),
+                0 14px 30px rgba(2, 6, 23, 0.5);
+            transform: translateY(-1px);
+        }
+        .btn-metal:active:not(:disabled),
+        .btn-metal.is-active {
+            transform: translateY(1px);
+            box-shadow:
+                inset 0 1px 1px rgba(0, 0, 0, 0.52),
+                inset 0 3px 0 rgba(0, 0, 0, 0.32),
+                inset 0 0 0 2px var(--btn-metal-filet),
+                0 4px 10px rgba(2, 6, 23, 0.36);
+        }
+        .btn-metal:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            filter: grayscale(0.2);
+        }
+        .btn-metal--gold {
+            --btn-metal-top: #d8b773;
+            --btn-metal-mid: #b6863f;
+            --btn-metal-bottom: #735021;
+            --btn-metal-ring: rgba(245, 222, 179, 0.68);
+            --btn-metal-filet: rgba(255, 236, 181, 0.46);
+            --btn-metal-text: #f8f2df;
+            --btn-metal-shade: rgba(49, 31, 7, 0.72);
+        }
+        .btn-metal--silver {
+            --btn-metal-top: #cbd5e1;
+            --btn-metal-mid: #94a3b8;
+            --btn-metal-bottom: #475569;
+            --btn-metal-ring: rgba(241, 245, 249, 0.75);
+            --btn-metal-filet: rgba(226, 232, 240, 0.5);
+            --btn-metal-text: #0f172a;
+            --btn-metal-shade: rgba(15, 23, 42, 0.36);
+        }
+        .btn-metal--danger {
+            --btn-metal-top: #f87171;
+            --btn-metal-mid: #dc2626;
+            --btn-metal-bottom: #7f1d1d;
+            --btn-metal-ring: rgba(254, 202, 202, 0.74);
+            --btn-metal-filet: rgba(254, 226, 226, 0.4);
+            --btn-metal-text: #fff5f5;
+            --btn-metal-shade: rgba(69, 10, 10, 0.74);
+        }
         /* La lencería de gala para tu podio */
         .podium-1 {
             background: linear-gradient(90deg,
@@ -1694,7 +1782,7 @@ const saveProfile = (e) => {
                                 <button
                                     key={item.id}
                                     onClick={() => { setActiveTab(item.id); setSelectedCategory(null); }}
-                                    className={`w-full flex items-center gap-4 px-6 py-4 rounded-[2rem] font-bold text-sm transition-all ${activeTab === item.id ? 'bg-[var(--metal-bronze)] text-white shadow-lg shadow-cyan-900/50' : 'text-slate-500 hover:bg-slate-800/50 hover:text-[var(--metal-gold)]'}`}
+                                    className={`btn-metal w-full flex items-center gap-4 px-6 py-4 rounded-[2rem] text-sm transition-all ${activeTab === item.id ? 'btn-metal--gold is-active text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
                                 >
                                     <LucideIcon name={item.icon} size={18} />
                                     {item.label}
@@ -1716,23 +1804,17 @@ const saveProfile = (e) => {
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={() => setGalleryFilterLabel('INICIAL')}
-                                        className={`px-3 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${galleryFilterLabel === 'INICIAL' ? 'bg-[var(--metal-bronze)] text-white border-[var(--metal-gold)] shadow-lg shadow-cyan-900/40' : 'theme-surface-card text-slate-400 theme-border-secondary hover:border-[color:color-mix(in_srgb,var(--metal-gold)_40%,transparent)] hover:text-[var(--metal-gold)]'}`}
+                                        className={`btn-metal px-3 py-3 rounded-2xl text-[10px] transition-all ${galleryFilterLabel === 'INICIAL' ? 'btn-metal--gold is-active text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
                                     >
                                         Inicial
                                     </button>
                                     {GALLERY_LABELS.map(label => {
-                                        const style = getGalleryLabelStyle(label);
                                         const isActive = galleryFilterLabel === label;
                                         return (
                                             <button
                                                 key={label}
                                                 onClick={() => setGalleryFilterLabel(label)}
-                                                className={`px-3 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${isActive ? 'text-white scale-[1.02]' : 'theme-surface-card text-slate-300 theme-border-secondary hover:border-[color:color-mix(in_srgb,var(--metal-gold)_40%,transparent)] hover:text-[var(--metal-gold)]'}`}
-                                                style={isActive ? {
-                                                    background: style.bg,
-                                                    borderColor: style.border,
-                                                    boxShadow: `0 0 18px ${style.glow}`
-                                                } : undefined}
+                                                className={`btn-metal px-3 py-3 rounded-2xl text-[10px] transition-all ${isActive ? 'btn-metal--gold is-active text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
                                             >
                                                 {label} · {galleryStats[label] || 0}
                                             </button>
@@ -1740,7 +1822,7 @@ const saveProfile = (e) => {
                                     })}
                                     <button
                                         onClick={() => setGalleryFilterLabel('100')}
-                                        className={`px-3 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${galleryFilterLabel === '100' ? 'bg-[var(--metal-bronze)] text-white border-[var(--metal-gold)] shadow-lg shadow-cyan-900/40' : 'theme-surface-card text-slate-400 theme-border-secondary hover:border-[color:color-mix(in_srgb,var(--metal-gold)_40%,transparent)] hover:text-[var(--metal-gold)]'}`}
+                                        className={`btn-metal px-3 py-3 rounded-2xl text-[10px] transition-all ${galleryFilterLabel === '100' ? 'btn-metal--gold is-active text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
                                     >
                                         100%
                                     </button>
@@ -1811,7 +1893,7 @@ const saveProfile = (e) => {
                                 setFormData({nombre:'', nacionalidad:'', ciudad:'', profesion:'', fechaNacimiento:'', estaturaCm:'', fotos:[], galeria:{ fotos: [], gifs: [], videos: [] }, puntuaciones:{Ojos:0, Rostro:0, Busto:0, Cola:0, Cintura:0, Cabello:0, Estatura:0, Sensualidad:0, Dulzura:0, Elegancia:0}});
                                 setIsModalOpen(true);
                             }}
-                            className="bg-[var(--metal-bronze)] text-white py-5 rounded-[2.2rem] font-black uppercase text-[11px] tracking-widest hover:bg-[var(--metal-gold)] transition-all flex items-center justify-center gap-2 flex-shrink-0 shadow-lg shadow-cyan-900/20"
+                            className="btn-metal btn-metal--gold py-5 rounded-[2.2rem] text-[11px] flex items-center justify-center gap-2 flex-shrink-0"
                         >
                             <LucideIcon name="plus" size={16} /> Nuevo Perfil
                         </button>
@@ -1988,28 +2070,17 @@ const saveProfile = (e) => {
             <div className="flex flex-wrap gap-3">
                 <button
                     onClick={() => setGalleryFilterLabel('INICIAL')}
-                    className={`px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all ${galleryFilterLabel === 'INICIAL' ? 'bg-[var(--metal-bronze)] text-white border-[var(--metal-gold)] shadow-lg shadow-cyan-900/40' : 'theme-surface-soft theme-border-secondary text-slate-400 hover:text-[var(--metal-gold)] hover:border-[color:color-mix(in_srgb,var(--metal-gold)_40%,transparent)]'}`}
+                    className={`btn-metal px-4 py-2 rounded-full text-[10px] transition-all ${galleryFilterLabel === 'INICIAL' ? 'btn-metal--gold is-active text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
                 >
                     Inicial
                 </button>
                 {GALLERY_LABELS.map(label => {
-                    const style = getGalleryLabelStyle(label);
                     const isActive = galleryFilterLabel === label;
                     return (
                         <button
                             key={label}
                             onClick={() => setGalleryFilterLabel(label)}
-                            className="font-title px-4 py-2 rounded-full border text-[10px] font-semibold tracking-[0.08em] transition-all"
-                            style={isActive ? {
-                                background: style.bg,
-                                borderColor: style.border,
-                                color: style.text,
-                                boxShadow: `0 0 18px ${style.glow}`
-                            } : {
-                                background: 'rgba(15, 23, 42, 0.6)',
-                                borderColor: 'rgba(30, 41, 59, 1)',
-                                color: '#cbd5e1'
-                            }}
+                            className={`btn-metal font-title px-4 py-2 rounded-full text-[10px] tracking-[0.08em] transition-all ${isActive ? 'btn-metal--gold is-active text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
                         >
                             {label} · {galleryStats[label] || 0}
                         </button>
@@ -2017,7 +2088,7 @@ const saveProfile = (e) => {
                 })}
                 <button
                     onClick={() => setGalleryFilterLabel('100')}
-                    className={`px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all ${galleryFilterLabel === '100' ? 'bg-[var(--metal-bronze)] text-white border-[var(--metal-gold)] shadow-lg shadow-cyan-900/40' : 'theme-surface-soft theme-border-secondary text-slate-400 hover:text-[var(--metal-gold)] hover:border-[color:color-mix(in_srgb,var(--metal-gold)_40%,transparent)]'}`}
+                    className={`btn-metal px-4 py-2 rounded-full text-[10px] transition-all ${galleryFilterLabel === '100' ? 'btn-metal--gold is-active text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
                 >
                     100%
                 </button>
@@ -2028,7 +2099,7 @@ const saveProfile = (e) => {
                     type="button"
                     onClick={() => openGalleryViewer(0, true)}
                     disabled={!filteredGalleryPhotos.length}
-                    className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-[color:color-mix(in_srgb,var(--metal-gold)_58%,transparent)] bg-[var(--metal-bronze)]/20 text-[color:color-mix(in_srgb,var(--metal-gold)_72%,white)] text-[10px] font-black uppercase tracking-[0.28em] hover:bg-[var(--metal-bronze)]/30 hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="btn-metal btn-metal--gold inline-flex items-center gap-2 px-5 py-3 rounded-full text-[10px] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     <LucideIcon name="play" size={14} />
                     Play galería general
@@ -2114,7 +2185,7 @@ const saveProfile = (e) => {
                     <button
                         type="button"
                         onClick={closeGalleryViewer}
-                        className="absolute top-4 right-4 sm:top-6 sm:right-6 w-12 h-12 rounded-full border border-red-500/80 bg-slate-900/90 text-red-400 flex items-center justify-center hover:border-red-400 hover:text-red-300 transition-all"
+                        className="btn-metal btn-metal--danger absolute top-4 right-4 sm:top-6 sm:right-6 w-12 h-12 rounded-full flex items-center justify-center"
                         aria-label="Cerrar visor"
                     >
                         <span className="text-[26px] leading-none font-black">✕</span>
@@ -2132,14 +2203,14 @@ const saveProfile = (e) => {
                                         <button
                                             type="button"
                                             onClick={() => setIsGalleryPlaying((prev) => !prev)}
-                                            className="px-4 py-2 rounded-full border border-[color:color-mix(in_srgb,var(--metal-gold)_58%,transparent)] bg-[var(--metal-bronze)]/20 text-[color:color-mix(in_srgb,var(--metal-gold)_58%,white)] text-[10px] font-black uppercase tracking-[0.28em] hover:bg-[var(--metal-bronze)]/35 hover:text-white transition-all"
+                                            className="btn-metal btn-metal--gold px-4 py-2 rounded-full text-[10px]"
                                         >
                                             {isGalleryPlaying ? 'Pause' : 'Play'}
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setIsGalleryRandom((prev) => !prev)}
-                                            className={`px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-[0.28em] transition-all ${isGalleryRandom ? 'border-fuchsia-400/80 bg-fuchsia-500/30 text-fuchsia-100 hover:bg-fuchsia-500/45' : 'theme-border-secondary bg-slate-900/80 text-slate-300 hover:border-fuchsia-400/70 hover:text-fuchsia-200'}`}
+                                            className={`btn-metal px-4 py-2 rounded-full text-[10px] transition-all ${isGalleryRandom ? 'btn-metal--gold is-active text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
                                         >
                                             Aleatorio {isGalleryRandom ? 'ON' : 'OFF'}
                                         </button>
@@ -2358,7 +2429,7 @@ const saveProfile = (e) => {
                     <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">Mis Archivos del Reino</h2>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Crónicas personalizadas del santuario</p>
                 </div>
-                <button onClick={() => { resetCatForm(); setIsCatModalOpen(true); }} className="bg-[var(--metal-bronze)] text-slate-950 px-8 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] border border-[color:color-mix(in_srgb,var(--metal-gold)_35%,var(--parchment)_65%)] hover:bg-[var(--metal-gold)] transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_24px_rgba(34,211,238,0.2)]">
+                <button onClick={() => { resetCatForm(); setIsCatModalOpen(true); }} className="btn-metal btn-metal--gold px-8 py-3 rounded-xl text-xs">
                     NUEVA CATEGORÍA
                 </button>
             </div>
@@ -2477,7 +2548,7 @@ const saveProfile = (e) => {
         });
         nuevaVentana.focus();
     }}
-    className="ml-4 px-4 py-2 bg-[var(--metal-bronze)]/10 border border-[color:color-mix(in_srgb,var(--metal-gold)_50%,transparent)] rounded-xl text-[10px] font-black text-[var(--metal-gold)] uppercase tracking-widest hover:bg-[var(--metal-bronze)] hover:text-white transition-all flex items-center gap-2"
+    className="btn-metal btn-metal--gold ml-4 px-4 py-2 rounded-xl text-[10px] flex items-center gap-2"
 >
     <LucideIcon name="image" size={14} />
     Ver Galería
@@ -2580,7 +2651,7 @@ const saveProfile = (e) => {
                                 <button
                                     type="button"
                                     onClick={() => submitGalleryImage({ successMessage: '¡Foto guardada! Sos un genio.' })}
-                                    className="w-full sm:w-auto bg-[var(--metal-bronze)] text-slate-950 px-6 py-4 rounded-xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-[var(--metal-gold)] border border-[color:color-mix(in_srgb,var(--metal-gold)_35%,var(--parchment)_65%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_24px_rgba(34,211,238,0.2)] transition-all sm:min-w-[210px]"
+                                    className="btn-metal btn-metal--gold w-full sm:w-auto px-6 py-4 rounded-xl text-[10px] sm:min-w-[210px]"
                                 >
                                     Guardar en galería
                                 </button>
@@ -2672,11 +2743,11 @@ const saveProfile = (e) => {
 </div>
                                     <div className="flex gap-4">
                                         {editingId && (
-                                            <button type="button" onClick={deleteProfile} className="bg-red-500/10 text-red-400 px-10 py-8 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-red-500 hover:text-white transition-all border border-red-400/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_10px_24px_rgba(127,29,29,0.35)]">
+                                            <button type="button" onClick={deleteProfile} className="btn-metal btn-metal--danger px-10 py-8 rounded-xl text-xs">
                                                 <LucideIcon name="trash-2" size={20} />
                                             </button>
                                         )}
-                                        <button type="submit" className="flex-1 bg-[var(--metal-bronze)] text-slate-950 py-8 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-[var(--metal-gold)] border border-[color:color-mix(in_srgb,var(--metal-gold)_35%,var(--parchment)_65%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_12px_24px_rgba(34,211,238,0.2)] transition-all active:scale-[0.98]">
+                                        <button type="submit" className="btn-metal btn-metal--gold flex-1 py-8 rounded-xl text-xs">
                                             {editingId ? 'Actualizar Registro' : 'Guardar Perfil'}
                                         </button>
                                     </div>
@@ -2814,7 +2885,7 @@ const saveProfile = (e) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <button type="submit" className="w-full bg-[var(--metal-bronze)] text-slate-950 py-8 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-[var(--metal-gold)] border border-[color:color-mix(in_srgb,var(--metal-gold)_35%,var(--parchment)_65%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_12px_24px_rgba(34,211,238,0.2)] transition-all">
+                                    <button type="submit" className="btn-metal btn-metal--gold w-full py-8 rounded-xl text-xs">
                                         CREAR CARPETA INTELIGENTE
                                     </button>
                                 </form>
