@@ -1683,7 +1683,7 @@ const saveProfile = (e) => {
                 <h2 className="text-6xl font-black italic text-white uppercase tracking-tighter leading-none">
     {/* Si estamos en la pestaña de categorías, buscamos el nombre lindo. Si no, mostramos la profesión directamente */}
     {activeTab === 'CATEGORIAS'
-        ? (categorias.find(c => c.firebaseId === selectedCategory)?.label || "Carpeta Inteligente")
+        ? (categorias.find(c => c.firebaseId === selectedCategory)?.label || "Archivo del Reino")
         : selectedCategory
     }
 </h2>
@@ -2151,8 +2151,8 @@ const saveProfile = (e) => {
         <div className="space-y-10 animate-in fade-in duration-500">
             <div className="flex justify-between items-end">
                 <div>
-                    <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">Mis Carpetas</h2>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Categorías personalizadas</p>
+                    <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">Mis Archivos del Reino</h2>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Crónicas personalizadas del santuario</p>
                 </div>
                 <button onClick={() => { resetCatForm(); setIsCatModalOpen(true); }} className="bg-cyan-500 text-slate-950 px-8 py-3 rounded-xl font-black text-xs uppercase tracking-[0.2em] border border-cyan-300/35 hover:bg-cyan-400 transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_10px_24px_rgba(34,211,238,0.2)]">
                     NUEVA CATEGORÍA
@@ -2428,9 +2428,9 @@ const saveProfile = (e) => {
         <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
             <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center text-cyan-400 shadow-lg">
-                    <LucideIcon name="star" />
+                    <LucideIcon name="crown" />
                 </div>
-                <h3 className="text-xl font-black italic tracking-tighter text-white">Evaluación G2 Score</h3>
+                <h3 className="text-xl font-black italic tracking-tighter text-white">Juicio del Oráculo G2</h3>
             </div>
 
             <div className="space-y-8">
@@ -2495,9 +2495,9 @@ const saveProfile = (e) => {
                                         <div className="space-y-8">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center text-white">
-                                                    <LucideIcon name="folder-plus" />
+                                                    <LucideIcon name="scroll" />
                                                 </div>
-                                                <h3 className="text-xl font-black italic text-white">Nueva Carpeta Inteligente</h3>
+                                                <h3 className="text-xl font-black italic text-white">Nuevo Archivo del Reino</h3>
                                             </div>
                                             <div className="space-y-4">
                                                 <input required placeholder="Nombre de la Carpeta" className="w-full bg-slate-900/50 border border-slate-800 p-5 rounded-xl outline-none font-bold text-lg text-white" value={catFormData.label} onChange={e => setCatFormData({...catFormData, label: e.target.value})} />
@@ -2517,7 +2517,7 @@ const saveProfile = (e) => {
 
                                         <div className="space-y-6">
                                             <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                                                <LucideIcon name="cpu" size={12} /> Reglas de Clasificación Automática
+                                                <LucideIcon name="shield" size={12} /> Mandatos de Clasificación del Consejo
                                             </h4>
 
                                             <div className="p-8 bg-slate-950/50 border border-slate-800 rounded-2xl space-y-6">
