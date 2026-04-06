@@ -2089,6 +2089,18 @@ const saveProfile = (e) => {
 
                 if (orderedProfiles.length < 2) return;
 
+                const findNextPendingPair = (orderedIds, matchups) => {
+                    for (let i = 0; i < orderedIds.length - 1; i++) {
+                        for (let j = i + 1; j < orderedIds.length; j++) {
+                            const pairKey = [orderedIds[i], orderedIds[j]].sort().join('__');
+                            if (!matchups[pairKey]) {
+                                return [orderedIds[i], orderedIds[j]];
+                            }
+                        }
+                    }
+                    return null;
+                };
+
                 const orderedIds = orderedProfiles.map(p => p.firebaseId);
                 const matchups = {};
                 const initialPair = findNextPendingPair(orderedIds, matchups);
@@ -2164,6 +2176,18 @@ const saveProfile = (e) => {
 
                 updateProfileArenaScore(winnerId, arenaName, winnerScore);
                 updateProfileArenaScore(loserId, arenaName, loserScore);
+
+                const findNextPendingPair = (ids, playedMatchups) => {
+                    for (let i = 0; i < ids.length - 1; i++) {
+                        for (let j = i + 1; j < ids.length; j++) {
+                            const key = [ids[i], ids[j]].sort().join('__');
+                            if (!playedMatchups[key]) {
+                                return [ids[i], ids[j]];
+                            }
+                        }
+                    }
+                    return null;
+                };
 
                 const nextPair = findNextPendingPair(orderedIds, updatedMatchups);
 
