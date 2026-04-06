@@ -143,12 +143,7 @@
         const db = firebase.database();
         const { useState, useEffect, useMemo, useRef } = React;
 
-        const clampIndex = (index, total) => {
-            if (!total) return 0;
-            return (index + total) % total;
-        };
-
-        const GALLERY_LABELS = ['C', 'P', 'B', 'N', 'S', 'E'];
+        const GALLERY_LABELS = ['C', 'P', 'B', 'N', 'S', 'E', 'X'];
         const GALLERY_LABEL_STYLES = {
             C: {
                 bg: 'linear-gradient(135deg, rgba(34,211,238,0.92), rgba(14,116,144,0.95))',
@@ -186,12 +181,22 @@
                 glow: 'rgba(248,113,113,0.8)',
                 text: '#fef2f2'
             },
+            X: {
+                bg: 'linear-gradient(135deg, rgba(239,68,68,0.98), rgba(127,29,29,0.98))',
+                border: 'rgba(254,226,226,1)',
+                glow: 'rgba(239,68,68,0.95)',
+                text: '#fff7f7'
+            },
             DEFAULT: {
                 bg: 'linear-gradient(135deg, rgba(51,65,85,0.92), rgba(15,23,42,0.95))',
                 border: 'rgba(148,163,184,0.85)',
                 glow: 'rgba(148,163,184,0.45)',
                 text: '#f8fafc'
             }
+        };
+        const clampIndex = (index, total) => {
+            if (!total) return 0;
+            return (index + total) % total;
         };
         const getGalleryLabelStyle = (label) => GALLERY_LABEL_STYLES[label] || GALLERY_LABEL_STYLES.DEFAULT;
         const VIDEO_FILE_REGEX = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i;
@@ -2324,5 +2329,4 @@ const saveProfile = (e) => {
     </script>
 </body>
 </html>
-
 
