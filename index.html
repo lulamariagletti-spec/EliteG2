@@ -2194,18 +2194,13 @@ const saveProfile = (e) => {
                 </button>
                 {GALLERY_LABELS.map(label => {
                     const isActive = galleryFilterLabel === label;
-                    const renderStyle = getGalleryLabelRenderStyle(labelStyle, isActive);
                     return (
                         <button
                             key={label}
                             onClick={() => setGalleryFilterLabel(label)}
                             className={`btn-metal font-title px-4 py-2 rounded-full text-[10px] tracking-[0.08em] transition-all ${isActive ? 'btn-metal--gold is-active text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
                         >
-                            <span className="absolute inset-0 pointer-events-none" style={{ background: renderStyle.facet.background, opacity: renderStyle.facet.opacity }} />
-                            <span className="absolute inset-[2px] rounded-full pointer-events-none border" style={{ borderColor: renderStyle.ring.borderColor }} />
-                            <span className="absolute inset-0 pointer-events-none mix-blend-screen" style={{ background: renderStyle.spark.background, opacity: renderStyle.spark.opacity }} />
-                            <span className="absolute inset-0 pointer-events-none rounded-full" style={renderStyle.halo} />
-                            <span className="relative z-10" style={renderStyle.text}>{label} · {galleryStats[label] || 0}</span>
+                            {label} · {galleryStats[label] || 0}
                         </button>
                     );
                 })}
