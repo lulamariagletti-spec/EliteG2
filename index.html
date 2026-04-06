@@ -54,6 +54,114 @@
             box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.15), 0 8px 24px rgba(0, 0, 0, 0.35);
         }
 
+        .parchment-panel {
+            background-color: #1a130d;
+            background-image:
+                linear-gradient(140deg, rgba(245, 222, 179, 0.14), rgba(45, 32, 23, 0.92)),
+                radial-gradient(circle at 18% 22%, rgba(245, 216, 155, 0.11), transparent 52%),
+                radial-gradient(circle at 82% 18%, rgba(196, 144, 84, 0.08), transparent 48%),
+                radial-gradient(circle at 28% 76%, rgba(92, 64, 34, 0.24), transparent 58%),
+                repeating-linear-gradient(35deg, rgba(255, 248, 220, 0.018) 0 2px, rgba(0, 0, 0, 0.018) 2px 4px);
+            border: 1px solid rgba(205, 163, 112, 0.26);
+            box-shadow: inset 0 1px 0 rgba(255, 239, 199, 0.09), inset 0 -12px 28px rgba(0, 0, 0, 0.28);
+        }
+
+        .gothic-frame {
+            position: relative;
+            border: 1px solid rgba(179, 148, 85, 0.6);
+            box-shadow:
+                inset 0 0 0 1px rgba(232, 214, 166, 0.32),
+                inset 0 0 0 3px rgba(142, 155, 171, 0.22),
+                inset 0 0 0 4px rgba(220, 224, 232, 0.28),
+                0 12px 32px rgba(0, 0, 0, 0.45);
+        }
+        .gothic-frame::before,
+        .gothic-frame::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(212, 175, 55, 0.62);
+            pointer-events: none;
+            z-index: 1;
+        }
+        .gothic-frame::before {
+            top: 8px;
+            left: 8px;
+            border-right: 0;
+            border-bottom: 0;
+            box-shadow: 0 0 0 1px rgba(192, 198, 210, 0.45);
+        }
+        .gothic-frame::after {
+            bottom: 8px;
+            right: 8px;
+            border-left: 0;
+            border-top: 0;
+            box-shadow: 0 0 0 1px rgba(192, 198, 210, 0.45);
+        }
+
+        .torch-glow-left,
+        .torch-glow-right {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: clamp(56px, 7vw, 92px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .torch-glow-left { left: 0; }
+        .torch-glow-right { right: 0; }
+        .torch-glow-left::before,
+        .torch-glow-right::before,
+        .torch-glow-left::after,
+        .torch-glow-right::after {
+            content: '';
+            position: absolute;
+            border-radius: 999px;
+            filter: blur(10px);
+            opacity: 0.7;
+        }
+        .torch-glow-left::before,
+        .torch-glow-right::before {
+            top: 22%;
+            width: 70px;
+            height: 180px;
+            background: radial-gradient(ellipse at center, rgba(255, 198, 95, 0.62), rgba(251, 146, 60, 0.3) 45%, rgba(251, 146, 60, 0) 72%);
+            animation: torch-flicker 5.8s ease-in-out infinite;
+        }
+        .torch-glow-left::after,
+        .torch-glow-right::after {
+            top: 31%;
+            width: 32px;
+            height: 32px;
+            background: radial-gradient(circle, rgba(255, 242, 186, 0.92) 0%, rgba(251, 146, 60, 0.62) 52%, rgba(251, 146, 60, 0) 78%);
+            animation: torch-flicker 6.7s ease-in-out infinite reverse;
+        }
+        .torch-glow-left::before,
+        .torch-glow-left::after {
+            left: -10px;
+        }
+        .torch-glow-right::before,
+        .torch-glow-right::after {
+            right: -10px;
+        }
+
+        @keyframes torch-flicker {
+            0%, 100% { opacity: 0.62; filter: blur(10px); }
+            40% { opacity: 0.78; filter: blur(12px); }
+            65% { opacity: 0.56; filter: blur(9px); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .torch-glow-left::before,
+            .torch-glow-right::before,
+            .torch-glow-left::after,
+            .torch-glow-right::after {
+                animation: none;
+            }
+        }
+
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: linear-gradient(180deg, #020617 0%, #0f172a 100%); }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
@@ -1501,7 +1609,7 @@ const saveProfile = (e) => {
             });
             return (
                 <div className="flex h-screen overflow-hidden bg-[#020617]">
-                    <aside className="w-72 bg-[#0a0f1e] border-r border-slate-800 flex flex-col p-8 z-20 shadow-xl overflow-y-auto">
+                    <aside className="w-72 bg-[#0a0f1e] border-r border-slate-800 flex flex-col p-8 z-20 shadow-xl overflow-y-auto gothic-frame parchment-panel">
                         <div className="mb-12 text-center flex-shrink-0">
                             <h1 className="text-5xl font-black text-cyan-400 italic tracking-tighter leading-none">G2</h1>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-2">Elite Database</p>
@@ -1639,8 +1747,9 @@ const saveProfile = (e) => {
                         </button>
                     </aside>
 
-                    <main className="flex-1 flex flex-col overflow-hidden bg-[#020617]">
-                        <header className="h-24 panel-frosted border-b border-slate-800 flex items-center px-12 justify-between z-10 flex-shrink-0">
+                    <main className="flex-1 flex flex-col overflow-hidden bg-[#020617] relative">
+                        <div className="torch-glow-left" aria-hidden="true"></div>
+                        <header className="h-24 panel-frosted border-b border-slate-800 flex items-center px-12 justify-between z-10 flex-shrink-0 gothic-frame parchment-panel">
                             <div className="relative w-full max-w-xl">
                                 <span className="absolute left-6 top-1/2 -translate-y-1/2 text-cyan-500/50">
                                     <LucideIcon name="search" size={20} />
@@ -1655,7 +1764,7 @@ const saveProfile = (e) => {
                             </div>
                         </header>
 
-                        <div className="flex-1 overflow-y-auto p-12">
+                        <div className="flex-1 overflow-y-auto p-12 relative z-10">
 
    {/* 1. VISTA EXPLORAR (CARPETAS POR PROFESIÓN) */}
                     {activeTab === 'EXPLORAR' && !selectedCategory && (
@@ -1686,7 +1795,7 @@ const saveProfile = (e) => {
                                         <div
                                             key={prof}
                                             onClick={() => setSelectedCategory(prof)}
-                                            className="bg-[#0a0f1e] rounded-2xl border border-slate-800 p-8 text-center cursor-pointer hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:border-cyan-500/50 transition-all group relative overflow-hidden active:scale-95"
+                                            className="bg-[#0a0f1e] rounded-2xl border border-slate-800 p-8 text-center cursor-pointer hover:shadow-[0_0_30px_rgba(34,211,238,0.15)] hover:border-cyan-500/50 transition-all group relative overflow-hidden active:scale-95 parchment-panel"
                                         >
                                             <div className="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                                 <span className="text-9xl">{getEmoji(prof)}</span>
@@ -1750,7 +1859,7 @@ const saveProfile = (e) => {
                                 if (typeof setEditingId === 'function') setEditingId(p.firebaseId);
                                 if (typeof setIsModalOpen === 'function') setIsModalOpen(true);
                             }}
-                            className="profile-card group relative bg-slate-900 rounded-2xl overflow-hidden border-4 cursor-pointer transition-all duration-500 hover:scale-[1.02]"
+                            className="profile-card group relative bg-slate-900 rounded-2xl overflow-hidden border-4 cursor-pointer transition-all duration-500 hover:scale-[1.02] parchment-panel"
                             style={{ borderColor: neonClass.color, boxShadow: `0 0 20px ${neonClass.sombra}` }}
                         >
                             <div className="aspect-[4/5] bg-slate-950 relative overflow-hidden">
@@ -1890,7 +1999,7 @@ const saveProfile = (e) => {
                                 key={photo.id}
                                 type="button"
                                 onClick={() => openGalleryViewer(index)}
-                                className="group text-left bg-[#0a0f1e] border border-slate-800 rounded-[2.4rem] overflow-hidden hover:border-cyan-500/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.12)] transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:ring-offset-2 focus:ring-offset-[#020617]"
+                                className="group text-left bg-[#0a0f1e] border border-slate-800 rounded-[2.4rem] overflow-hidden hover:border-cyan-500/40 hover:shadow-[0_0_30px_rgba(34,211,238,0.12)] transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:ring-offset-2 focus:ring-offset-[#020617] parchment-panel"
                             >
                                 <div className="aspect-[4/5] relative overflow-hidden bg-slate-950">
                                     {photo.type === 'video' ? (() => {
@@ -2081,7 +2190,7 @@ const saveProfile = (e) => {
 
     {/* 3. VISTA RANKING (SOLO TABLA) */}
     {activeTab === 'RANKING' && !selectedCategory && (
-        <div className="bg-[#0a0f1e] rounded-2xl border border-slate-800 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+        <div className="bg-[#0a0f1e] rounded-2xl border border-slate-800 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500 parchment-panel gothic-frame">
             <table className="w-full text-left border-collapse">
                 <thead className="bg-slate-900/50 border-b border-slate-800">
                     <tr>
@@ -2266,6 +2375,7 @@ const saveProfile = (e) => {
         </div>
     )}
 </div>
+                        <div className="torch-glow-right" aria-hidden="true"></div>
                     </main>
 
                     {isModalOpen && (
