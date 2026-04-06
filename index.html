@@ -2015,6 +2015,73 @@ const saveProfile = (e) => {
                 return `${Math.round(numericHeight)} cm`;
             };
 
+            const findNextPendingPair = (ids = [], playedMatchups = {}) => {
+                for (let i = 0; i < ids.length - 1; i++) {
+                    for (let j = i + 1; j < ids.length; j++) {
+                        const key = [ids[i], ids[j]].sort().join('__');
+                        if (!playedMatchups[key]) {
+                            return [ids[i], ids[j]];
+                        }
+                    }
+                }
+                return null;
+            };
+
+            const normalizeArenaState = (arenaState) => {
+                if (!arenaState) return null;
+
+                const profileIds = new Set(
+                    (perfiles || [])
+                        .filter(p => p?.firebaseId && (p?.nombre || '').trim())
+                        .map(p => p.firebaseId)
+                );
+                const orderedIds = (arenaState.orderedIds || []).filter(id => profileIds.has(id));
+                const stats = arenaState.stats || {};
+                const matchups = arenaState.matchups || {};
+                const nextPair = orderedIds.length > 1 ? findNextPendingPair(orderedIds, matchups) : null;
+                const isFinished = !nextPair;
+
+                return {
+                    ...arenaState,
+                    orderedIds,
+                    stats,
+                    matchups,
+                    championId: nextPair ? nextPair[0] : null,
+                    challengerId: nextPair ? nextPair[1] : null,
+                    isFinished
+                };
+            };
+
+            useEffect(() => {
+                if (!perfiles.length) return;
+
+                const repairedStates = {};
+                const updates = [];
+
+                Object.entries(arenaBattleState || {}).forEach(([arenaName, state]) => {
+                    const normalized = normalizeArenaState(state);
+                    if (!normalized) return;
+
+                    const hasChanged = JSON.stringify(state) !== JSON.stringify(normalized);
+                    if (!hasChanged) return;
+
+                    repairedStates[arenaName] = normalized;
+                    updates.push(
+                        db.ref(`arenaBattleState/${arenaName}`).set(normalized)
+                            .catch(error => console.error('No se pudo normalizar el estado del arena:', error))
+                    );
+                });
+
+                if (!Object.keys(repairedStates).length) return;
+
+                setArenaBattleState(prev => ({
+                    ...prev,
+                    ...repairedStates
+                }));
+
+                Promise.all(updates).catch(() => {});
+            }, [arenaBattleState, perfiles]);
+
             const initArenaBattle = (arenaName) => {
                 const orderedProfiles = [...perfiles]
                     .filter(p => p?.firebaseId && (p?.nombre || '').trim())
@@ -2022,12 +2089,17 @@ const saveProfile = (e) => {
 
                 if (orderedProfiles.length < 2) return;
 
+                const orderedIds = orderedProfiles.map(p => p.firebaseId);
+                const matchups = {};
+                const initialPair = findNextPendingPair(orderedIds, matchups);
+                if (!initialPair) return;
+
                 const nextArenaState = {
-                    orderedIds: orderedProfiles.map(p => p.firebaseId),
+                    orderedIds,
                     stats: {},
-                    matchups: {},
-                    championId: orderedProfiles[0].firebaseId,
-                    challengerId: orderedProfiles[1].firebaseId,
+                    matchups,
+                    championId: initialPair[0],
+                    challengerId: initialPair[1],
                     isFinished: false
                 };
 
@@ -2054,6 +2126,7 @@ const saveProfile = (e) => {
                 if (!state || state.isFinished) return;
 
                 const { orderedIds = [], championId, challengerId, matchups = {}, stats = {} } = state;
+                if (winnerId !== championId && winnerId !== challengerId) return;
                 const loserId = winnerId === championId ? challengerId : championId;
                 if (!winnerId || !loserId) return;
 
@@ -2092,16 +2165,15 @@ const saveProfile = (e) => {
                 updateProfileArenaScore(winnerId, arenaName, winnerScore);
                 updateProfileArenaScore(loserId, arenaName, loserScore);
 
-                const nextChampionId = winnerId;
-                const candidateId = orderedIds.find(id => id !== nextChampionId && !updatedMatchups[[id, nextChampionId].sort().join('__')]);
+                const nextPair = findNextPendingPair(orderedIds, updatedMatchups);
 
                 const nextArenaState = {
                     ...state,
                     stats: updatedStats,
                     matchups: updatedMatchups,
-                    championId: nextChampionId,
-                    challengerId: candidateId || null,
-                    isFinished: !candidateId
+                    championId: nextPair ? nextPair[0] : null,
+                    challengerId: nextPair ? nextPair[1] : null,
+                    isFinished: !nextPair
                 };
 
                 setArenaBattleState(prev => ({
