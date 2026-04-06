@@ -257,6 +257,18 @@
         const getGalleryItemLabel = (item) => normalizeGalleryItem(item).label;
         const getGalleryItemType = (item) => normalizeGalleryItem(item).type;
         const isGifUrl = (url = '') => GIF_FILE_REGEX.test((url || '').trim());
+        const CRYING_EMOJI_FALLBACK = "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20256%20256%27%3E%3Crect%20width%3D%27256%27%20height%3D%27256%27%20rx%3D%2740%27%20fill%3D%27%23020617%27/%3E%3Ctext%20x%3D%27128%27%20y%3D%27152%27%20text-anchor%3D%27middle%27%20font-size%3D%27120%27%3E%F0%9F%98%A2%3C/text%3E%3C/svg%3E";
+        const BROKEN_IMAGE_INLINE_HANDLER = `if(this.dataset.fallbackApplied==='true')return;this.dataset.fallbackApplied='true';this.src='${CRYING_EMOJI_FALLBACK}';this.style.objectFit='contain';this.style.padding='12px';this.style.background='#020617';this.alt='Imagen no disponible';`;
+        const applyCryingEmojiFallback = (event) => {
+            const img = event?.currentTarget || event?.target;
+            if (!img || img.dataset.fallbackApplied === 'true') return;
+            img.dataset.fallbackApplied = 'true';
+            img.src = CRYING_EMOJI_FALLBACK;
+            img.style.objectFit = 'contain';
+            img.style.padding = '12px';
+            img.style.background = '#020617';
+            img.alt = 'Imagen no disponible';
+        };
 
         const STORAGE_KEY = 'g2_elite_database_v4';
         const CAT_STORAGE_KEY = 'g2_elite_categories_v4';
@@ -599,7 +611,7 @@
                                 }
                                 return `<video src="${fotoUrl}" style="width: 100%; height: 100%; object-fit: cover;" muted playsinline preload="metadata"></video>`;
                             })()
-                            : `<img src="${fotoUrl}" alt="Imagen de la galería" style="width: 100%; height: 100%; object-fit: cover;" />`
+                            : `<img src="${fotoUrl}" alt="Imagen de la galería" onerror="${BROKEN_IMAGE_INLINE_HANDLER}" style="width: 100%; height: 100%; object-fit: cover;" />`
                         }
                         <div style="position:absolute; left: 12px; top: 12px; z-index: 15; padding: 6px 10px; border-radius: 999px; background: rgba(2,6,23,0.72); border: 1px solid rgba(148,163,184,0.24); color: #e2e8f0; display:flex; align-items:center; justify-content:center; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; backdrop-filter: blur(8px);">${getGalleryItemType(foto) === 'video' ? 'VIDEO' : 'IMG'}</div>
                         ${fotoLabel ? `<div style="position:absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 15; min-width: 52px; height: 30px; padding: 0 14px; border-radius: 999px; background: ${labelStyle.bg}; border: 1px solid ${labelStyle.border}; color: ${labelStyle.text}; display:flex; align-items:center; justify-content:center; font-size: 12px; font-weight: 900; letter-spacing: 0.24em; box-shadow: 0 0 14px ${labelStyle.glow}, 0 0 24px ${labelStyle.glow}; text-shadow: 0 0 10px ${labelStyle.glow}; backdrop-filter: blur(8px);">${fotoLabel}</div>` : ""}
@@ -625,7 +637,7 @@
                                     ? (embedInfo
                                         ? `<iframe src="${embedInfo.src}" title="${embedInfo.title} ${index + 1}" style="width:min(92vw, 1400px); height:min(75vh, 820px); border:0; border-radius:24px; box-shadow:0 0 40px rgba(34, 211, 238, 0.2); background:#000;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`
                                         : `<video src="${foto.url}" controls playsinline style="max-width:min(92vw, 1400px); max-height:calc(100vh - 64px); width:auto; height:auto; border-radius:24px; box-shadow:0 0 40px rgba(34, 211, 238, 0.2); background:#000;"></video>`)
-                                    : `<img src="${foto.url}" alt="Vista completa ${index + 1}" />`
+                                    : `<img src="${foto.url}" alt="Vista completa ${index + 1}" onerror="${BROKEN_IMAGE_INLINE_HANDLER}" />`
                                 }
                             </div>`;
                         }).join('')}
@@ -1534,6 +1546,7 @@ const saveProfile = (e) => {
                                 <img
                                     src={(p.fotos && p.fotos.length > 0) ? p.fotos[0] : 'https://via.placeholder.com/400x500'}
                                     className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100"
+                                    onError={applyCryingEmojiFallback}
                                 />
 
                                 <div className="absolute top-6 right-6 w-14 h-14 bg-slate-900/90 backdrop-blur-md rounded-full flex flex-col items-center justify-center border border-white/10">
@@ -1683,7 +1696,7 @@ const saveProfile = (e) => {
                                             );
                                         }
                                         return <video src={photo.url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" muted playsInline preload="metadata" />;
-                                    })() : <img src={photo.url} alt={`${photo.nombre} - ${photo.label || 'galería'}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />}
+                                    })() : <img src={photo.url} alt={`${photo.nombre} - ${photo.label || 'galería'}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onError={applyCryingEmojiFallback} />}
                                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-cyan-950/40 via-transparent to-transparent" />
                                     <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent">
                                         <div className="flex items-end justify-between gap-3">
@@ -1796,6 +1809,7 @@ const saveProfile = (e) => {
                                     src={selectedGalleryPhoto.url}
                                     alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
                                     className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
+                                    onError={applyCryingEmojiFallback}
                                 />
                             )}
 
@@ -1889,7 +1903,7 @@ const saveProfile = (e) => {
          borderColor: (neonColors[p.profesion?.toUpperCase()] || neonColors["DEFAULT"]).color,
          boxShadow: `0 0 10px ${(neonColors[p.profesion?.toUpperCase()] || neonColors["DEFAULT"]).sombra}`
      }}>
-                <img src={p.fotos?.[0] || 'https://via.placeholder.com/400x500'} className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" />
+                <img src={p.fotos?.[0] || 'https://via.placeholder.com/400x500'} className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" onError={applyCryingEmojiFallback} />
             </div>
             <div>
                 <p className="font-black text-white text-sm uppercase tracking-tighter">{p.nombre} {getEmoji(p.profesion)}</p>
@@ -1999,6 +2013,7 @@ const saveProfile = (e) => {
             <img
                 src={cat.coverImg || 'https://via.placeholder.com/400x600?text=Sin+Portada'}
                 className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500"
+                onError={applyCryingEmojiFallback}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent"></div>
         </div>
@@ -2076,7 +2091,7 @@ const saveProfile = (e) => {
             {/* CUADRO VISTA PREVIA NEÓN */}
             <div className="w-48 h-60 rounded-[2.5rem] border-2 border-cyan-500 shadow-[0_0_20px_rgba(34,211,238,0.4)] overflow-hidden bg-slate-900 flex items-center justify-center relative group">
                 {formData.fotos.length > 0 && formData.fotos[0] !== "" ? (
-                    <img src={formData.fotos[0]} className="w-full h-full object-cover" alt="Preview" />
+                    <img src={formData.fotos[0]} className="w-full h-full object-cover" alt="Preview" onError={applyCryingEmojiFallback} />
                 ) : (
                     <div className="text-center p-4">
                         <LucideIcon name="image" size={32} className="mx-auto text-slate-700 mb-2" />
@@ -2099,7 +2114,7 @@ const saveProfile = (e) => {
                                 );
                             }
                             return <video src={urlInput} className="w-full h-full object-cover" muted playsInline preload="metadata" />;
-                        })() : <img src={urlInput} className="w-full h-full object-cover" alt="Preview galería" />}
+                        })() : <img src={urlInput} className="w-full h-full object-cover" alt="Preview galería" onError={applyCryingEmojiFallback} />}
                         {(() => {
                             const labelStyle = getGalleryLabelStyle(galleryLabel);
                             return (
