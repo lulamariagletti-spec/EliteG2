@@ -2555,6 +2555,16 @@ const saveProfile = (e) => {
         const challenger = perfiles.find(p => p.firebaseId === arenaState?.challengerId);
         const championStats = champion ? getArenaStats(selectedArena, champion.firebaseId) : null;
         const challengerStats = challenger ? getArenaStats(selectedArena, challenger.firebaseId) : null;
+        const isHeightArena = selectedArena === 'Estatura';
+        const getBattleCardImage = (profile) => {
+            if (!profile) return 'https://via.placeholder.com/400x500';
+            if (isHeightArena) return profile.fotos?.[0] || 'https://via.placeholder.com/400x500';
+            return profile.fotos?.[0] || 'https://via.placeholder.com/400x500';
+        };
+        const getHeightBadge = (profile) => {
+            const cm = Number(profile?.estaturaCm);
+            return Number.isFinite(cm) && cm > 0 ? `${cm} cm` : '— cm';
+        };
 
         return (
             <div className="space-y-8 animate-in fade-in duration-500">
@@ -2596,6 +2606,19 @@ const saveProfile = (e) => {
                             onClick={() => registerBattleWinner(selectedArena, champion.firebaseId)}
                             className="theme-surface-card border theme-border-secondary rounded-2xl p-8 hover:border-[var(--metal-gold)] transition-all text-left"
                         >
+                            <div className="relative mb-5 h-56 w-full overflow-hidden rounded-xl border border-white/10">
+                                <img
+                                    src={getBattleCardImage(champion)}
+                                    className="w-full h-full object-cover"
+                                    alt={champion.nombre}
+                                    onError={applyCryingEmojiFallback}
+                                />
+                                {isHeightArena && (
+                                    <span className="absolute top-3 right-3 bg-black/70 border border-white/20 text-white text-[11px] font-black tracking-[0.08em] px-3 py-1 rounded-full backdrop-blur-sm">
+                                        {getHeightBadge(champion)}
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
                             <h3 className="text-3xl font-black italic text-white mt-2">{champion.nombre}</h3>
                             <p className="text-xs text-[var(--metal-gold)] mt-3">Victorias: {championStats?.wins || 0} · Batallas: {championStats?.battles || 0}</p>
@@ -2608,6 +2631,19 @@ const saveProfile = (e) => {
                             onClick={() => registerBattleWinner(selectedArena, challenger.firebaseId)}
                             className="theme-surface-card border theme-border-secondary rounded-2xl p-8 hover:border-[var(--metal-gold)] transition-all text-left"
                         >
+                            <div className="relative mb-5 h-56 w-full overflow-hidden rounded-xl border border-white/10">
+                                <img
+                                    src={getBattleCardImage(challenger)}
+                                    className="w-full h-full object-cover"
+                                    alt={challenger.nombre}
+                                    onError={applyCryingEmojiFallback}
+                                />
+                                {isHeightArena && (
+                                    <span className="absolute top-3 right-3 bg-black/70 border border-white/20 text-white text-[11px] font-black tracking-[0.08em] px-3 py-1 rounded-full backdrop-blur-sm">
+                                        {getHeightBadge(challenger)}
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
                             <h3 className="text-3xl font-black italic text-white mt-2">{challenger.nombre}</h3>
                             <p className="text-xs text-[var(--metal-gold)] mt-3">Victorias: {challengerStats?.wins || 0} · Batallas: {challengerStats?.battles || 0}</p>
