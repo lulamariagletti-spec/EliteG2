@@ -480,6 +480,18 @@
             if (lowP.includes('atleta')) return 'shield';
             return 'shield';
         };
+        const getEmoji = (profession = '') => {
+            const lowP = String(profession || '').toLowerCase();
+            if (lowP.includes('cantante')) return '🎤';
+            if (lowP.includes('nsfw')) return '🔞';
+            if (lowP.includes('actriz') || lowP.includes('actor')) return '🎬';
+            if (lowP.includes('modelo')) return '✨';
+            if (lowP.includes('influencer')) return '📱';
+            if (lowP.includes('periodista')) return '👓';
+            if (lowP.includes('bailarina')) return '💃';
+            if (lowP.includes('atleta')) return '🏋️‍♀️';
+            return '📁';
+        };
 
         const HeraldicGlyph = ({ variant = 'sigil', size = 18, className = '', tint = 'currentColor' }) => {
             const common = {
