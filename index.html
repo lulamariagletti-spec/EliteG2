@@ -2022,12 +2022,29 @@ const saveProfile = (e) => {
 
                 if (orderedProfiles.length < 2) return;
 
+                const findNextPendingPair = (orderedIds, matchups) => {
+                    for (let i = 0; i < orderedIds.length - 1; i++) {
+                        for (let j = i + 1; j < orderedIds.length; j++) {
+                            const pairKey = [orderedIds[i], orderedIds[j]].sort().join('__');
+                            if (!matchups[pairKey]) {
+                                return [orderedIds[i], orderedIds[j]];
+                            }
+                        }
+                    }
+                    return null;
+                };
+
+                const orderedIds = orderedProfiles.map(p => p.firebaseId);
+                const matchups = {};
+                const initialPair = findNextPendingPair(orderedIds, matchups);
+                if (!initialPair) return;
+
                 const nextArenaState = {
-                    orderedIds: orderedProfiles.map(p => p.firebaseId),
+                    orderedIds,
                     stats: {},
-                    matchups: {},
-                    championId: orderedProfiles[0].firebaseId,
-                    challengerId: orderedProfiles[1].firebaseId,
+                    matchups,
+                    championId: initialPair[0],
+                    challengerId: initialPair[1],
                     isFinished: false
                 };
 
@@ -2054,6 +2071,7 @@ const saveProfile = (e) => {
                 if (!state || state.isFinished) return;
 
                 const { orderedIds = [], championId, challengerId, matchups = {}, stats = {} } = state;
+                if (winnerId !== championId && winnerId !== challengerId) return;
                 const loserId = winnerId === championId ? challengerId : championId;
                 if (!winnerId || !loserId) return;
 
@@ -2092,16 +2110,27 @@ const saveProfile = (e) => {
                 updateProfileArenaScore(winnerId, arenaName, winnerScore);
                 updateProfileArenaScore(loserId, arenaName, loserScore);
 
-                const nextChampionId = winnerId;
-                const candidateId = orderedIds.find(id => id !== nextChampionId && !updatedMatchups[[id, nextChampionId].sort().join('__')]);
+                const findNextPendingPair = (ids, playedMatchups) => {
+                    for (let i = 0; i < ids.length - 1; i++) {
+                        for (let j = i + 1; j < ids.length; j++) {
+                            const key = [ids[i], ids[j]].sort().join('__');
+                            if (!playedMatchups[key]) {
+                                return [ids[i], ids[j]];
+                            }
+                        }
+                    }
+                    return null;
+                };
+
+                const nextPair = findNextPendingPair(orderedIds, updatedMatchups);
 
                 const nextArenaState = {
                     ...state,
                     stats: updatedStats,
                     matchups: updatedMatchups,
-                    championId: nextChampionId,
-                    challengerId: candidateId || null,
-                    isFinished: !candidateId
+                    championId: nextPair ? nextPair[0] : null,
+                    challengerId: nextPair ? nextPair[1] : null,
+                    isFinished: !nextPair
                 };
 
                 setArenaBattleState(prev => ({
