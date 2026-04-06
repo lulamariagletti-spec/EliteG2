@@ -320,9 +320,12 @@
                 <title>Galería de ${profileName}</title>
                 <style>
                     body {
-                        background-color: #020617;
-                        color: #f1f5f9;
-                        font-family: 'Plus Jakarta Sans', sans-serif;
+                        background:
+                            radial-gradient(circle at 20% 18%, rgba(255, 208, 140, 0.14), transparent 32%),
+                            radial-gradient(circle at 82% 8%, rgba(184, 115, 51, 0.17), transparent 28%),
+                            linear-gradient(180deg, #120f0a 0%, #1d160f 45%, #271b12 100%);
+                        color: #f7ebd2;
+                        font-family: 'Cinzel', 'Plus Jakarta Sans', serif;
                         padding: 40px;
                         margin: 0;
                         display: flex;
@@ -385,8 +388,10 @@
                         position: fixed;
                         inset: 0;
                         z-index: 2000;
-                        background: rgba(2, 6, 23, 0.96);
-                        backdrop-filter: blur(12px);
+                        background:
+                            radial-gradient(circle at 50% 20%, rgba(255, 214, 153, 0.08), transparent 42%),
+                            rgba(16, 10, 4, 0.95);
+                        backdrop-filter: blur(6px);
                     }
                     .fullscreen-viewer.open {
                         display: flex;
@@ -396,15 +401,35 @@
                         top: 20px;
                         right: 30px;
                         z-index: 2100;
-                        background: rgba(15, 23, 42, 0.9);
-                        color: #f8fafc;
-                        border: 1px solid rgba(148, 163, 184, 0.4);
-                        border-radius: 999px;
+                        background: linear-gradient(180deg, #5d3f21 0%, #3d2814 100%);
+                        color: #fff7e6;
+                        border: 2px solid #d2ae6d;
+                        border-radius: 50%;
                         width: 48px;
                         height: 48px;
                         cursor: pointer;
                         font-size: 28px;
                         line-height: 1;
+                        font-weight: 700;
+                        box-shadow:
+                            0 6px 16px rgba(0, 0, 0, 0.55),
+                            inset 0 1px 0 rgba(255, 244, 214, 0.35),
+                            inset 0 -2px 0 rgba(48, 28, 12, 0.55);
+                        text-shadow: 0 0 6px rgba(0, 0, 0, 0.75);
+                        transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+                    }
+                    .viewer-close:hover {
+                        transform: scale(1.06);
+                        filter: brightness(1.08);
+                        box-shadow:
+                            0 8px 18px rgba(0, 0, 0, 0.62),
+                            inset 0 1px 0 rgba(255, 244, 214, 0.42),
+                            inset 0 -2px 0 rgba(48, 28, 12, 0.62);
+                    }
+                    .viewer-close:focus-visible,
+                    .viewer-nav:focus-visible {
+                        outline: 3px solid #ffe0a8;
+                        outline-offset: 3px;
                     }
                     .viewer-stage {
                         position: relative;
@@ -432,8 +457,12 @@
                         width: auto;
                         height: auto;
                         object-fit: contain;
-                        border-radius: 24px;
-                        box-shadow: 0 0 40px rgba(34, 211, 238, 0.2);
+                        border-radius: 20px;
+                        border: 3px solid #c8a167;
+                        box-shadow:
+                            0 24px 52px rgba(0, 0, 0, 0.64),
+                            0 0 0 3px rgba(83, 55, 27, 0.8),
+                            inset 0 0 24px rgba(255, 223, 171, 0.12);
                     }
                     .viewer-nav {
                         position: fixed;
@@ -441,22 +470,29 @@
                         z-index: 2100;
                         width: 44px;
                         height: 44px;
-                        border-radius: 999px;
-                        border: 1px solid rgba(148, 163, 184, 0.42);
-                        background: rgba(15, 23, 42, 0.92);
-                        color: #f8fafc;
+                        border-radius: 50%;
+                        border: 2px solid #d8b374;
+                        background: linear-gradient(180deg, #624021 0%, #3a2512 100%);
+                        color: #fff7e6;
                         display: flex;
                         align-items: center;
                         justify-content: center;
                         cursor: pointer;
                         font-size: 24px;
+                        font-weight: 700;
                         line-height: 1;
-                        transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+                        text-shadow: 0 0 5px rgba(0, 0, 0, 0.72);
+                        box-shadow:
+                            0 6px 16px rgba(0, 0, 0, 0.55),
+                            inset 0 1px 0 rgba(255, 244, 214, 0.34),
+                            inset 0 -2px 0 rgba(48, 28, 12, 0.55);
+                        transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease, filter 0.2s ease;
                     }
                     .viewer-nav:hover {
                         transform: scale(1.06);
-                        border-color: rgba(34, 211, 238, 0.8);
-                        color: #22d3ee;
+                        border-color: #f0c883;
+                        color: #fff7e6;
+                        filter: brightness(1.1);
                     }
                     .viewer-nav.prev {
                         left: 24px;
@@ -465,13 +501,15 @@
                         right: 24px;
                     }
                     .viewer-nav[disabled] {
-                        opacity: 0.45;
+                        opacity: 0.62;
                         cursor: default;
+                        filter: grayscale(0.28);
                     }
                     .viewer-nav[disabled]:hover {
                         transform: none;
-                        border-color: rgba(148, 163, 184, 0.42);
-                        color: #f8fafc;
+                        border-color: #d8b374;
+                        color: #fff7e6;
+                        filter: grayscale(0.28);
                     }
                     .viewer-hint {
                         position: fixed;
@@ -481,8 +519,9 @@
                         z-index: 2100;
                         padding: 10px 16px;
                         border-radius: 999px;
-                        background: rgba(15, 23, 42, 0.75);
-                        color: #cbd5e1;
+                        background: rgba(43, 29, 16, 0.72);
+                        color: #f6e7ca;
+                        border: 1px solid rgba(201, 162, 98, 0.72);
                         font-size: 12px;
                         letter-spacing: 0.08em;
                         text-transform: uppercase;
