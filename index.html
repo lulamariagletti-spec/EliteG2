@@ -1552,10 +1552,16 @@ const getInitialCatFormData = () => ({
                     }
                 });
 
+                const arenasRef = db.ref('arenaBattleState');
+                arenasRef.on('value', (snapshot) => {
+                    setArenaBattleState(snapshot.val() || {});
+                });
+
                 return () => {
                     window.removeEventListener('message', handleMessage);
                     perfilesRef.off();
                     categoriasRef.off();
+                    arenasRef.off();
                 };
             }, []);
 
@@ -1861,17 +1867,22 @@ const saveProfile = (e) => {
 
                 if (orderedProfiles.length < 2) return;
 
+                const nextArenaState = {
+                    orderedIds: orderedProfiles.map(p => p.firebaseId),
+                    stats: {},
+                    matchups: {},
+                    championId: orderedProfiles[0].firebaseId,
+                    challengerId: orderedProfiles[1].firebaseId,
+                    isFinished: false
+                };
+
                 setArenaBattleState(prev => ({
                     ...prev,
-                    [arenaName]: {
-                        orderedIds: orderedProfiles.map(p => p.firebaseId),
-                        stats: {},
-                        matchups: {},
-                        championId: orderedProfiles[0].firebaseId,
-                        challengerId: orderedProfiles[1].firebaseId,
-                        isFinished: false
-                    }
+                    [arenaName]: nextArenaState
                 }));
+
+                db.ref(`arenaBattleState/${arenaName}`).set(nextArenaState)
+                    .catch(error => console.error('No se pudo guardar el estado del arena:', error));
             };
 
             const updateProfileArenaScore = async (profileId, arenaName, value) => {
@@ -1929,17 +1940,22 @@ const saveProfile = (e) => {
                 const nextChampionId = winnerId;
                 const candidateId = orderedIds.find(id => id !== nextChampionId && !updatedMatchups[[id, nextChampionId].sort().join('__')]);
 
+                const nextArenaState = {
+                    ...state,
+                    stats: updatedStats,
+                    matchups: updatedMatchups,
+                    championId: nextChampionId,
+                    challengerId: candidateId || null,
+                    isFinished: !candidateId
+                };
+
                 setArenaBattleState(prev => ({
                     ...prev,
-                    [arenaName]: {
-                        ...state,
-                        stats: updatedStats,
-                        matchups: updatedMatchups,
-                        championId: nextChampionId,
-                        challengerId: candidateId || null,
-                        isFinished: !candidateId
-                    }
+                    [arenaName]: nextArenaState
                 }));
+
+                db.ref(`arenaBattleState/${arenaName}`).set(nextArenaState)
+                    .catch(error => console.error('No se pudo guardar avance de batallas:', error));
             };
 
             const resetAllScores = async () => {
@@ -1957,6 +1973,7 @@ const saveProfile = (e) => {
                         puntuaciones: createZeroScores()
                     })));
                     setArenaBattleState({});
+                    await db.ref('arenaBattleState').remove();
                     alert('Calificaciones reiniciadas en 0 para todos los items.');
                 } catch (error) {
                     console.error('No se pudieron resetear las calificaciones:', error);
