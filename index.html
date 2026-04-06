@@ -2015,6 +2015,85 @@ const saveProfile = (e) => {
                 return `${Math.round(numericHeight)} cm`;
             };
 
+            const findNextPendingDuel = (ids = [], playedMatchups = {}, preferredChampionId = null) => {
+                const findOpponentForChampion = (championId) =>
+                    ids.find(id => id !== championId && !playedMatchups[[id, championId].sort().join('__')]);
+
+                if (preferredChampionId && ids.includes(preferredChampionId)) {
+                    const preferredOpponent = findOpponentForChampion(preferredChampionId);
+                    if (preferredOpponent) {
+                        return [preferredChampionId, preferredOpponent];
+                    }
+                }
+
+                for (const championId of ids) {
+                    const opponentId = findOpponentForChampion(championId);
+                    if (opponentId) {
+                        return [championId, opponentId];
+                    }
+                }
+
+                return null;
+            };
+
+            const normalizeArenaState = (arenaState) => {
+                if (!arenaState) return null;
+
+                const profileIds = new Set(
+                    (perfiles || [])
+                        .filter(p => p?.firebaseId && (p?.nombre || '').trim())
+                        .map(p => p.firebaseId)
+                );
+                const orderedIds = (arenaState.orderedIds || []).filter(id => profileIds.has(id));
+                const stats = arenaState.stats || {};
+                const matchups = arenaState.matchups || {};
+                const preferredChampionId = arenaState.championId || orderedIds[0] || null;
+                const nextDuel = orderedIds.length > 1
+                    ? findNextPendingDuel(orderedIds, matchups, preferredChampionId)
+                    : null;
+                const isFinished = !nextDuel;
+
+                return {
+                    ...arenaState,
+                    orderedIds,
+                    stats,
+                    matchups,
+                    championId: nextDuel ? nextDuel[0] : null,
+                    challengerId: nextDuel ? nextDuel[1] : null,
+                    isFinished
+                };
+            };
+
+            useEffect(() => {
+                if (!perfiles.length) return;
+
+                const repairedStates = {};
+                const updates = [];
+
+                Object.entries(arenaBattleState || {}).forEach(([arenaName, state]) => {
+                    const normalized = normalizeArenaState(state);
+                    if (!normalized) return;
+
+                    const hasChanged = JSON.stringify(state) !== JSON.stringify(normalized);
+                    if (!hasChanged) return;
+
+                    repairedStates[arenaName] = normalized;
+                    updates.push(
+                        db.ref(`arenaBattleState/${arenaName}`).set(normalized)
+                            .catch(error => console.error('No se pudo normalizar el estado del arena:', error))
+                    );
+                });
+
+                if (!Object.keys(repairedStates).length) return;
+
+                setArenaBattleState(prev => ({
+                    ...prev,
+                    ...repairedStates
+                }));
+
+                Promise.all(updates).catch(() => {});
+            }, [arenaBattleState, perfiles]);
+
             const initArenaBattle = (arenaName) => {
                 const orderedProfiles = [...perfiles]
                     .filter(p => p?.firebaseId && (p?.nombre || '').trim())
@@ -2022,12 +2101,17 @@ const saveProfile = (e) => {
 
                 if (orderedProfiles.length < 2) return;
 
+                const orderedIds = orderedProfiles.map(p => p.firebaseId);
+                const matchups = {};
+                const initialDuel = findNextPendingDuel(orderedIds, matchups, orderedIds[0]);
+                if (!initialDuel) return;
+
                 const nextArenaState = {
-                    orderedIds: orderedProfiles.map(p => p.firebaseId),
+                    orderedIds,
                     stats: {},
-                    matchups: {},
-                    championId: orderedProfiles[0].firebaseId,
-                    challengerId: orderedProfiles[1].firebaseId,
+                    matchups,
+                    championId: initialDuel[0],
+                    challengerId: initialDuel[1],
                     isFinished: false
                 };
 
@@ -2054,6 +2138,7 @@ const saveProfile = (e) => {
                 if (!state || state.isFinished) return;
 
                 const { orderedIds = [], championId, challengerId, matchups = {}, stats = {} } = state;
+                if (winnerId !== championId && winnerId !== challengerId) return;
                 const loserId = winnerId === championId ? challengerId : championId;
                 if (!winnerId || !loserId) return;
 
@@ -2092,16 +2177,15 @@ const saveProfile = (e) => {
                 updateProfileArenaScore(winnerId, arenaName, winnerScore);
                 updateProfileArenaScore(loserId, arenaName, loserScore);
 
-                const nextChampionId = winnerId;
-                const candidateId = orderedIds.find(id => id !== nextChampionId && !updatedMatchups[[id, nextChampionId].sort().join('__')]);
+                const nextDuel = findNextPendingDuel(orderedIds, updatedMatchups, winnerId);
 
                 const nextArenaState = {
                     ...state,
                     stats: updatedStats,
                     matchups: updatedMatchups,
-                    championId: nextChampionId,
-                    challengerId: candidateId || null,
-                    isFinished: !candidateId
+                    championId: nextDuel ? nextDuel[0] : null,
+                    challengerId: nextDuel ? nextDuel[1] : null,
+                    isFinished: !nextDuel
                 };
 
                 setArenaBattleState(prev => ({
