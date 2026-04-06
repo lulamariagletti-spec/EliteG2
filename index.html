@@ -2015,24 +2015,15 @@ const saveProfile = (e) => {
                 return `${Math.round(numericHeight)} cm`;
             };
 
-            const findNextPendingDuel = (ids = [], playedMatchups = {}, preferredChampionId = null) => {
-                const findOpponentForChampion = (championId) =>
-                    ids.find(id => id !== championId && !playedMatchups[[id, championId].sort().join('__')]);
-
-                if (preferredChampionId && ids.includes(preferredChampionId)) {
-                    const preferredOpponent = findOpponentForChampion(preferredChampionId);
-                    if (preferredOpponent) {
-                        return [preferredChampionId, preferredOpponent];
+            const findNextPendingPair = (ids = [], playedMatchups = {}) => {
+                for (let i = 0; i < ids.length - 1; i++) {
+                    for (let j = i + 1; j < ids.length; j++) {
+                        const key = [ids[i], ids[j]].sort().join('__');
+                        if (!playedMatchups[key]) {
+                            return [ids[i], ids[j]];
+                        }
                     }
                 }
-
-                for (const championId of ids) {
-                    const opponentId = findOpponentForChampion(championId);
-                    if (opponentId) {
-                        return [championId, opponentId];
-                    }
-                }
-
                 return null;
             };
 
@@ -2047,19 +2038,16 @@ const saveProfile = (e) => {
                 const orderedIds = (arenaState.orderedIds || []).filter(id => profileIds.has(id));
                 const stats = arenaState.stats || {};
                 const matchups = arenaState.matchups || {};
-                const preferredChampionId = arenaState.championId || orderedIds[0] || null;
-                const nextDuel = orderedIds.length > 1
-                    ? findNextPendingDuel(orderedIds, matchups, preferredChampionId)
-                    : null;
-                const isFinished = !nextDuel;
+                const nextPair = orderedIds.length > 1 ? findNextPendingPair(orderedIds, matchups) : null;
+                const isFinished = !nextPair;
 
                 return {
                     ...arenaState,
                     orderedIds,
                     stats,
                     matchups,
-                    championId: nextDuel ? nextDuel[0] : null,
-                    challengerId: nextDuel ? nextDuel[1] : null,
+                    championId: nextPair ? nextPair[0] : null,
+                    challengerId: nextPair ? nextPair[1] : null,
                     isFinished
                 };
             };
@@ -2101,17 +2089,29 @@ const saveProfile = (e) => {
 
                 if (orderedProfiles.length < 2) return;
 
+                const findNextPendingPair = (orderedIds, matchups) => {
+                    for (let i = 0; i < orderedIds.length - 1; i++) {
+                        for (let j = i + 1; j < orderedIds.length; j++) {
+                            const pairKey = [orderedIds[i], orderedIds[j]].sort().join('__');
+                            if (!matchups[pairKey]) {
+                                return [orderedIds[i], orderedIds[j]];
+                            }
+                        }
+                    }
+                    return null;
+                };
+
                 const orderedIds = orderedProfiles.map(p => p.firebaseId);
                 const matchups = {};
-                const initialDuel = findNextPendingDuel(orderedIds, matchups, orderedIds[0]);
-                if (!initialDuel) return;
+                const initialPair = findNextPendingPair(orderedIds, matchups);
+                if (!initialPair) return;
 
                 const nextArenaState = {
                     orderedIds,
                     stats: {},
                     matchups,
-                    championId: initialDuel[0],
-                    challengerId: initialDuel[1],
+                    championId: initialPair[0],
+                    challengerId: initialPair[1],
                     isFinished: false
                 };
 
@@ -2177,15 +2177,27 @@ const saveProfile = (e) => {
                 updateProfileArenaScore(winnerId, arenaName, winnerScore);
                 updateProfileArenaScore(loserId, arenaName, loserScore);
 
-                const nextDuel = findNextPendingDuel(orderedIds, updatedMatchups, winnerId);
+                const findNextPendingPair = (ids, playedMatchups) => {
+                    for (let i = 0; i < ids.length - 1; i++) {
+                        for (let j = i + 1; j < ids.length; j++) {
+                            const key = [ids[i], ids[j]].sort().join('__');
+                            if (!playedMatchups[key]) {
+                                return [ids[i], ids[j]];
+                            }
+                        }
+                    }
+                    return null;
+                };
+
+                const nextPair = findNextPendingPair(orderedIds, updatedMatchups);
 
                 const nextArenaState = {
                     ...state,
                     stats: updatedStats,
                     matchups: updatedMatchups,
-                    championId: nextDuel ? nextDuel[0] : null,
-                    challengerId: nextDuel ? nextDuel[1] : null,
-                    isFinished: !nextDuel
+                    championId: nextPair ? nextPair[0] : null,
+                    challengerId: nextPair ? nextPair[1] : null,
+                    isFinished: !nextPair
                 };
 
                 setArenaBattleState(prev => ({
