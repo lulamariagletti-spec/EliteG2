@@ -2038,8 +2038,22 @@ const saveProfile = (e) => {
                 const orderedIds = (arenaState.orderedIds || []).filter(id => profileIds.has(id));
                 const stats = arenaState.stats || {};
                 const matchups = arenaState.matchups || {};
-                const nextPair = orderedIds.length > 1 ? findNextPendingPair(orderedIds, matchups) : null;
-                const isFinished = !nextPair;
+                const currentChampionId = arenaState.championId;
+                const currentChallengerId = arenaState.challengerId;
+                const currentPairIsValid = (
+                    !!currentChampionId &&
+                    !!currentChallengerId &&
+                    currentChampionId !== currentChallengerId &&
+                    orderedIds.includes(currentChampionId) &&
+                    orderedIds.includes(currentChallengerId) &&
+                    !matchups[[currentChampionId, currentChallengerId].sort().join('__')]
+                );
+
+                const nextPendingPair = orderedIds.length > 1 ? findNextPendingPair(orderedIds, matchups) : null;
+                const nextPair = currentPairIsValid
+                    ? [currentChampionId, currentChallengerId]
+                    : nextPendingPair;
+                const isFinished = !nextPendingPair;
 
                 return {
                     ...arenaState,
