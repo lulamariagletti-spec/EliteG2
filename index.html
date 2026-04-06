@@ -599,7 +599,7 @@
                                 }
                                 return `<video src="${fotoUrl}" style="width: 100%; height: 100%; object-fit: cover;" muted playsinline preload="metadata"></video>`;
                             })()
-                            : `<img src="${fotoUrl}" alt="Imagen de la galería" style="width: 100%; height: 100%; object-fit: cover;" />`
+                            : `<img src="${fotoUrl}" alt="Imagen de la galería" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.closest('.gallery-card')?.remove(); window.opener.postMessage({type: 'DELETE_IMAGE', index: ${foto.sourceIndex}, mediaType: 'image', id: '${editingId}'}, '*');" />`
                         }
                         <div style="position:absolute; left: 12px; top: 12px; z-index: 15; padding: 6px 10px; border-radius: 999px; background: rgba(2,6,23,0.72); border: 1px solid rgba(148,163,184,0.24); color: #e2e8f0; display:flex; align-items:center; justify-content:center; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; backdrop-filter: blur(8px);">${getGalleryItemType(foto) === 'video' ? 'VIDEO' : 'IMG'}</div>
                         ${fotoLabel ? `<div style="position:absolute; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 15; min-width: 52px; height: 30px; padding: 0 14px; border-radius: 999px; background: ${labelStyle.bg}; border: 1px solid ${labelStyle.border}; color: ${labelStyle.text}; display:flex; align-items:center; justify-content:center; font-size: 12px; font-weight: 900; letter-spacing: 0.24em; box-shadow: 0 0 14px ${labelStyle.glow}, 0 0 24px ${labelStyle.glow}; text-shadow: 0 0 10px ${labelStyle.glow}; backdrop-filter: blur(8px);">${fotoLabel}</div>` : ""}
@@ -625,7 +625,7 @@
                                     ? (embedInfo
                                         ? `<iframe src="${embedInfo.src}" title="${embedInfo.title} ${index + 1}" style="width:min(92vw, 1400px); height:min(75vh, 820px); border:0; border-radius:24px; box-shadow:0 0 40px rgba(34, 211, 238, 0.2); background:#000;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`
                                         : `<video src="${foto.url}" controls playsinline style="max-width:min(92vw, 1400px); max-height:calc(100vh - 64px); width:auto; height:auto; border-radius:24px; box-shadow:0 0 40px rgba(34, 211, 238, 0.2); background:#000;"></video>`)
-                                    : `<img src="${foto.url}" alt="Vista completa ${index + 1}" />`
+                                    : `<img src="${foto.url}" alt="Vista completa ${index + 1}" onerror="this.closest('.viewer-slide')?.remove(); window.opener.postMessage({type: 'DELETE_IMAGE', index: ${foto.sourceIndex}, mediaType: 'image', id: '${editingId}'}, '*');" />`
                                 }
                             </div>`;
                         }).join('')}
@@ -851,6 +851,68 @@ const getInitialCatFormData = () => ({
                     console.error('Error al guardar archivo en galería:', error);
                 }
             };
+            const registerAutoDeleteKey = (key) => {
+                if (!key) return false;
+                if (autoDeletedMediaRef.current.has(key)) return false;
+                autoDeletedMediaRef.current.add(key);
+                return true;
+            };
+
+            const removeBrokenProfileAvatar = async ({ profileId, brokenUrl = '' }) => {
+                const normalizedBrokenUrl = (brokenUrl || '').trim();
+                if (!profileId || !normalizedBrokenUrl) return;
+                const deletionKey = `avatar:${profileId}:${normalizedBrokenUrl}`;
+                if (!registerAutoDeleteKey(deletionKey)) return;
+
+                try {
+                    const avatarRef = db.ref(`perfiles/${profileId}/fotos`);
+                    const snapshot = await avatarRef.once('value');
+                    const currentPhotos = Array.isArray(snapshot.val()) ? snapshot.val() : [];
+                    const updatedPhotos = currentPhotos.filter((photoUrl) => (photoUrl || '').trim() && (photoUrl || '').trim() !== normalizedBrokenUrl);
+                    if (updatedPhotos.length !== currentPhotos.length) {
+                        await avatarRef.set(updatedPhotos);
+                    }
+                } catch (error) {
+                    console.error('Error al eliminar avatar roto:', error);
+                }
+            };
+
+            const removeBrokenGalleryImage = async ({ profileId, tag = 'fotos', brokenUrl = '' }) => {
+                const normalizedBrokenUrl = (brokenUrl || '').trim();
+                if (!profileId || !normalizedBrokenUrl || tag !== 'fotos') return;
+                const deletionKey = `gallery:${profileId}:${tag}:${normalizedBrokenUrl}`;
+                if (!registerAutoDeleteKey(deletionKey)) return;
+
+                try {
+                    const galleryRef = db.ref(`perfiles/${profileId}/galeria/${tag}`);
+                    const snapshot = await galleryRef.once('value');
+                    const currentItems = Array.isArray(snapshot.val()) ? snapshot.val() : [];
+                    const updatedItems = currentItems.filter((item) => normalizeGalleryItem(item, 'image').url !== normalizedBrokenUrl);
+                    if (updatedItems.length !== currentItems.length) {
+                        await galleryRef.set(updatedItems);
+                    }
+                } catch (error) {
+                    console.error('Error al eliminar imagen rota de galería:', error);
+                }
+            };
+
+            const removeBrokenCategoryCover = async ({ categoryId, brokenUrl = '' }) => {
+                const normalizedBrokenUrl = (brokenUrl || '').trim();
+                if (!categoryId || !normalizedBrokenUrl) return;
+                const deletionKey = `category-cover:${categoryId}:${normalizedBrokenUrl}`;
+                if (!registerAutoDeleteKey(deletionKey)) return;
+
+                try {
+                    const categoryRef = db.ref(`categorias/${categoryId}/coverImg`);
+                    const snapshot = await categoryRef.once('value');
+                    const currentCover = (snapshot.val() || '').trim();
+                    if (currentCover && currentCover === normalizedBrokenUrl) {
+                        await categoryRef.set('');
+                    }
+                } catch (error) {
+                    console.error('Error al eliminar portada rota de categoría:', error);
+                }
+            };
             const handleDelete = async (id, e) => {
                 e.stopPropagation(); // Esto es para que no se abra la foto cuando hacés click en la cruz
                 if(confirm('¿Estás seguro de que querés eliminar esto, corazón?')) {
@@ -1030,7 +1092,7 @@ const getInitialCatFormData = () => ({
                     ];
 
                     return galleryItems
-                        .map((item, index) => {
+                        .map(({ item, sourceTag, sourceIndex }, index) => {
                             const normalizedItem = normalizeGalleryItem(item);
                             if (!normalizedItem.url) return null;
 
@@ -1044,7 +1106,9 @@ const getInitialCatFormData = () => ({
                                 profesion: perfil.profesion || 'Perfil',
                                 nacionalidad: perfil.nacionalidad || '',
                                 fotoPerfil: perfil.fotos?.[0] || normalizedItem.url,
-                                profileId: perfil.firebaseId
+                                profileId: perfil.firebaseId,
+                                sourceTag,
+                                sourceIndex
                             };
                         })
                         .filter(Boolean);
@@ -1133,7 +1197,7 @@ const getInitialCatFormData = () => ({
                     return;
                 }
 
-                const timeoutDuration = 7000;
+                const timeoutDuration = selectedGalleryPhoto.isGif ? 25000 : 5000;
                 galleryPlaybackTimeoutRef.current = setTimeout(() => {
                     setSelectedGalleryIndex((current) => clampIndex((current ?? 0) + 1, filteredGalleryPhotos.length));
                 }, timeoutDuration);
@@ -1534,6 +1598,7 @@ const saveProfile = (e) => {
                                 <img
                                     src={(p.fotos && p.fotos.length > 0) ? p.fotos[0] : 'https://via.placeholder.com/400x500'}
                                     className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100"
+                                    onError={() => removeBrokenProfileAvatar({ profileId: p.firebaseId, brokenUrl: p.fotos?.[0] })}
                                 />
 
                                 <div className="absolute top-6 right-6 w-14 h-14 bg-slate-900/90 backdrop-blur-md rounded-full flex flex-col items-center justify-center border border-white/10">
@@ -1644,7 +1709,7 @@ const saveProfile = (e) => {
                     Play galería general
                 </button>
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                    Fotos y GIF: 7s · Videos: hasta terminar
+                    Fotos: 5s · GIF: 5 ciclos aprox · Videos: hasta terminar
                 </p>
             </div>
 
@@ -1683,7 +1748,14 @@ const saveProfile = (e) => {
                                             );
                                         }
                                         return <video src={photo.url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" muted playsInline preload="metadata" />;
-                                    })() : <img src={photo.url} alt={`${photo.nombre} - ${photo.label || 'galería'}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />}
+                                    })() : (
+                                        <img
+                                            src={photo.url}
+                                            alt={`${photo.nombre} - ${photo.label || 'galería'}`}
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                            onError={() => removeBrokenGalleryImage({ profileId: photo.profileId, tag: photo.sourceTag, brokenUrl: photo.url })}
+                                        />
+                                    )}
                                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-cyan-950/40 via-transparent to-transparent" />
                                     <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent">
                                         <div className="flex items-end justify-between gap-3">
@@ -1796,6 +1868,10 @@ const saveProfile = (e) => {
                                     src={selectedGalleryPhoto.url}
                                     alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
                                     className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
+                                    onError={() => {
+                                        closeGalleryViewer();
+                                        removeBrokenGalleryImage({ profileId: selectedGalleryPhoto.profileId, tag: selectedGalleryPhoto.sourceTag, brokenUrl: selectedGalleryPhoto.url });
+                                    }}
                                 />
                             )}
 
@@ -1889,7 +1965,11 @@ const saveProfile = (e) => {
          borderColor: (neonColors[p.profesion?.toUpperCase()] || neonColors["DEFAULT"]).color,
          boxShadow: `0 0 10px ${(neonColors[p.profesion?.toUpperCase()] || neonColors["DEFAULT"]).sombra}`
      }}>
-                <img src={p.fotos?.[0] || 'https://via.placeholder.com/400x500'} className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" />
+                <img
+                    src={p.fotos?.[0] || 'https://via.placeholder.com/400x500'}
+                    className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100"
+                    onError={() => removeBrokenProfileAvatar({ profileId: p.firebaseId, brokenUrl: p.fotos?.[0] })}
+                />
             </div>
             <div>
                 <p className="font-black text-white text-sm uppercase tracking-tighter">{p.nombre} {getEmoji(p.profesion)}</p>
@@ -1999,6 +2079,7 @@ const saveProfile = (e) => {
             <img
                 src={cat.coverImg || 'https://via.placeholder.com/400x600?text=Sin+Portada'}
                 className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500"
+                onError={() => removeBrokenCategoryCover({ categoryId: cat.firebaseId, brokenUrl: cat.coverImg })}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent"></div>
         </div>
@@ -2076,7 +2157,18 @@ const saveProfile = (e) => {
             {/* CUADRO VISTA PREVIA NEÓN */}
             <div className="w-48 h-60 rounded-[2.5rem] border-2 border-cyan-500 shadow-[0_0_20px_rgba(34,211,238,0.4)] overflow-hidden bg-slate-900 flex items-center justify-center relative group">
                 {formData.fotos.length > 0 && formData.fotos[0] !== "" ? (
-                    <img src={formData.fotos[0]} className="w-full h-full object-cover" alt="Preview" />
+                    <img
+                        src={formData.fotos[0]}
+                        className="w-full h-full object-cover"
+                        alt="Preview"
+                        onError={() => {
+                            if (editingId) {
+                                removeBrokenProfileAvatar({ profileId: editingId, brokenUrl: formData.fotos?.[0] });
+                            } else {
+                                setFormData(prev => ({ ...prev, fotos: [] }));
+                            }
+                        }}
+                    />
                 ) : (
                     <div className="text-center p-4">
                         <LucideIcon name="image" size={32} className="mx-auto text-slate-700 mb-2" />
@@ -2099,7 +2191,14 @@ const saveProfile = (e) => {
                                 );
                             }
                             return <video src={urlInput} className="w-full h-full object-cover" muted playsInline preload="metadata" />;
-                        })() : <img src={urlInput} className="w-full h-full object-cover" alt="Preview galería" />}
+                        })() : (
+                            <img
+                                src={urlInput}
+                                className="w-full h-full object-cover"
+                                alt="Preview galería"
+                                onError={() => setUrlInput('')}
+                            />
+                        )}
                         {(() => {
                             const labelStyle = getGalleryLabelStyle(galleryLabel);
                             return (
