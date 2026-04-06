@@ -1334,6 +1334,7 @@
             const [editingId, setEditingId] = useState(null);
             const [selectedCategory, setSelectedCategory] = React.useState(null);
             const [sortBy, setSortBy] = useState('promedio');
+            const [sortDirection, setSortDirection] = useState('desc');
             const [urlInput, setUrlInput] = useState('');
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
             const [galleryMediaType, setGalleryMediaType] = useState('image');
@@ -1951,12 +1952,51 @@ const saveProfile = (e) => {
 
                 return base;
             }, [perfiles, searchQuery, activeTab, selectedCategory, filters]);
-            const sortedProfiles = [...filteredProfiles].sort((a, b) => {
-                if (sortBy === 'promedio') {
-                    return calcularPromedio(b) - calcularPromedio(a);
+            const getSortValue = (profile, key) => {
+                if (key === 'promedio') return Number(calcularPromedio(profile)) || 0;
+                if (key === 'nombre') return (profile.nombre || '').toLowerCase();
+                if (key === 'nacionalidad') return (profile.nacionalidad || '').toLowerCase();
+                if (key === 'edad') {
+                    const edad = calcularEdad(profile.fechaNacimiento);
+                    return typeof edad === 'number' ? edad : -1;
                 }
-                // Si elegimos un atributo específico (ej: 'rostro')
-                return (b.puntuaciones?.[sortBy] || 0) - (a.puntuaciones?.[sortBy] || 0);
+                if (key === 'Rostro') {
+                    return ((profile.puntuaciones.Rostro + profile.puntuaciones.Ojos + profile.puntuaciones.Boca + profile.puntuaciones.Cabello) / 4) || 0;
+                }
+                if (key === 'Cuerpo') {
+                    return ((profile.puntuaciones.Cuerpo + profile.puntuaciones.Cola + profile.puntuaciones.Pechos + profile.puntuaciones.Cintura + profile.puntuaciones.Piernas + profile.puntuaciones.Estatura) / 6) || 0;
+                }
+                if (key === 'Actitud') {
+                    return ((profile.puntuaciones.Sensualidad + profile.puntuaciones.Carisma + profile.puntuaciones.Elegancia + profile.puntuaciones.Dulzura + profile.puntuaciones.Talento) / 5) || 0;
+                }
+                return Number(profile.puntuaciones?.[key] || 0);
+            };
+
+            const toggleSort = (key, defaultDirection = 'asc') => {
+                if (sortBy === key) {
+                    setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+                    return;
+                }
+                setSortBy(key);
+                setSortDirection(defaultDirection);
+            };
+
+            const sortedProfiles = [...filteredProfiles].sort((a, b) => {
+                const aValue = getSortValue(a, sortBy);
+                const bValue = getSortValue(b, sortBy);
+
+                let result = 0;
+                if (typeof aValue === 'string' || typeof bValue === 'string') {
+                    result = String(aValue).localeCompare(String(bValue), 'es', { sensitivity: 'base' });
+                } else {
+                    result = aValue - bValue;
+                }
+
+                if (result === 0) {
+                    return (a.nombre || '').localeCompare((b.nombre || ''), 'es', { sensitivity: 'base' });
+                }
+
+                return sortDirection === 'asc' ? result : -result;
             });
             return (
                 <div className="flex h-screen overflow-hidden bg-[#020617] stone-wall-surface relative">
@@ -2626,18 +2666,45 @@ const saveProfile = (e) => {
                 <thead className="theme-surface-soft">
                     <tr>
                         <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">#</th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest rock-carved-text">Perfil</th>
+                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest rock-carved-text">
+                            <button
+                                type="button"
+                                onClick={() => toggleSort('nombre', 'asc')}
+                                className="inline-flex items-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
+                            >
+                                Perfil {sortBy === 'nombre' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                            </button>
+                        </th>
                         <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Rostro</th>
                         <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Cuerpo</th>
                         <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Actitud</th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Ubicación</th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Edad</th>
+                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">
+                            <button
+                                type="button"
+                                onClick={() => toggleSort('nacionalidad', 'asc')}
+                                className="inline-flex items-center justify-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
+                            >
+                                Ubicación {sortBy === 'nacionalidad' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                            </button>
+                        </th>
+                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">
+                            <button
+                                type="button"
+                                onClick={() => toggleSort('edad', 'desc')}
+                                className="inline-flex items-center justify-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
+                            >
+                                Edad {sortBy === 'edad' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                            </button>
+                        </th>
                         <th className="px-8 py-6 text-right">
                             <div className="flex flex-col items-end gap-1">
                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ordenar por</span>
                                 <select
                                     value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
+                                    onChange={(e) => {
+                                        setSortBy(e.target.value);
+                                        setSortDirection('desc');
+                                    }}
                                     className="bg-slate-900 border border-[color:color-mix(in_srgb,var(--metal-gold)_30%,transparent)] text-[var(--metal-gold)] text-[10px] font-black uppercase py-1 px-2 rounded-lg outline-none cursor-pointer hover:border-cyan-500 transition-all"
                                 >
                                     <option value="promedio">G2 SCORE TOTAL (PROMEDIO)</option>
