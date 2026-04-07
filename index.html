@@ -1819,6 +1819,40 @@ const getInitialCatFormData = () => ({
                     return acc;
                 }, {});
             }, [allGalleryPhotos]);
+            const galleryBuckets = useMemo(() => {
+                const participantBuckets = (perfiles || [])
+                    .map((perfil) => {
+                        const normalizedItems = [
+                            ...(Array.isArray(perfil?.galeria?.fotos) ? perfil.galeria.fotos : []),
+                            ...(Array.isArray(perfil?.galeria?.gifs) ? perfil.galeria.gifs : []),
+                            ...(Array.isArray(perfil?.galeria?.videos) ? perfil.galeria.videos : [])
+                        ]
+                            .map((item) => normalizeGalleryItem(item))
+                            .filter((item) => item?.url);
+
+                        return {
+                            profileId: perfil?.firebaseId || null,
+                            nombre: perfil?.nombre || 'Sin nombre',
+                            profesion: perfil?.profesion || 'Perfil',
+                            count: normalizedItems.length
+                        };
+                    })
+                    .filter((bucket) => bucket.count > 0)
+                    .sort((a, b) => {
+                        const byCount = b.count - a.count;
+                        if (byCount !== 0) return byCount;
+                        return a.nombre.localeCompare(b.nombre, 'es');
+                    });
+
+                return {
+                    general: {
+                        key: 'GENERAL',
+                        nombre: 'General',
+                        count: allGalleryPhotos.length
+                    },
+                    participants: participantBuckets
+                };
+            }, [perfiles, allGalleryPhotos]);
             const filteredGalleryPhotos = useMemo(() => {
                 const query = searchQuery.trim().toLowerCase();
 
@@ -2715,6 +2749,30 @@ const saveProfile = (e) => {
                     <LucideIcon name="play" size={14} />
                     Play galería general
                 </button>
+            </div>
+
+            <div className="space-y-4">
+                <div className="theme-surface-card border theme-border-secondary rounded-[2rem] p-6">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Principal</p>
+                    <p className="text-2xl font-black italic text-white mt-2">{galleryBuckets.general.nombre}</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-[var(--metal-gold)] mt-2">
+                        {galleryBuckets.general.count} {galleryBuckets.general.count === 1 ? 'archivo' : 'archivos'}
+                    </p>
+                </div>
+
+                {galleryBuckets.participants.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                        {galleryBuckets.participants.map((bucket) => (
+                            <div key={bucket.profileId || bucket.nombre} className="theme-surface-soft border theme-border-secondary rounded-[1.6rem] px-5 py-4">
+                                <p className="text-lg font-black italic text-white leading-none">{bucket.nombre}</p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-2">{bucket.profesion}</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--metal-gold)] mt-3">
+                                    {bucket.count} {bucket.count === 1 ? 'archivo' : 'archivos'}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {filteredGalleryPhotos.length === 0 ? (
