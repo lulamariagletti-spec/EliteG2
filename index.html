@@ -1450,7 +1450,6 @@
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
             const [galleryMediaType, setGalleryMediaType] = useState('image');
             const [galleryFilterLabel, setGalleryFilterLabel] = useState('INICIAL');
-            const [galleryOwnerFilter, setGalleryOwnerFilter] = useState('GENERAL');
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
             const [selectedGalleryBucket, setSelectedGalleryBucket] = useState(null);
             const [isGalleryPlaying, setIsGalleryPlaying] = useState(false);
@@ -1875,11 +1874,8 @@ const getInitialCatFormData = () => ({
                         || photo.profesion.toLowerCase().includes(query)
                         || (photo.nacionalidad || '').toLowerCase().includes(query)
                         || (photo.label || '').toLowerCase().includes(query);
-                    const matchesOwner = galleryOwnerFilter === 'GENERAL'
-                        ? true
-                        : photo.profileId === galleryOwnerFilter;
 
-                    return matchesLabel && matchesQuery && matchesOwner;
+                    return matchesLabel && matchesQuery;
                 });
             }, [sourceGalleryPhotos, galleryFilterLabel, searchQuery]);
             const selectedGalleryPhoto = selectedGalleryIndex === null
@@ -2481,42 +2477,11 @@ const saveProfile = (e) => {
                                     </button>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <h5 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.22em]">Índice de galerías</h5>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setGalleryOwnerFilter('GENERAL')}
-                                            title={`General (${allGalleryPhotos.length} archivos)`}
-                                            className={`btn-metal relative h-9 rounded-xl px-2 text-[10px] transition-all ${galleryOwnerFilter === 'GENERAL' ? 'btn-metal--gold is-active text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
-                                        >
-                                            <span className="block max-w-[84px] truncate whitespace-nowrap">General</span>
-                                            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-black/75 border border-white/15 text-[8px] leading-[14px] text-white font-black">
-                                                {allGalleryPhotos.length}
-                                            </span>
-                                        </button>
-                                        {galleryOwnerStats.map(owner => (
-                                            <button
-                                                key={owner.id}
-                                                type="button"
-                                                onClick={() => setGalleryOwnerFilter(owner.id)}
-                                                title={`${owner.nombre} (${owner.count} archivos)`}
-                                                className={`btn-metal relative h-9 rounded-xl px-2 text-[10px] transition-all ${galleryOwnerFilter === owner.id ? 'btn-metal--gold is-active text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
-                                            >
-                                                <span className="block max-w-[84px] truncate whitespace-nowrap">{owner.nombre}</span>
-                                                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-black/75 border border-white/15 text-[8px] leading-[14px] text-white font-black">
-                                                    {owner.count}
-                                                </span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
                                 <button
-                                    onClick={() => { setGalleryFilterLabel('INICIAL'); setGalleryOwnerFilter('GENERAL'); }}
+                                    onClick={() => setGalleryFilterLabel('INICIAL')}
                                     className="w-full text-[9px] font-black text-slate-600 hover:text-[var(--metal-gold)] uppercase tracking-tighter transition-colors"
                                 >
-                                    Limpiar filtros de galería
+                                    Limpiar filtro de etiquetas
                                 </button>
                             </div>
                         )}
