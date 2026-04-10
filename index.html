@@ -9,8 +9,6 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
@@ -279,6 +277,44 @@
             background-position: right 1rem center;
             background-size: 1em;
         }
+        .character-selector {
+            width: min(100%, 460px);
+            min-height: 44px;
+            border-radius: 14px;
+            border: 1px solid rgba(103, 232, 249, 0.5);
+            background-color: rgba(15, 23, 42, 0.96);
+            color: #f8fafc;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            padding: 0.65rem 2.75rem 0.65rem 0.9rem;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                0 0 0 1px rgba(8, 47, 73, 0.35),
+                0 10px 24px rgba(2, 6, 23, 0.5);
+        }
+        .character-selector:hover {
+            border-color: rgba(34, 211, 238, 0.75);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.12),
+                0 0 0 1px rgba(34, 211, 238, 0.35),
+                0 0 16px rgba(34, 211, 238, 0.22);
+        }
+        .character-selector:focus {
+            outline: none;
+            border-color: rgba(103, 232, 249, 0.95);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.14),
+                0 0 0 2px rgba(34, 211, 238, 0.4),
+                0 0 22px rgba(34, 211, 238, 0.28);
+        }
+        .character-selector option {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-weight: 700;
+        }
+        .character-selector option:disabled {
+            color: #94a3b8;
+        }
 
         .btn-metal {
             --btn-metal-top: #4b5563;
@@ -449,6 +485,13 @@
         const { useState, useEffect, useMemo, useRef } = React;
 
         const GALLERY_LABELS = ['C', 'P', 'B', 'N', 'S', 'E', 'X'];
+        const GALLERY_VIEW_MODES = ['PERSONAJE', 'ETIQUETA', 'CARPETA', 'GENERAL'];
+        const GALLERY_VIEW_MODE_LABELS = {
+            PERSONAJE: 'Personaje',
+            ETIQUETA: 'Etiqueta',
+            CARPETA: 'Carpetas',
+            GENERAL: 'General'
+        };
         const BATTLE_PHOTO_SLOTS = [
             { id: 'pechos', label: 'Pechos', labels: ['P'] },
             { id: 'colaPiernas', label: 'Cola/Piernas', labels: ['C'] },
@@ -597,6 +640,23 @@
 
             return null;
         };
+        const BLOCKED_MEDIA_HOST_PATTERNS = ['eporner.com'];
+        const isBlockedMediaUrl = (rawUrl = '') => {
+            const normalized = String(rawUrl || '').trim();
+            if (!normalized || normalized.startsWith('data:') || normalized.startsWith('blob:')) return false;
+            try {
+                const parsed = new URL(normalized);
+                const host = parsed.hostname.toLowerCase();
+                return BLOCKED_MEDIA_HOST_PATTERNS.some((pattern) => host === pattern || host.endsWith(`.${pattern}`));
+            } catch {
+                return false;
+            }
+        };
+        const getSafeImageSrc = (rawUrl = '', fallback = '') => {
+            const normalized = String(rawUrl || '').trim();
+            if (!normalized || isBlockedMediaUrl(normalized)) return fallback;
+            return normalized;
+        };
         const detectGalleryItemType = (url = '', explicitType = '') => {
             if (explicitType === 'video' || explicitType === 'image') return explicitType;
             const normalizedUrl = (url || '').trim();
@@ -608,13 +668,13 @@
         const normalizeGalleryItem = (item, fallbackType = '') => {
             if (typeof item === 'string') {
                 return {
-                    url: item.trim(),
+                    url: getSafeImageSrc(item.trim(), ''),
                     label: '',
                     type: detectGalleryItemType(item, fallbackType)
                 };
             }
             if (item && typeof item === 'object') {
-                const url = (item.url || '').trim();
+                const url = getSafeImageSrc((item.url || '').trim(), '');
                 return {
                     url,
                     label: GALLERY_LABELS.includes(item.label) ? item.label : '',
@@ -633,7 +693,7 @@
                     .map((item) => normalizeGalleryItem(item, 'image'))
                     .filter((item) => item.type === 'image' && item.url)
                 : [];
-            const profilePhoto = profile?.fotos?.[0];
+            const profilePhoto = getSafeImageSrc(profile?.fotos?.[0], '');
             const fallbackPhoto = profilePhoto || 'https://via.placeholder.com/400x500';
 
             const useProfilePhotoArenas = new Set([
@@ -1079,6 +1139,8 @@
                 <div id="miModal" class="modal-url">
                     <h2 style="margin:0; font-size: 14px; color: #94a3b8;">PEGAR URL DEL ARCHIVO</h2>
                     <input type="text" id="nuevaFotoUrl" placeholder="https://ejemplo.com/foto.jpg o https://youtube.com/...">
+                    <label for="nuevoArchivoLocal" style="display:block; margin-top: 14px; font-size: 10px; font-weight: 900; letter-spacing: 0.14em; color: #94a3b8; text-transform: uppercase;">o subir desde escritorio</label>
+                    <input type="file" id="nuevoArchivoLocal" accept="image/*,video/*,.gif" style="width: 100%; margin-top: 8px; padding: 10px; background: #020617; border: 1px dashed #334155; color: #e2e8f0; border-radius: 8px; outline: none; font-size: 12px;">
                     <select id="nuevoArchivoTipo" style="width: 100%; padding: 12px; margin-top: 15px; background: #020617; border: 1px solid #334155; color: #22d3ee; border-radius: 8px; outline: none;">
                         <option value="image">Imagen</option>
                         <option value="video">Video</option>
@@ -1086,7 +1148,7 @@
                     <select id="nuevaFotoEtiqueta" style="width: 100%; padding: 12px; margin-top: 15px; background: #020617; border: 1px solid #334155; color: #22d3ee; border-radius: 8px; outline: none;">
                         ${GALLERY_LABELS.map(label => `<option value="${label}">Etiqueta ${label}</option>`).join('')}
                     </select>
-                    <button onclick="window.opener.postMessage({type: 'ADD_IMAGE', url: document.getElementById('nuevaFotoUrl').value, label: document.getElementById('nuevaFotoEtiqueta').value, mediaType: document.getElementById('nuevoArchivoTipo').value, id: '${editingId}'}, '*'); document.getElementById('miModal').style.display='none'; document.getElementById('nuevaFotoUrl').value=''; document.getElementById('nuevaFotoEtiqueta').value='${GALLERY_LABELS[0]}'; document.getElementById('nuevoArchivoTipo').value='image';"
+                    <button onclick="addMediaFromModal()"
                         style="margin-top: 15px; width: 100%; padding: 10px; background: #06b6d4; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                         Guardar
                     </button>
@@ -1244,6 +1306,46 @@
                     let viewerAutoplay = false;
                     let viewerRandom = false;
                     let viewerAutoplayTimeout = null;
+
+                    function resetAddMediaModalFields() {
+                        const urlInput = document.getElementById('nuevaFotoUrl');
+                        const localInput = document.getElementById('nuevoArchivoLocal');
+                        const labelInput = document.getElementById('nuevaFotoEtiqueta');
+                        const mediaTypeInput = document.getElementById('nuevoArchivoTipo');
+                        if (urlInput) urlInput.value = '';
+                        if (localInput) localInput.value = '';
+                        if (labelInput) labelInput.value = '${GALLERY_LABELS[0]}';
+                        if (mediaTypeInput) mediaTypeInput.value = 'image';
+                    }
+
+                    function addMediaFromModal() {
+                        const urlInput = document.getElementById('nuevaFotoUrl');
+                        const localInput = document.getElementById('nuevoArchivoLocal');
+                        const labelInput = document.getElementById('nuevaFotoEtiqueta');
+                        const mediaTypeInput = document.getElementById('nuevoArchivoTipo');
+                        const normalizedUrl = (urlInput?.value || '').trim();
+                        const selectedFile = localInput?.files?.[0];
+                        const mediaType = mediaTypeInput?.value || 'image';
+                        const label = labelInput?.value || '${GALLERY_LABELS[0]}';
+
+                        const postMedia = (finalUrl, finalType) => {
+                            if (!finalUrl) return;
+                            window.opener.postMessage({ type: 'ADD_IMAGE', url: finalUrl, label, mediaType: finalType, id: '${editingId}' }, '*');
+                            document.getElementById('miModal').style.display = 'none';
+                            resetAddMediaModalFields();
+                        };
+
+                        if (selectedFile) {
+                            const inferredType = selectedFile.type && selectedFile.type.startsWith('video/') ? 'video' : 'image';
+                            const reader = new FileReader();
+                            reader.onload = () => postMedia(String(reader.result || ''), inferredType);
+                            reader.onerror = () => alert('No se pudo leer el archivo seleccionado.');
+                            reader.readAsDataURL(selectedFile);
+                            return;
+                        }
+
+                        postMedia(normalizedUrl, mediaType);
+                    }
 
                     function getNextViewerIndex() {
                         if (viewerSlides.length <= 1) return 0;
@@ -1450,11 +1552,15 @@
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
             const [galleryMediaType, setGalleryMediaType] = useState('image');
             const [galleryFilterLabel, setGalleryFilterLabel] = useState('INICIAL');
+            const [galleryViewMode, setGalleryViewMode] = useState('PERSONAJE');
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
             const [selectedGalleryBucket, setSelectedGalleryBucket] = useState(null);
+            const [selectedCharacterBucketIds, setSelectedCharacterBucketIds] = useState([]);
             const [isGalleryPlaying, setIsGalleryPlaying] = useState(false);
             const [isGalleryRandom, setIsGalleryRandom] = useState(false);
             const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+            const [isEditingGalleryLabel, setIsEditingGalleryLabel] = useState(false);
+            const [galleryLabelDraft, setGalleryLabelDraft] = useState('');
             const galleryPlaybackTimeoutRef = useRef(null);
 
             const [filters, setFilters] = useState({
@@ -1541,6 +1647,65 @@ const getInitialCatFormData = () => ({
                     console.error('Error al guardar archivo en galería:', error);
                 }
             };
+            const updateGalleryItemLabel = async ({ profileId, sourceTag, sourceIndex, label }) => {
+                if (!profileId || !sourceTag || !Number.isInteger(sourceIndex)) return;
+                const normalizedLabel = GALLERY_LABELS.includes(label) ? label : '';
+                const galleryRef = db.ref(`perfiles/${profileId}/galeria/${sourceTag}`);
+                const snapshot = await galleryRef.once('value');
+                const currentItems = Array.isArray(snapshot.val()) ? snapshot.val() : [];
+                if (!currentItems[sourceIndex]) return;
+
+                const updatedItems = [...currentItems];
+                const normalizedItem = normalizeGalleryItem(updatedItems[sourceIndex], sourceTag === 'videos' ? 'video' : 'image');
+                updatedItems[sourceIndex] = {
+                    ...normalizedItem,
+                    label: normalizedLabel
+                };
+
+                await galleryRef.set(updatedItems);
+
+                if (profileId === editingId) {
+                    setFormData(prev => ({
+                        ...prev,
+                        galeria: {
+                            ...(prev.galeria || { fotos: [], gifs: [], videos: [] }),
+                            [sourceTag]: updatedItems
+                        }
+                    }));
+                }
+            };
+            const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ''));
+                reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
+                reader.readAsDataURL(file);
+            });
+            const handleLocalProfilePhotoUpload = async (event) => {
+                const selectedFile = event.target.files?.[0];
+                if (!selectedFile) return;
+                try {
+                    const dataUrl = await readFileAsDataUrl(selectedFile);
+                    setFormData(prev => ({ ...prev, fotos: [dataUrl] }));
+                } catch (error) {
+                    console.error('Error al cargar foto de perfil local:', error);
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            const handleLocalGalleryFileUpload = async (event) => {
+                const selectedFile = event.target.files?.[0];
+                if (!selectedFile) return;
+                try {
+                    const dataUrl = await readFileAsDataUrl(selectedFile);
+                    const inferredType = selectedFile.type && selectedFile.type.startsWith('video/') ? 'video' : 'image';
+                    setUrlInput(dataUrl);
+                    setGalleryMediaType(inferredType);
+                } catch (error) {
+                    console.error('Error al cargar archivo local de galería:', error);
+                } finally {
+                    event.target.value = '';
+                }
+            };
             const handleDelete = async (id, e) => {
                 e.stopPropagation(); // Esto es para que no se abra la foto cuando hacés click en la cruz
                 if(confirm('¿Estás seguro de que querés eliminar esto, corazón?')) {
@@ -1586,6 +1751,7 @@ const getInitialCatFormData = () => ({
                         const snapshot = await galleryRef.once('value');
                         const currentPhotos = snapshot.val() || [];
                         const normalizedUrl = (url || '').trim();
+                        if (!normalizedUrl) return;
                         const updatedPhotos = [...currentPhotos, { url: normalizedUrl, label: GALLERY_LABELS.includes(label) ? label : '', type: detectGalleryItemType(normalizedUrl, mediaType) }];
 
                         await galleryRef.set(updatedPhotos);
@@ -1684,7 +1850,7 @@ const getInitialCatFormData = () => ({
                     const data = snapshot.val();
                     if (data) {
                         const listaPerfiles = Object.keys(data).map(key => ({
-                            ...data[key],
+                            ...mapProfileToFormData(data[key]),
                             firebaseId: key // Guardamos la llave de Firebase por si necesitamos editar
                         }));
                         setPerfiles(listaPerfiles);
@@ -1730,21 +1896,24 @@ const getInitialCatFormData = () => ({
                 return edad;
             };
 
-            const calcularPromedio = (p) => {
-                const s = p.puntuaciones;
-
-                // Promedio Rostro (4 ítems)
-                const promRostro = (s.Rostro + s.Ojos + s.Boca + s.Cabello) / 4;
-
-                // Promedio Cuerpo (6 ítems)
-                const promCuerpo = (s.Cuerpo + s.Cola + s.Pechos + s.Cintura + s.Piernas + s.Estatura) / 6;
-
-                // Promedio Actitud (5 ítems)
-                const promActitud = (s.Sensualidad + s.Carisma + s.Elegancia + s.Dulzura + s.Talento) / 5;
-
+            const getProfileScores = (profile = {}) => {
+                return { ...createZeroScores(), ...(profile?.puntuaciones || {}) };
+            };
+            const getRostroScore = (profile = {}) => {
+                const scores = getProfileScores(profile);
+                return (scores.Rostro + scores.Ojos + scores.Boca + scores.Cabello) / 4;
+            };
+            const getCuerpoScore = (profile = {}) => {
+                const scores = getProfileScores(profile);
+                return (scores.Cuerpo + scores.Cola + scores.Pechos + scores.Cintura + scores.Piernas + scores.Estatura) / 6;
+            };
+            const getActitudScore = (profile = {}) => {
+                const scores = getProfileScores(profile);
+                return (scores.Sensualidad + scores.Carisma + scores.Elegancia + scores.Dulzura + scores.Talento) / 5;
+            };
+            const calcularPromedio = (p = {}) => {
                 // El Score Total es el promedio de las 3 categorías principales
-                const scoreTotal = (promRostro + promCuerpo + promActitud) / 3;
-
+                const scoreTotal = (getRostroScore(p) + getCuerpoScore(p) + getActitudScore(p)) / 3;
                 return scoreTotal.toFixed(0);
             };
 
@@ -1770,7 +1939,7 @@ const getInitialCatFormData = () => ({
 
                     // Filtro de puntuación (ej: Rostro > 8)
                     if (r.caracteristica && r.umbral) {
-                        const score = p.puntuaciones[r.caracteristica];
+                        const score = getProfileScores(p)[r.caracteristica] || 0;
                         const umbral = parseInt(r.umbral);
                         if (r.operador === 'Superior a' && score <= umbral) matches = false;
                         if (r.operador === 'Inferior a' && score >= umbral) matches = false;
@@ -1785,12 +1954,37 @@ const getInitialCatFormData = () => ({
             const uniqueNacionalidades = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.nacionalidad).filter(Boolean))], [perfiles]);
             const uniqueProfesiones = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.profesion).filter(Boolean))], [perfiles]);
             const uniqueCiudades = useMemo(() => ['Todas', ...new Set(perfiles.map(p => p.ciudad).filter(Boolean))], [perfiles]);
+            const profileCategoryMap = useMemo(() => {
+                return (perfiles || []).reduce((acc, profile) => {
+                    if (!profile?.firebaseId) return acc;
+                    acc[profile.firebaseId] = obtenerCategoriasDePerfil(profile);
+                    return acc;
+                }, {});
+            }, [perfiles, categorias]);
             const allGalleryPhotos = useMemo(() => {
                 return (perfiles || []).flatMap((perfil) => {
                     const galleryItems = [
-                        ...(Array.isArray(perfil?.galeria?.fotos) ? perfil.galeria.fotos.map(item => normalizeGalleryItem(item, 'image')) : []),
-                        ...(Array.isArray(perfil?.galeria?.gifs) ? perfil.galeria.gifs.map(item => normalizeGalleryItem(item, 'image')) : []),
-                        ...(Array.isArray(perfil?.galeria?.videos) ? perfil.galeria.videos.map(item => normalizeGalleryItem(item, 'video')) : [])
+                        ...(Array.isArray(perfil?.galeria?.fotos)
+                            ? perfil.galeria.fotos.map((item, sourceIndex) => ({
+                                ...normalizeGalleryItem(item, 'image'),
+                                sourceTag: 'fotos',
+                                sourceIndex
+                            }))
+                            : []),
+                        ...(Array.isArray(perfil?.galeria?.gifs)
+                            ? perfil.galeria.gifs.map((item, sourceIndex) => ({
+                                ...normalizeGalleryItem(item, 'image'),
+                                sourceTag: 'gifs',
+                                sourceIndex
+                            }))
+                            : []),
+                        ...(Array.isArray(perfil?.galeria?.videos)
+                            ? perfil.galeria.videos.map((item, sourceIndex) => ({
+                                ...normalizeGalleryItem(item, 'video'),
+                                sourceTag: 'videos',
+                                sourceIndex
+                            }))
+                            : [])
                     ];
 
                     return galleryItems
@@ -1808,52 +2002,100 @@ const getInitialCatFormData = () => ({
                                 profesion: perfil.profesion || 'Perfil',
                                 nacionalidad: perfil.nacionalidad || '',
                                 fotoPerfil: perfil.fotos?.[0] || normalizedItem.url,
-                                profileId: perfil.firebaseId
+                                profileId: perfil.firebaseId,
+                                sourceTag: item.sourceTag || (normalizedItem.type === 'video' ? 'videos' : 'fotos'),
+                                sourceIndex: Number.isInteger(item.sourceIndex) ? item.sourceIndex : index
                             };
                         })
                         .filter(Boolean);
                 });
             }, [perfiles]);
             const galleryBuckets = useMemo(() => {
-                const groupedByProfile = allGalleryPhotos.reduce((acc, photo) => {
-                    const key = photo.profileId || photo.nombre;
-                    if (!key) return acc;
-                    if (!acc[key]) {
-                        acc[key] = {
-                            id: key,
-                            profileId: photo.profileId || null,
-                            nombre: photo.nombre || 'Sin nombre',
-                            profesion: photo.profesion || 'Perfil',
-                            nacionalidad: photo.nacionalidad || '',
-                            fotoPerfil: photo.fotoPerfil || photo.url,
-                            photos: []
-                        };
-                    }
-                    acc[key].photos.push(photo);
-                    return acc;
-                }, {});
-
-                const participantBuckets = Object.values(groupedByProfile)
-                    .filter(bucket => bucket.photos.length > 0)
-                    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
-
-                return [
-                    {
+                if (galleryViewMode === 'GENERAL') {
+                    return [{
                         id: 'GENERAL',
                         nombre: 'General',
                         profesion: 'Archivo global',
                         nacionalidad: '',
                         fotoPerfil: allGalleryPhotos[0]?.url || '',
                         photos: allGalleryPhotos
-                    },
-                    ...participantBuckets
-                ];
-            }, [allGalleryPhotos]);
+                    }];
+                }
+
+                if (galleryViewMode === 'PERSONAJE') {
+                    const groupedByProfile = allGalleryPhotos.reduce((acc, photo) => {
+                        const key = photo.profileId || photo.nombre;
+                        if (!key) return acc;
+                        if (!acc[key]) {
+                            acc[key] = {
+                                id: `PERSONAJE-${key}`,
+                                profileId: photo.profileId || null,
+                                nombre: photo.nombre || 'Sin nombre',
+                                profesion: photo.profesion || 'Perfil',
+                                nacionalidad: photo.nacionalidad || '',
+                                fotoPerfil: photo.fotoPerfil || photo.url,
+                                photos: []
+                            };
+                        }
+                        acc[key].photos.push(photo);
+                        return acc;
+                    }, {});
+
+                    return Object.values(groupedByProfile)
+                        .filter(bucket => bucket.photos.length > 0)
+                        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+                }
+
+                if (galleryViewMode === 'ETIQUETA') {
+                    return GALLERY_LABELS
+                        .map((label) => {
+                            const labelPhotos = allGalleryPhotos.filter(photo => photo.label === label);
+                            return {
+                                id: `ETIQUETA-${label}`,
+                                nombre: `Etiqueta ${label}`,
+                                profesion: 'Archivo por etiqueta',
+                                nacionalidad: '',
+                                fotoPerfil: labelPhotos[0]?.url || '',
+                                photos: labelPhotos
+                            };
+                        })
+                        .filter(bucket => bucket.photos.length > 0);
+                }
+
+                return (categorias || [])
+                    .map((categoria) => {
+                        const categoryPhotos = allGalleryPhotos.filter((photo) => {
+                            if (!photo.profileId) return false;
+                            return (profileCategoryMap[photo.profileId] || []).includes(categoria.firebaseId);
+                        });
+
+                        return {
+                            id: `CARPETA-${categoria.firebaseId}`,
+                            nombre: categoria.label || 'Carpeta sin nombre',
+                            profesion: 'Categoría',
+                            nacionalidad: '',
+                            fotoPerfil: categoria.coverImg || categoryPhotos[0]?.fotoPerfil || categoryPhotos[0]?.url || '',
+                            photos: categoryPhotos
+                        };
+                    })
+                    .filter(bucket => bucket.photos.length > 0)
+                    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+            }, [allGalleryPhotos, categorias, galleryViewMode, profileCategoryMap]);
             const activeGalleryBucket = useMemo(() => {
+                if (galleryViewMode === 'GENERAL') return galleryBuckets[0] || null;
                 if (!selectedGalleryBucket) return null;
                 return galleryBuckets.find(bucket => bucket.id === selectedGalleryBucket.id) || null;
-            }, [galleryBuckets, selectedGalleryBucket]);
-            const sourceGalleryPhotos = activeGalleryBucket?.photos || allGalleryPhotos;
+            }, [galleryBuckets, selectedGalleryBucket, galleryViewMode]);
+            const selectedCharacterBuckets = useMemo(() => {
+                if (galleryViewMode !== 'PERSONAJE') return [];
+                return galleryBuckets.filter((bucket) => selectedCharacterBucketIds.includes(bucket.id));
+            }, [galleryBuckets, galleryViewMode, selectedCharacterBucketIds]);
+            const sourceGalleryPhotos = useMemo(() => {
+                if (galleryViewMode === 'PERSONAJE') {
+                    return selectedCharacterBuckets.flatMap((bucket) => bucket.photos || []);
+                }
+                return activeGalleryBucket?.photos || allGalleryPhotos;
+            }, [galleryViewMode, selectedCharacterBuckets, activeGalleryBucket, allGalleryPhotos]);
             const galleryStats = useMemo(() => {
                 return GALLERY_LABELS.reduce((acc, label) => {
                     acc[label] = sourceGalleryPhotos.filter(photo => photo.label === label).length;
@@ -1870,17 +2112,33 @@ const getInitialCatFormData = () => ({
                             ? true
                             : photo.label === galleryFilterLabel;
                     const matchesQuery = !query
-                        || photo.nombre.toLowerCase().includes(query)
-                        || photo.profesion.toLowerCase().includes(query)
-                        || (photo.nacionalidad || '').toLowerCase().includes(query)
-                        || (photo.label || '').toLowerCase().includes(query);
+                        || String(photo.nombre || '').toLowerCase().includes(query)
+                        || String(photo.profesion || '').toLowerCase().includes(query)
+                        || String(photo.nacionalidad || '').toLowerCase().includes(query)
+                        || String(photo.label || '').toLowerCase().includes(query);
 
                     return matchesLabel && matchesQuery;
                 });
             }, [sourceGalleryPhotos, galleryFilterLabel, searchQuery]);
+            const currentGalleryModeLabel = GALLERY_VIEW_MODE_LABELS[galleryViewMode] || galleryViewMode;
+            const isGalleryBucketMode = galleryViewMode !== 'GENERAL';
+            const availableCharacterBuckets = useMemo(() => {
+                if (galleryViewMode !== 'PERSONAJE') return [];
+                return galleryBuckets.filter((bucket) => !selectedCharacterBucketIds.includes(bucket.id));
+            }, [galleryBuckets, galleryViewMode, selectedCharacterBucketIds]);
             const selectedGalleryPhoto = selectedGalleryIndex === null
                 ? null
                 : filteredGalleryPhotos[clampIndex(selectedGalleryIndex, filteredGalleryPhotos.length)] || null;
+
+            useEffect(() => {
+                if (!selectedGalleryPhoto) {
+                    setIsEditingGalleryLabel(false);
+                    setGalleryLabelDraft('');
+                    return;
+                }
+                setIsEditingGalleryLabel(false);
+                setGalleryLabelDraft(selectedGalleryPhoto.label || '');
+            }, [selectedGalleryPhoto]);
 
             useEffect(() => {
                 if (activeTab !== 'GALERIA') {
@@ -1888,6 +2146,12 @@ const getInitialCatFormData = () => ({
                     setSelectedGalleryIndex(null);
                 }
             }, [activeTab]);
+
+            useEffect(() => {
+                setSelectedGalleryBucket(null);
+                setSelectedGalleryIndex(null);
+                setSelectedCharacterBucketIds([]);
+            }, [galleryViewMode]);
 
             useEffect(() => {
                 if (selectedGalleryIndex === null) return;
@@ -1962,12 +2226,45 @@ const getInitialCatFormData = () => ({
                 setSelectedGalleryIndex(index);
                 setIsGalleryPlaying(autoplay);
             };
+            const addCharacterToGallerySelection = (bucketId) => {
+                if (!bucketId) return;
+                setSelectedCharacterBucketIds((current) => current.includes(bucketId) ? current : [...current, bucketId]);
+                setSelectedGalleryIndex(null);
+            };
+            const removeCharacterFromGallerySelection = (bucketId) => {
+                if (!bucketId) return;
+                setSelectedCharacterBucketIds((current) => current.filter((id) => id !== bucketId));
+                setSelectedGalleryIndex(null);
+            };
             const closeGalleryViewer = () => {
                 setIsGalleryPlaying(false);
                 setSelectedGalleryIndex(null);
             };
             const showNextGalleryPhoto = () => setSelectedGalleryIndex((current) => getNextPlayableIndex(current, filteredGalleryPhotos, isGalleryRandom));
             const showPreviousGalleryPhoto = () => setSelectedGalleryIndex((current) => clampIndex((current ?? 0) - 1, filteredGalleryPhotos.length));
+            const saveSelectedGalleryLabel = async () => {
+                if (!selectedGalleryPhoto?.profileId || !selectedGalleryPhoto?.sourceTag || !Number.isInteger(selectedGalleryPhoto?.sourceIndex)) return;
+                try {
+                    await updateGalleryItemLabel({
+                        profileId: selectedGalleryPhoto.profileId,
+                        sourceTag: selectedGalleryPhoto.sourceTag,
+                        sourceIndex: selectedGalleryPhoto.sourceIndex,
+                        label: galleryLabelDraft
+                    });
+                    setIsEditingGalleryLabel(false);
+                } catch (error) {
+                    console.error('Error al actualizar etiqueta de la multimedia:', error);
+                }
+            };
+            const galleryContextLabel = useMemo(() => {
+                if (galleryViewMode === 'PERSONAJE') {
+                    return selectedCharacterBuckets.length
+                        ? `${selectedCharacterBuckets.length} personaje${selectedCharacterBuckets.length > 1 ? 's' : ''} seleccionado${selectedCharacterBuckets.length > 1 ? 's' : ''}`
+                        : 'Sin personajes seleccionados';
+                }
+                if (activeGalleryBucket && isGalleryBucketMode) return activeGalleryBucket.nombre;
+                return currentGalleryModeLabel;
+            }, [galleryViewMode, selectedCharacterBuckets, activeGalleryBucket, isGalleryBucketMode, currentGalleryModeLabel]);
 
 const saveProfile = (e) => {
                 e.preventDefault();
@@ -2312,7 +2609,7 @@ const saveProfile = (e) => {
             };
 
             const filteredProfiles = useMemo(() => {
-                let base = perfiles.filter(p => p.nombre.toLowerCase().includes(searchQuery.toLowerCase()));
+                let base = perfiles.filter(p => String(p?.nombre || '').toLowerCase().includes(searchQuery.toLowerCase()));
 
                 if (activeTab === 'RANKING') {
                     return base.filter(p => {
@@ -2329,7 +2626,7 @@ const saveProfile = (e) => {
                             // Si elige Score Total usamos el promedio, si no, el atributo específico
                             const valPerfil = filters.scoreAttr === 'promedio'
                                 ? parseFloat(calcularPromedio(p))
-                                : p.puntuaciones[filters.scoreAttr];
+                                : getProfileScores(p)[filters.scoreAttr] || 0;
 
                             if (filters.scoreVal !== '') {
                                 const valFiltro = parseInt(filters.scoreVal);
@@ -2358,13 +2655,13 @@ const saveProfile = (e) => {
                     return typeof edad === 'number' ? edad : -1;
                 }
                 if (key === 'Rostro') {
-                    return ((profile.puntuaciones.Rostro + profile.puntuaciones.Ojos + profile.puntuaciones.Boca + profile.puntuaciones.Cabello) / 4) || 0;
+                    return getRostroScore(profile) || 0;
                 }
                 if (key === 'Cuerpo') {
-                    return ((profile.puntuaciones.Cuerpo + profile.puntuaciones.Cola + profile.puntuaciones.Pechos + profile.puntuaciones.Cintura + profile.puntuaciones.Piernas + profile.puntuaciones.Estatura) / 6) || 0;
+                    return getCuerpoScore(profile) || 0;
                 }
                 if (key === 'Actitud') {
-                    return ((profile.puntuaciones.Sensualidad + profile.puntuaciones.Carisma + profile.puntuaciones.Elegancia + profile.puntuaciones.Dulzura + profile.puntuaciones.Talento) / 5) || 0;
+                    return getActitudScore(profile) || 0;
                 }
                 return Number(profile.puntuaciones?.[key] || 0);
             };
@@ -2443,8 +2740,20 @@ const saveProfile = (e) => {
                                         <LucideIcon name="images" size={12} /> Filtros de Galería
                                     </h4>
                                     <p className="text-[10px] font-semibold text-slate-500 tracking-[0.08em] mt-2">
-                                        {filteredGalleryPhotos.length} archivos visibles de {allGalleryPhotos.length}
+                                        {filteredGalleryPhotos.length} archivos visibles de {sourceGalleryPhotos.length}
                                     </p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    {GALLERY_VIEW_MODES.map((mode) => (
+                                        <button
+                                            key={mode}
+                                            onClick={() => setGalleryViewMode(mode)}
+                                            className={`btn-metal px-3 py-3 rounded-2xl text-[10px] transition-all ${galleryViewMode === mode ? 'btn-metal--gold text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
+                                        >
+                                            {GALLERY_VIEW_MODE_LABELS[mode]}
+                                        </button>
+                                    ))}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
@@ -2590,8 +2899,12 @@ const saveProfile = (e) => {
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                                {[...new Set(perfiles.map(p => p.profesion || 'Perfil'))].map(prof => {
-                                    const count = perfiles.filter(p => (p.profesion || 'Perfil') === prof).length;
+                                {[...new Set(
+                                    (perfiles || [])
+                                        .map(p => String(p?.profesion || '').trim())
+                                        .filter(Boolean)
+                                )].map(prof => {
+                                    const count = (perfiles || []).filter(p => String(p?.profesion || '').trim() === prof).length;
 
                                     return (
                                         <div
@@ -2644,7 +2957,7 @@ const saveProfile = (e) => {
             return misCategorias.includes(selectedCategory);
         }
         // Si estamos en Explorar (por profesión):
-        return String(p.profesion || 'Perfil').trim().toLowerCase() === String(selectedCategory).trim().toLowerCase();
+        return String(p.profesion || '').trim().toLowerCase() === String(selectedCategory).trim().toLowerCase();
     }).map(p => {
                     const profKey = p.profesion?.toUpperCase() || 'DEFAULT';
                     const neonClass = (typeof neonColors !== 'undefined' && neonColors[profKey]) ? neonColors[profKey] : { color: '#06b6d4', sombra: 'rgba(6,182,212,0.5)' };
@@ -2665,7 +2978,7 @@ const saveProfile = (e) => {
                         >
                             <div className="aspect-[4/5] bg-slate-950 relative overflow-hidden">
                                 <img
-                                    src={(p.fotos && p.fotos.length > 0) ? p.fotos[0] : 'https://via.placeholder.com/400x500'}
+                                    src={getSafeImageSrc((p.fotos && p.fotos.length > 0) ? p.fotos[0] : '', 'https://via.placeholder.com/400x500')}
                                     className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100"
                                     onError={applyCryingEmojiFallback}
                                 />
@@ -2706,10 +3019,21 @@ const saveProfile = (e) => {
                 <div>
                     <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Galería</h2>
                     <p className="text-xs font-bold text-[var(--metal-gold)] uppercase tracking-widest mt-1">
-                        {activeGalleryBucket
-                            ? `Vista ${activeGalleryBucket.nombre} · ${activeGalleryBucket.profesion || 'Galería'}`
-                            : 'Índice de galerías por participante'}
+                        {`Vista por ${currentGalleryModeLabel} · ${galleryContextLabel}`}
                     </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    {GALLERY_VIEW_MODES.map((mode) => (
+                        <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setGalleryViewMode(mode)}
+                            className={`btn-metal px-4 py-2 rounded-full text-[10px] tracking-[0.08em] transition-all ${galleryViewMode === mode ? 'btn-metal--gold text-[#fffaf0]' : 'btn-metal--silver text-slate-900'}`}
+                        >
+                            {GALLERY_VIEW_MODE_LABELS[mode]}
+                        </button>
+                    ))}
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -2732,7 +3056,7 @@ const saveProfile = (e) => {
                 </div>
             </div>
 
-            {!activeGalleryBucket ? (
+            {galleryViewMode !== 'PERSONAJE' && isGalleryBucketMode && !activeGalleryBucket ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                     {galleryBuckets.map(bucket => (
                         <button
@@ -2747,7 +3071,7 @@ const saveProfile = (e) => {
                             <div className="aspect-[4/5] bg-slate-950 relative overflow-hidden">
                                 {bucket.fotoPerfil ? (
                                     <img
-                                        src={bucket.fotoPerfil}
+                                        src={getSafeImageSrc(bucket.fotoPerfil, 'https://via.placeholder.com/400x500')}
                                         alt={`Portada ${bucket.nombre}`}
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100"
                                         onError={applyCryingEmojiFallback}
@@ -2771,19 +3095,60 @@ const saveProfile = (e) => {
                 </div>
             ) : (
                 <>
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setSelectedGalleryBucket(null);
-                                setSelectedGalleryIndex(null);
-                            }}
-                            className="btn-metal btn-metal--silver inline-flex items-center gap-2 px-5 py-3 rounded-full text-[10px] text-slate-900"
-                        >
-                            <LucideIcon name="arrow-left" size={14} />
-                            Volver al índice
-                        </button>
-                    </div>
+                    {galleryViewMode !== 'PERSONAJE' && isGalleryBucketMode && (
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedGalleryBucket(null);
+                                    setSelectedGalleryIndex(null);
+                                }}
+                                className="btn-metal btn-metal--silver inline-flex items-center gap-2 px-5 py-3 rounded-full text-[10px] text-slate-900"
+                            >
+                                <LucideIcon name="arrow-left" size={14} />
+                                Volver al índice
+                            </button>
+                        </div>
+                    )}
+
+                    {galleryViewMode === 'PERSONAJE' && (
+                        <div className="space-y-4">
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                                <label htmlFor="galleryCharacterSelector" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Selector de personajes</label>
+                                <select
+                                    id="galleryCharacterSelector"
+                                    className="filter-select max-w-lg"
+                                    value=""
+                                    onChange={(event) => addCharacterToGallerySelection(event.target.value)}
+                                >
+                                    <option value="" disabled>{availableCharacterBuckets.length ? 'Seleccionar personaje…' : 'No hay más personajes disponibles'}</option>
+                                    {availableCharacterBuckets.map((bucket) => (
+                                        <option key={bucket.id} value={bucket.id}>
+                                            {bucket.nombre} · {bucket.photos.length} archivos
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            {selectedCharacterBuckets.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedCharacterBuckets.map((bucket) => (
+                                        <button
+                                            key={bucket.id}
+                                            type="button"
+                                            onClick={() => removeCharacterFromGallerySelection(bucket.id)}
+                                            className="btn-metal btn-metal--silver inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] text-slate-900"
+                                            title="Quitar personaje de la galería visible"
+                                        >
+                                            {bucket.nombre}
+                                            <LucideIcon name="x" size={12} />
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-slate-400">Seleccioná uno o más personajes para mostrar su multimedia en la galería.</p>
+                            )}
+                        </div>
+                    )}
 
                     <div className="flex flex-wrap gap-3">
                         <button
@@ -2823,7 +3188,7 @@ const saveProfile = (e) => {
                             className="btn-metal btn-metal--gold inline-flex items-center gap-2 px-5 py-3 rounded-full text-[10px] disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             <LucideIcon name="play" size={14} />
-                            Play {activeGalleryBucket.nombre}
+                            Play {activeGalleryBucket?.nombre || currentGalleryModeLabel}
                         </button>
                     </div>
 
@@ -2862,7 +3227,7 @@ const saveProfile = (e) => {
                                                     );
                                                 }
                                                 return <video src={photo.url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" muted playsInline preload="metadata" />;
-                                            })() : <img src={photo.url} alt={`${photo.nombre} - ${photo.label || 'galería'}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onError={applyCryingEmojiFallback} />}
+                                            })() : <img src={getSafeImageSrc(photo.url, CRYING_EMOJI_FALLBACK)} alt={`${photo.nombre} - ${photo.label || 'galería'}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onError={applyCryingEmojiFallback} />}
                                             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-cyan-950/40 via-transparent to-transparent" />
                                             <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent">
                                                 <div className="flex items-end justify-between gap-3">
@@ -2988,7 +3353,7 @@ const saveProfile = (e) => {
                                 );
                             })() : (
                                 <img
-                                    src={selectedGalleryPhoto.url}
+                                    src={getSafeImageSrc(selectedGalleryPhoto.url, CRYING_EMOJI_FALLBACK)}
                                     alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
                                     onError={() => {
                                         if (filteredGalleryPhotos.length > 1) {
@@ -3026,9 +3391,49 @@ const saveProfile = (e) => {
                             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">
                                 {selectedGalleryIndex + 1} de {filteredGalleryPhotos.length} archivos visibles
                             </p>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500">
-                                Navegá con las flechas del teclado o los botones inferiores · Respeta el filtro actual
-                            </p>
+                            <div className="flex items-center justify-start sm:justify-end gap-2">
+                                {isEditingGalleryLabel ? (
+                                    <>
+                                        <select
+                                            value={galleryLabelDraft}
+                                            onChange={(event) => setGalleryLabelDraft(event.target.value)}
+                                            className="bg-slate-900 border theme-border-secondary rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white focus:outline-none focus:border-[var(--metal-gold)]"
+                                        >
+                                            <option value="">Sin etiqueta</option>
+                                            {GALLERY_LABELS.map((label) => (
+                                                <option key={label} value={label}>{label}</option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onClick={saveSelectedGalleryLabel}
+                                            className="px-2 py-1 rounded-lg border theme-border-secondary bg-slate-900 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] transition-all"
+                                        >
+                                            Guardar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setGalleryLabelDraft(selectedGalleryPhoto?.label || '');
+                                                setIsEditingGalleryLabel(false);
+                                            }}
+                                            className="px-2 py-1 rounded-lg border theme-border-secondary bg-slate-900 text-[10px] font-black uppercase tracking-[0.14em] text-slate-300 hover:text-white transition-all"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsEditingGalleryLabel(true)}
+                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border theme-border-secondary bg-slate-900 text-[10px] font-black uppercase tracking-[0.16em] text-slate-300 hover:border-[var(--metal-gold)] hover:text-[var(--metal-gold)] transition-all"
+                                        aria-label="Editar etiqueta de la multimedia"
+                                    >
+                                        <span className="text-xs leading-none">✏️</span>
+                                        <span>{selectedGalleryPhoto?.label || 'Sin etiqueta'}</span>
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3269,7 +3674,7 @@ const saveProfile = (e) => {
          borderColor: (neonColors[p.profesion?.toUpperCase()] || neonColors["DEFAULT"]).color,
          boxShadow: `0 0 10px ${(neonColors[p.profesion?.toUpperCase()] || neonColors["DEFAULT"]).sombra}`
      }}>
-                <img src={p.fotos?.[0] || 'https://via.placeholder.com/400x500'} className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" onError={applyCryingEmojiFallback} />
+                <img src={getSafeImageSrc(p.fotos?.[0], 'https://via.placeholder.com/400x500')} className="w-full h-full object-cover transition-transform duration-700 opacity-80 group-hover:opacity-100" onError={applyCryingEmojiFallback} />
             </div>
             <div>
                 <p className="font-title font-black text-white text-sm tracking-[0.06em] rock-carved-text">{p.nombre}</p>
@@ -3281,17 +3686,17 @@ const saveProfile = (e) => {
 {/* Promedios por Categoría */}
 <td className="px-4 py-5 text-center">
     <span className="text-xs font-bold text-slate-300">
-        {((p.puntuaciones.Rostro + p.puntuaciones.Ojos + p.puntuaciones.Boca + p.puntuaciones.Cabello) / 4).toFixed(0)}
+        {getRostroScore(p).toFixed(0)}
     </span>
 </td>
 <td className="px-4 py-5 text-center">
     <span className="text-xs font-bold text-slate-300">
-        {((p.puntuaciones.Cuerpo + p.puntuaciones.Cola + p.puntuaciones.Pechos + p.puntuaciones.Cintura + p.puntuaciones.Piernas + p.puntuaciones.Estatura) / 6).toFixed(0)}
+        {getCuerpoScore(p).toFixed(0)}
     </span>
 </td>
 <td className="px-4 py-5 text-center">
     <span className="text-xs font-bold text-slate-300">
-        {((p.puntuaciones.Sensualidad + p.puntuaciones.Carisma + p.puntuaciones.Elegancia + p.puntuaciones.Dulzura + p.puntuaciones.Talento) / 5).toFixed(0)}
+        {getActitudScore(p).toFixed(0)}
     </span>
 </td>
 
@@ -3377,7 +3782,7 @@ const saveProfile = (e) => {
         {/* Imagen de Portada */}
         <div className="absolute inset-0">
             <img
-                src={cat.coverImg || 'https://via.placeholder.com/400x600?text=Sin+Portada'}
+                src={getSafeImageSrc(cat.coverImg, 'https://via.placeholder.com/400x600?text=Sin+Portada')}
                 className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500"
                 onError={applyCryingEmojiFallback}
             />
@@ -3458,7 +3863,7 @@ const saveProfile = (e) => {
             {/* CUADRO VISTA PREVIA NEÓN */}
             <div className="w-48 h-60 rounded-2xl border-2 border-cyan-500 shadow-[0_0_20px_rgba(34,211,238,0.4)] overflow-hidden bg-slate-900 flex items-center justify-center relative group">
                 {formData.fotos.length > 0 && formData.fotos[0] !== "" ? (
-                    <img src={formData.fotos[0]} className="w-full h-full object-cover" alt="Preview" onError={applyCryingEmojiFallback} />
+                    <img src={getSafeImageSrc(formData.fotos[0], CRYING_EMOJI_FALLBACK)} className="w-full h-full object-cover" alt="Preview" onError={applyCryingEmojiFallback} />
                 ) : (
                     <div className="text-center p-4">
                         <LucideIcon name="image" size={32} className="mx-auto text-slate-700 mb-2" />
@@ -3481,7 +3886,7 @@ const saveProfile = (e) => {
                                 );
                             }
                             return <video src={urlInput} className="w-full h-full object-cover" muted playsInline preload="metadata" />;
-                        })() : <img src={urlInput} className="w-full h-full object-cover" alt="Preview galería" onError={applyCryingEmojiFallback} />}
+                        })() : <img src={getSafeImageSrc(urlInput, CRYING_EMOJI_FALLBACK)} className="w-full h-full object-cover" alt="Preview galería" onError={applyCryingEmojiFallback} />}
                         {(() => {
                             const labelStyle = getGalleryLabelStyle(galleryLabel);
                             return (
@@ -3516,6 +3921,12 @@ const saveProfile = (e) => {
                         className="w-full theme-surface-soft border theme-border-secondary p-5 rounded-xl outline-none focus:ring-2 focus:ring-[var(--glow-gold)] text-white font-bold text-xs"
                         value={formData.fotos[0] || ''}
                         onChange={e => setFormData({...formData, fotos: [e.target.value]})}
+                    />
+                    <input
+                        type="file"
+                        accept="image/*,.gif"
+                        onChange={handleLocalProfilePhotoUpload}
+                        className="w-full theme-surface-soft border border-dashed theme-border-secondary p-4 rounded-xl outline-none text-slate-200 font-semibold text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-3 file:py-2 file:text-cyan-200 file:font-black"
                     />
                 </div>
 
@@ -3556,6 +3967,12 @@ const saveProfile = (e) => {
                                 </button>
                             </div>
                         </div>
+                        <input
+                            type="file"
+                            accept="image/*,video/*,.gif"
+                            onChange={handleLocalGalleryFileUpload}
+                            className="w-full theme-surface-soft border border-dashed theme-border-secondary p-4 rounded-xl outline-none text-slate-200 font-semibold text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-3 file:py-2 file:text-cyan-200 file:font-black"
+                        />
                     </div>
                 )}
 
