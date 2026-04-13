@@ -1066,9 +1066,6 @@
             const [activeTab, setActiveTab] = useState('EXPLORAR');
             const [selectedArena, setSelectedArena] = useState(null);
             const [arenaBattleState, setArenaBattleState] = useState({});
-            const [showResetArenaPicker, setShowResetArenaPicker] = useState(false);
-            const [resetArenaTarget, setResetArenaTarget] = useState(ARENAS[0] || '');
-            const [showBattleResetPanel, setShowBattleResetPanel] = useState(false);
             const [searchQuery, setSearchQuery] = useState('');
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [isCatModalOpen, setIsCatModalOpen] = useState(false);
@@ -1933,23 +1930,6 @@ const saveProfile = (e) => {
                 return null;
             };
 
-            const rebuildArenaStatsFromMatchups = (matchups = {}) => {
-                return Object.keys(matchups || {}).reduce((acc, key) => {
-                    if (!matchups[key]) return acc;
-                    const [profileAId, profileBId] = String(key).split('__');
-                    if (!profileAId || !profileBId) return acc;
-
-                    const prevA = acc[profileAId] || { wins: 0, battles: 0 };
-                    const prevB = acc[profileBId] || { wins: 0, battles: 0 };
-
-                    return {
-                        ...acc,
-                        [profileAId]: { wins: prevA.wins, battles: prevA.battles + 1 },
-                        [profileBId]: { wins: prevB.wins, battles: prevB.battles + 1 }
-                    };
-                }, {});
-            };
-
             const normalizeArenaState = (arenaState) => {
                 if (!arenaState) return null;
 
@@ -2183,122 +2163,6 @@ const saveProfile = (e) => {
                 } catch (error) {
                     console.error('No se pudieron resetear las calificaciones:', error);
                     alert('No se pudo completar el reseteo.');
-                }
-            };
-
-            const resetArenaScores = async (arenaName) => {
-                if (!arenaName) {
-                    alert('Seleccioná un item para resetear.');
-                    return;
-                }
-
-                const confirmed = window.confirm(`Esto va a poner en 0 el item "${arenaName}" para todos los perfiles. ¿Continuar?`);
-                if (!confirmed) return;
-
-                try {
-                    await Promise.all((perfiles || []).map((profile) => {
-                        if (!profile?.firebaseId) return Promise.resolve();
-                        return db.ref(`perfiles/${profile.firebaseId}/puntuaciones/${arenaName}`).set(0);
-                    }));
-
-                    setPerfiles((prev) => prev.map((profile) => ({
-                        ...profile,
-                        puntuaciones: {
-                            ...(profile.puntuaciones || {}),
-                            [arenaName]: 0
-                        }
-                    })));
-
-                    setArenaBattleState((prev) => {
-                        if (!prev?.[arenaName]) return prev;
-                        const next = { ...prev };
-                        delete next[arenaName];
-                        return next;
-                    });
-
-                    await db.ref(`arenaBattleState/${arenaName}`).remove();
-                    alert(`Se reseteó "${arenaName}" y se limpió su estado de batallas.`);
-                } catch (error) {
-                    console.error('No se pudo resetear el item:', error);
-                    alert('No se pudo resetear ese item.');
-                }
-            };
-
-            const resetSpecificBattle = async (arenaName, profileAId, profileBId) => {
-                const arenaState = arenaBattleState?.[arenaName];
-                if (!arenaState) {
-                    alert('Esa arena no tiene estado cargado.');
-                    return;
-                }
-
-                const currentMatchups = arenaState.matchups || {};
-                const playedKeys = Object.keys(currentMatchups).filter((key) => !!currentMatchups[key]);
-                if (!playedKeys.length) {
-                    alert('No hay cruces jugados para resetear en esta arena.');
-                    return;
-                }
-
-                const pairKey = [profileAId, profileBId].sort().join('__');
-                if (!currentMatchups[pairKey]) {
-                    alert('Ese cruce no existe o no fue jugado todavía.');
-                    return;
-                }
-
-                const confirmed = window.confirm('¿Seguro que querés deshacer esta batalla?');
-                if (!confirmed) return;
-
-                try {
-                    const updatedMatchups = { ...currentMatchups };
-                    delete updatedMatchups[pairKey];
-
-                    const rebuiltStats = rebuildArenaStatsFromMatchups(updatedMatchups);
-                    const candidateState = {
-                        ...arenaState,
-                        matchups: updatedMatchups,
-                        stats: rebuiltStats
-                    };
-                    const normalizedState = normalizeArenaState(candidateState);
-
-                    if (!normalizedState) {
-                        alert('No se pudo recomponer el estado del arena.');
-                        return;
-                    }
-
-                    setArenaBattleState((prev) => ({
-                        ...prev,
-                        [arenaName]: normalizedState
-                    }));
-
-                    await db.ref(`arenaBattleState/${arenaName}`).set(normalizedState);
-
-                    const affectedIds = [profileAId, profileBId].filter(Boolean);
-                    await Promise.all(affectedIds.map(async (profileId) => {
-                        const profileStats = normalizedState.stats?.[profileId] || { wins: 0, battles: 0 };
-                        const nextScore = profileStats.battles
-                            ? Math.round((profileStats.wins / profileStats.battles) * 100)
-                            : 0;
-                        await db.ref(`perfiles/${profileId}/puntuaciones/${arenaName}`).set(nextScore);
-                    }));
-
-                    setPerfiles((prev) => prev.map((profile) => {
-                        if (!affectedIds.includes(profile.firebaseId)) return profile;
-                        const profileStats = normalizedState.stats?.[profile.firebaseId] || { wins: 0, battles: 0 };
-                        const nextScore = profileStats.battles
-                            ? Math.round((profileStats.wins / profileStats.battles) * 100)
-                            : 0;
-                        return {
-                            ...profile,
-                            puntuaciones: {
-                                ...(profile.puntuaciones || {}),
-                                [arenaName]: nextScore
-                            }
-                        };
-                    }));
-
-                    alert('Batalla reseteada correctamente.');
-                } catch (error) {
-                    console.error('No se pudo resetear la batalla:', error);
-                    alert('No se pudo resetear esa batalla.');
                 }
             };
 
@@ -3191,8 +3055,8 @@ const saveProfile = (e) => {
     {/* 3. VISTA BATALLAS */}
     {activeTab === 'BATALLAS' && !selectedCategory && !selectedArena && (
         <div className="space-y-10 animate-in fade-in duration-500">
-                <div className="flex flex-col gap-4">
-                    <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-center gap-3">
                     <button
                         onClick={() => setActiveTab('EXPLORAR')}
                         className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl border theme-border-secondary text-[11px] font-black uppercase tracking-[0.16em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] hover:bg-[var(--metal-bronze)]/10 transition-all"
@@ -3206,32 +3070,7 @@ const saveProfile = (e) => {
                     >
                         Resetear calificaciones
                     </button>
-                    <button
-                        onClick={() => setShowResetArenaPicker(prev => !prev)}
-                        className="bg-amber-500/20 text-amber-200 border border-amber-300/40 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.18em] hover:bg-amber-500 hover:text-slate-950 transition-all"
-                    >
-                        Resetear item
-                    </button>
                 </div>
-                {showResetArenaPicker && (
-                    <div className="theme-surface-card border theme-border-secondary rounded-2xl p-4 flex flex-wrap items-center gap-3">
-                        <select
-                            value={resetArenaTarget}
-                            onChange={(e) => setResetArenaTarget(e.target.value)}
-                            className="bg-slate-900 border theme-border-secondary rounded-xl px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white"
-                        >
-                            {ARENAS.map((arenaName) => (
-                                <option key={arenaName} value={arenaName}>{arenaName}</option>
-                            ))}
-                        </select>
-                        <button
-                            onClick={() => resetArenaScores(resetArenaTarget)}
-                            className="bg-red-500/20 text-red-300 border border-red-400/40 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.16em] hover:bg-red-500 hover:text-white transition-all"
-                        >
-                            Confirmar reset item
-                        </button>
-                    </div>
-                )}
                 <div>
                     <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Arenas</h2>
                     <p className="text-xs font-bold text-[var(--metal-gold)] uppercase tracking-widest mt-1">Elegí uno de los 15 ítems para iniciar las batallas</p>
@@ -3302,46 +3141,7 @@ const saveProfile = (e) => {
                             <i data-lucide="layout-grid" className="w-4 h-4"></i>
                             Ir a Explorar
                         </button>
-                        <button
-                            onClick={() => setShowBattleResetPanel(prev => !prev)}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-red-400/40 text-[11px] font-black uppercase tracking-[0.16em] text-red-300 hover:bg-red-600 hover:text-white transition-all"
-                        >
-                            Resetear una batalla
-                        </button>
                     </div>
-                    {showBattleResetPanel && (
-                        <div className="theme-surface-card border border-red-400/30 rounded-2xl p-4 mt-3">
-                            {(() => {
-                                const playedKeys = Object.keys(arenaState?.matchups || {}).filter((key) => !!arenaState?.matchups?.[key]);
-                                if (!arenaState || !playedKeys.length) {
-                                    return <p className="text-xs text-red-200 font-bold uppercase tracking-[0.12em]">No hay cruces jugados para resetear.</p>;
-                                }
-
-                                return (
-                                    <div className="space-y-2">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-200">Elegí el cruce a deshacer:</p>
-                                        {playedKeys.map((pairKey) => {
-                                            const [profileAId, profileBId] = pairKey.split('__');
-                                            const profileA = perfiles.find((profile) => profile.firebaseId === profileAId);
-                                            const profileB = perfiles.find((profile) => profile.firebaseId === profileBId);
-                                            const labelA = profileA?.nombre || profileAId;
-                                            const labelB = profileB?.nombre || profileBId;
-
-                                            return (
-                                                <button
-                                                    key={pairKey}
-                                                    onClick={() => resetSpecificBattle(selectedArena, profileAId, profileBId)}
-                                                    className="w-full text-left px-3 py-2 rounded-xl border theme-border-secondary bg-slate-900/60 hover:border-red-300/70 transition-all"
-                                                >
-                                                    <span className="text-xs text-white font-semibold">{labelA} vs {labelB}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    )}
                     <div className="min-w-0">
                         <h2 className={`font-title text-2xl sm:text-3xl lg:text-4xl font-black italic tracking-[0.08em] break-words leading-tight ${arenaProgressMeta.isCompleted ? 'battle-success-glow text-emerald-200' : 'text-white'}`}>
                             {selectedArena}
