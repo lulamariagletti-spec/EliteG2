@@ -1890,6 +1890,27 @@ const saveProfile = (e) => {
                 const score = stats.battles ? Math.round((stats.wins / stats.battles) * 100) : 0;
                 return { ...stats, score };
             };
+            const getArenaProgressMeta = (arenaName) => {
+                const arenaState = arenaBattleState?.[arenaName] || null;
+                const participantCount = arenaState?.orderedIds?.length || 0;
+                const totalMatchups = participantCount > 1 ? Math.floor((participantCount * (participantCount - 1)) / 2) : 0;
+                const playedMatchups = Object.keys(arenaState?.matchups || {}).length;
+                const clampedPlayed = Math.min(playedMatchups, totalMatchups);
+                const progressPercent = totalMatchups ? Math.round((clampedPlayed / totalMatchups) * 100) : 0;
+                const status = !arenaState || !clampedPlayed
+                    ? 'Sin iniciar'
+                    : (arenaState?.isFinished || clampedPlayed >= totalMatchups)
+                        ? 'Completada'
+                        : 'En curso';
+                return {
+                    participantCount,
+                    totalMatchups,
+                    playedMatchups: clampedPlayed,
+                    progressPercent,
+                    status,
+                    isCompleted: status === 'Completada'
+                };
+            };
 
             const getProfileHeightLabel = (profile) => {
                 const rawHeight = profile?.estaturaCm;
@@ -3047,25 +3068,46 @@ const saveProfile = (e) => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {ARENAS.map((arenaName) => (
-                    <button
-                        key={arenaName}
-                        onClick={() => {
-                            setSelectedArena(arenaName);
-                            if (!arenaBattleState[arenaName]) initArenaBattle(arenaName);
-                        }}
-                        className="theme-surface-card border theme-border-secondary rounded-2xl p-6 text-left hover:border-[var(--metal-gold)] hover:shadow-[0_0_20px_rgba(201,163,90,0.2)] transition-all"
-                    >
-                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">Item</p>
-                        <h3 className="text-2xl font-black italic text-white mt-2">{arenaName}</h3>
-                    </button>
-                ))}
+                {ARENAS.map((arenaName) => {
+                    const progressMeta = getArenaProgressMeta(arenaName);
+                    return (
+                        <button
+                            key={arenaName}
+                            onClick={() => {
+                                setSelectedArena(arenaName);
+                                if (!arenaBattleState[arenaName]) initArenaBattle(arenaName);
+                            }}
+                            className="battle-card theme-surface-card border theme-border-secondary rounded-2xl p-6 text-left hover:border-[var(--metal-gold)] transition-all"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">Item</p>
+                                <span className={`battle-status-pill ${progressMeta.isCompleted ? 'is-completed' : progressMeta.status === 'En curso' ? 'is-active' : ''}`}>
+                                    {progressMeta.status}
+                                </span>
+                            </div>
+                            <h3 className="text-2xl font-black italic text-white mt-2">{arenaName}</h3>
+                            <div className="mt-4 space-y-2">
+                                <div className="battle-progress" role="presentation" aria-hidden="true">
+                                    <span style={{ width: `${progressMeta.progressPercent}%` }} />
+                                </div>
+                                <div className="flex items-center justify-between gap-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-300">
+                                    <span>{progressMeta.playedMatchups} / {progressMeta.totalMatchups} jugadas</span>
+                                    <span>{progressMeta.progressPercent}%</span>
+                                </div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                    Cruces posibles: {progressMeta.totalMatchups}
+                                </p>
+                            </div>
+                        </button>
+                    );
+                })}
             </div>
         </div>
     )}
 
     {activeTab === 'BATALLAS' && selectedArena && (() => {
         const arenaState = arenaBattleState[selectedArena];
+        const arenaProgressMeta = getArenaProgressMeta(selectedArena);
         const champion = perfiles.find(p => p.firebaseId === arenaState?.championId);
         const challenger = perfiles.find(p => p.firebaseId === arenaState?.challengerId);
         const championStats = champion ? getArenaStats(selectedArena, champion.firebaseId) : null;
@@ -3091,12 +3133,20 @@ const saveProfile = (e) => {
                         </button>
                     </div>
                     <div className="min-w-0">
-                        <h2 className="font-title text-2xl sm:text-3xl lg:text-4xl font-black italic text-white tracking-[0.08em] break-words leading-tight">
+                        <h2 className={`font-title text-2xl sm:text-3xl lg:text-4xl font-black italic tracking-[0.08em] break-words leading-tight ${arenaProgressMeta.isCompleted ? 'battle-success-glow text-emerald-200' : 'text-white'}`}>
                             {selectedArena}
                         </h2>
                         <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mt-1">
                             Arena activa
                         </p>
+                        <div className="mt-4 space-y-2 max-w-xl">
+                            <div className="battle-progress battle-progress--lg" role="progressbar" aria-valuemin="0" aria-valuemax={arenaProgressMeta.totalMatchups} aria-valuenow={arenaProgressMeta.playedMatchups} aria-label="Progreso de batallas de la arena activa">
+                                <span style={{ width: `${arenaProgressMeta.progressPercent}%` }} />
+                            </div>
+                            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-200">
+                                {arenaProgressMeta.playedMatchups} de {arenaProgressMeta.totalMatchups} batallas · {arenaProgressMeta.progressPercent}%
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -3123,7 +3173,7 @@ const saveProfile = (e) => {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                         <button
                             onClick={() => registerBattleWinner(selectedArena, champion.firebaseId)}
-                            className="theme-surface-card border theme-border-secondary rounded-2xl p-8 hover:border-[var(--metal-gold)] transition-all text-left"
+                            className="battle-vote-btn theme-surface-card border theme-border-secondary rounded-2xl p-8 text-left"
                         >
                             <img
                                 src={getBattlePhotoForArena(champion, selectedArena)}
@@ -3133,6 +3183,9 @@ const saveProfile = (e) => {
                             />
                             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
                             <h3 className="text-3xl font-black italic text-white mt-2">{champion.nombre}</h3>
+                            {arenaState?.stats?.[champion.firebaseId]?.wins > arenaState?.stats?.[challenger?.firebaseId]?.wins && (
+                                <p className="battle-status-pill is-completed mt-3 inline-flex">Ganadora actual</p>
+                            )}
                             {selectedArena === 'Estatura' && (
                                 <p className="text-xs text-slate-200 mt-2">Altura: {getProfileHeightLabel(champion)}</p>
                             )}
@@ -3140,7 +3193,7 @@ const saveProfile = (e) => {
                             <p className="text-xs text-white/80 mt-1">Puntaje final: {championStats?.score || 0}</p>
                         </button>
 
-                        <div className="flex flex-col items-center justify-center text-center">
+                        <div className="battle-vs-column flex flex-col items-center justify-center text-center">
                             <div className="font-title text-4xl text-[var(--metal-gold)] font-black">VS</div>
                             {selectedArena === 'Estatura' && (
                                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300 mt-3">
@@ -3151,7 +3204,7 @@ const saveProfile = (e) => {
 
                         <button
                             onClick={() => registerBattleWinner(selectedArena, challenger.firebaseId)}
-                            className="theme-surface-card border theme-border-secondary rounded-2xl p-8 hover:border-[var(--metal-gold)] transition-all text-left"
+                            className="battle-vote-btn theme-surface-card border theme-border-secondary rounded-2xl p-8 text-left"
                         >
                             <img
                                 src={getBattlePhotoForArena(challenger, selectedArena)}
@@ -3161,12 +3214,39 @@ const saveProfile = (e) => {
                             />
                             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Versus</p>
                             <h3 className="text-3xl font-black italic text-white mt-2">{challenger.nombre}</h3>
+                            {arenaState?.stats?.[challenger.firebaseId]?.wins > arenaState?.stats?.[champion?.firebaseId]?.wins && (
+                                <p className="battle-status-pill is-completed mt-3 inline-flex">Ganadora actual</p>
+                            )}
                             {selectedArena === 'Estatura' && (
                                 <p className="text-xs text-slate-200 mt-2">Altura: {getProfileHeightLabel(challenger)}</p>
                             )}
                             <p className="text-xs text-[var(--metal-gold)] mt-3">Victorias: {challengerStats?.wins || 0} · Batallas: {challengerStats?.battles || 0}</p>
                             <p className="text-xs text-white/80 mt-1">Puntaje final: {challengerStats?.score || 0}</p>
                         </button>
+                    </div>
+                )}
+                {arenaState && (
+                    <div className="battle-cta-row">
+                        <button
+                            onClick={() => initArenaBattle(selectedArena)}
+                            className="battle-cta-primary"
+                        >
+                            Iniciar/Reiniciar duelo
+                        </button>
+                        <div className="battle-cta-secondary">
+                            <button
+                                onClick={() => setSelectedArena(null)}
+                                className="group inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border theme-border-secondary text-[11px] font-black uppercase tracking-[0.16em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] hover:bg-[var(--metal-bronze)]/10 transition-all"
+                            >
+                                Volver a arenas
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('EXPLORAR')}
+                                className="group inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border theme-border-secondary text-[11px] font-black uppercase tracking-[0.16em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] hover:bg-[var(--metal-bronze)]/10 transition-all"
+                            >
+                                Ir a Explorar
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
