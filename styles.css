@@ -11,6 +11,14 @@
             --stone-dark: #131923;
             --stone-deep: #0b1018;
             --glow-gold: rgba(201, 163, 90, 0.42);
+            --neon-cyan: #22d3ee;
+            --neon-pink: #f472b6;
+            --neon-gold: #facc15;
+            --neon-focus: rgba(34, 211, 238, 0.55);
+            --control-bg: #020617;
+            --control-border: rgba(71, 85, 105, 0.92);
+            --control-text: #f8fafc;
+            --control-placeholder: #cbd5e1;
         }
 
         .theme-surface-card {
@@ -187,45 +195,31 @@
 
         .profile-card {
             --card-neon-color: rgba(34, 211, 238, 0.85);
-            --card-neon-glow: rgba(34, 211, 238, 0.5);
-            --card-metal-dark: color-mix(in srgb, var(--card-neon-color) 28%, #1f2937 72%);
-            --card-metal-mid: color-mix(in srgb, var(--card-neon-color) 50%, #94a3b8 50%);
-            --card-metal-light: color-mix(in srgb, var(--card-neon-color) 28%, #f8fafc 72%);
-            border: 1px solid color-mix(in srgb, var(--card-neon-color) 55%, rgba(148, 163, 184, 0.45) 45%);
-            box-shadow: 0 0 18px var(--card-neon-glow), inset 0 0 28px color-mix(in srgb, var(--card-neon-glow) 30%, transparent);
+            --card-neon-glow: rgba(34, 211, 238, 0.42);
+            position: relative;
+            border: 1px solid color-mix(in srgb, var(--card-neon-color) 58%, rgba(148, 163, 184, 0.35) 42%);
+            background: linear-gradient(160deg, rgba(2, 6, 23, 0.96), rgba(15, 23, 42, 0.92));
+            box-shadow: 0 8px 22px rgba(2, 6, 23, 0.46), 0 0 14px color-mix(in srgb, var(--card-neon-glow) 70%, transparent);
+            transition: transform 200ms ease, box-shadow 220ms ease, border-color 220ms ease;
         }
         .profile-card::before {
             content: "";
             position: absolute;
-            inset: 7px;
-            border-radius: 1rem;
-            border: 2px solid transparent;
-            background:
-                linear-gradient(155deg, var(--card-metal-light), var(--card-metal-mid), var(--card-metal-dark)) border-box;
-            -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            opacity: 0.86;
+            inset: 6px;
+            border-radius: 0.9rem;
+            border: 1px solid color-mix(in srgb, var(--card-neon-color) 34%, rgba(226, 232, 240, 0.38) 66%);
+            box-shadow: inset 0 1px 0 rgba(248, 250, 252, 0.16);
             pointer-events: none;
-            box-shadow:
-                inset 0 1px 1px rgba(255, 255, 255, 0.35),
-                inset 0 -2px 4px rgba(2, 6, 23, 0.75),
-                0 0 18px color-mix(in srgb, var(--card-neon-color) 40%, transparent);
-            transform: translateZ(0);
-            transition: opacity 220ms ease, box-shadow 220ms ease;
+            transition: border-color 220ms ease, box-shadow 220ms ease;
         }
         .profile-card:hover {
-            box-shadow:
-                0 0 26px var(--card-neon-glow),
-                0 0 60px color-mix(in srgb, var(--card-neon-color) 42%, transparent),
-                inset 0 0 55px color-mix(in srgb, var(--card-neon-color) 28%, transparent);
+            border-color: color-mix(in srgb, var(--card-neon-color) 75%, rgba(226, 232, 240, 0.25) 25%);
+            box-shadow: 0 14px 26px rgba(2, 6, 23, 0.5), 0 0 22px var(--card-neon-glow);
+            transform: translateY(-2px);
         }
         .profile-card:hover::before {
-            opacity: 1;
-            box-shadow:
-                inset 0 1px 1px rgba(255, 255, 255, 0.46),
-                inset 0 -2px 4px rgba(2, 6, 23, 0.85),
-                0 0 24px color-mix(in srgb, var(--card-neon-color) 65%, transparent);
+            border-color: color-mix(in srgb, var(--card-neon-color) 62%, rgba(248, 250, 252, 0.38) 38%);
+            box-shadow: inset 0 1px 0 rgba(248, 250, 252, 0.24), 0 0 16px color-mix(in srgb, var(--card-neon-color) 44%, transparent);
         }
 
 
@@ -237,8 +231,61 @@
             transform: scale(1.05);
         }
 
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        select,
+        textarea {
+            background: var(--control-bg);
+            border: 1px solid var(--control-border);
+            color: var(--control-text);
+            transition: border-color 180ms ease, box-shadow 200ms ease;
+        }
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--control-placeholder);
+            opacity: 1;
+        }
+        label {
+            color: #e2e8f0;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+        input[type="text"]:focus-visible,
+        input[type="number"]:focus-visible,
+        input[type="file"]:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible,
+        input[type="range"]:focus-visible {
+            outline: 2px solid rgba(125, 211, 252, 0.95);
+            outline-offset: 2px;
+            box-shadow: 0 0 0 2px rgba(2, 6, 23, 0.85), 0 0 0 4px var(--neon-focus), 0 0 16px rgba(34, 211, 238, 0.32);
+        }
         input[type="range"] {
-            accent-color: #22d3ee;
+            appearance: none;
+            height: 6px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            border: 1px solid rgba(71, 85, 105, 0.7);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid rgba(186, 230, 253, 0.95);
+            background: radial-gradient(circle at 30% 30%, #ecfeff, var(--neon-cyan));
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.7);
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid rgba(186, 230, 253, 0.95);
+            background: radial-gradient(circle at 30% 30%, #ecfeff, var(--neon-cyan));
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.7);
+            cursor: pointer;
         }
 
         #root:empty {
@@ -304,6 +351,42 @@
             color: #94a3b8;
         }
 
+        .btn-neon {
+            --btn-neon-color: var(--neon-cyan);
+            --btn-neon-border: color-mix(in srgb, var(--btn-neon-color) 74%, #e2e8f0 26%);
+            --btn-neon-glow: color-mix(in srgb, var(--btn-neon-color) 65%, transparent);
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.96));
+            border: 1px solid var(--btn-neon-border);
+            color: #ecfeff;
+            text-shadow: 0 0 10px color-mix(in srgb, var(--btn-neon-color) 65%, transparent);
+            box-shadow: inset 0 1px 0 rgba(186, 230, 253, 0.26), 0 0 0 1px rgba(8, 47, 73, 0.55), 0 0 14px var(--btn-neon-glow);
+            transition: filter 180ms ease, box-shadow 220ms ease, transform 180ms ease, border-color 200ms ease;
+        }
+        .btn-neon:hover:not(:disabled) {
+            filter: brightness(1.18) saturate(1.08);
+            box-shadow: inset 0 1px 0 rgba(186, 230, 253, 0.34), 0 0 0 1px color-mix(in srgb, var(--btn-neon-color) 40%, #fff), 0 0 22px color-mix(in srgb, var(--btn-neon-color) 78%, transparent);
+            transform: translateY(-1px);
+        }
+        .btn-neon:active:not(:disabled),
+        .btn-neon.is-active {
+            transform: translateY(1px);
+            filter: brightness(1.05);
+            box-shadow: inset 0 2px 6px rgba(2, 6, 23, 0.82), 0 0 0 1px color-mix(in srgb, var(--btn-neon-color) 38%, #fff), 0 0 16px color-mix(in srgb, var(--btn-neon-color) 55%, transparent);
+        }
+        .btn-neon:focus-visible,
+        .btn-metal:focus-visible {
+            outline: 2px solid rgba(186, 230, 253, 0.95);
+            outline-offset: 2px;
+            box-shadow: 0 0 0 2px rgba(2, 6, 23, 0.9), 0 0 0 4px var(--neon-focus), 0 0 18px rgba(34, 211, 238, 0.38);
+        }
+        .btn-neon:disabled,
+        .btn-metal:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            filter: grayscale(0.2);
+            box-shadow: none;
+        }
+
         .btn-metal {
             --btn-metal-top: #4b5563;
             --btn-metal-mid: #374151;
@@ -358,11 +441,6 @@
                 inset 0 3px 0 rgba(0, 0, 0, 0.32),
                 inset 0 0 0 2px var(--btn-metal-filet),
                 0 4px 10px rgba(2, 6, 23, 0.36);
-        }
-        .btn-metal:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-            filter: grayscale(0.2);
         }
         .btn-metal--gold {
             --btn-metal-top: #d8b773;
