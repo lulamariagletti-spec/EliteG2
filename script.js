@@ -134,14 +134,14 @@
                     ? GALLERY_LABEL_STYLES.B
                     : getGalleryLabelStyle(label);
             return {
-                background: `linear-gradient(180deg, color-mix(in srgb, ${styleForLabel.text} 30%, rgba(255,255,255,0) 70%), ${styleForLabel.bg})`,
+                '--btn-neon-color': styleForLabel.glow,
                 borderColor: styleForLabel.border,
                 color: styleForLabel.text,
                 boxShadow: isActive
-                    ? `inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 0 rgba(2,6,23,0.6), 0 0 0 1px ${styleForLabel.border}, 0 0 22px ${styleForLabel.glow}`
-                    : `inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -2px 0 rgba(2,6,23,0.55), 0 0 0 1px color-mix(in srgb, ${styleForLabel.border} 65%, rgba(15,23,42,0.65) 35%), 0 0 14px color-mix(in srgb, ${styleForLabel.glow} 75%, transparent)`,
+                    ? `inset 0 1px 0 rgba(186,230,253,0.35), 0 0 0 1px ${styleForLabel.border}, 0 0 20px ${styleForLabel.glow}`
+                    : `inset 0 1px 0 rgba(186,230,253,0.2), 0 0 0 1px color-mix(in srgb, ${styleForLabel.border} 65%, rgba(15,23,42,0.65) 35%), 0 0 12px color-mix(in srgb, ${styleForLabel.glow} 60%, transparent)`,
                 textShadow: `0 0 8px color-mix(in srgb, ${styleForLabel.glow} 70%, transparent)`,
-                filter: isActive ? 'brightness(1.08) saturate(1.12)' : 'brightness(0.98) saturate(1.02)'
+                filter: isActive ? 'brightness(1.14)' : 'brightness(1)'
             };
         };
         const VIDEO_FILE_REGEX = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i;
@@ -672,16 +672,16 @@
                     <h2 style="margin:0; font-size: 14px; color: #94a3b8;">PEGAR URL DEL ARCHIVO</h2>
                     <input type="text" id="nuevaFotoUrl" placeholder="https://ejemplo.com/foto.jpg o https://youtube.com/...">
                     <label for="nuevoArchivoLocal" style="display:block; margin-top: 14px; font-size: 10px; font-weight: 900; letter-spacing: 0.14em; color: #94a3b8; text-transform: uppercase;">o subir desde escritorio</label>
-                    <input type="file" id="nuevoArchivoLocal" accept="image/*,video/*,.gif" style="width: 100%; margin-top: 8px; padding: 10px; background: #020617; border: 1px dashed #334155; color: #e2e8f0; border-radius: 8px; outline: none; font-size: 12px;">
-                    <select id="nuevoArchivoTipo" style="width: 100%; padding: 12px; margin-top: 15px; background: #020617; border: 1px solid #334155; color: #22d3ee; border-radius: 8px; outline: none;">
+                    <input type="file" id="nuevoArchivoLocal" accept="image/*,video/*,.gif" style="width: 100%; margin-top: 8px; padding: 10px; background: #020617; border: 1px dashed rgba(34,211,238,0.65); color: #e2e8f0; border-radius: 8px; outline: none; font-size: 12px; box-shadow: 0 0 10px rgba(34,211,238,0.18);">
+                    <select id="nuevoArchivoTipo" style="width: 100%; padding: 12px; margin-top: 15px; background: #020617; border: 1px solid rgba(71,85,105,0.92); color: #e2e8f0; border-radius: 8px; outline: none; box-shadow: inset 0 1px 0 rgba(148,163,184,0.18);">
                         <option value="image">Imagen</option>
                         <option value="video">Video</option>
                     </select>
-                    <select id="nuevaFotoEtiqueta" style="width: 100%; padding: 12px; margin-top: 15px; background: #020617; border: 1px solid #334155; color: #22d3ee; border-radius: 8px; outline: none;">
+                    <select id="nuevaFotoEtiqueta" style="width: 100%; padding: 12px; margin-top: 15px; background: #020617; border: 1px solid rgba(71,85,105,0.92); color: #e2e8f0; border-radius: 8px; outline: none; box-shadow: inset 0 1px 0 rgba(148,163,184,0.18);">
                         ${GALLERY_LABELS.map(label => `<option value="${label}">Etiqueta ${label}</option>`).join('')}
                     </select>
                     <button onclick="addMediaFromModal()"
-                        style="margin-top: 15px; width: 100%; padding: 10px; background: #06b6d4; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        style="margin-top: 15px; width: 100%; padding: 10px; background: linear-gradient(180deg, rgba(14,116,144,0.95), rgba(8,47,73,0.95)); color: #ecfeff; border: 1px solid rgba(103,232,249,0.9); border-radius: 8px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; box-shadow: 0 0 14px rgba(34,211,238,0.4);">
                         Guardar
                     </button>
                 </div>
@@ -696,7 +696,7 @@
                                 <button
                                     type="button"
                                     onclick="event.stopPropagation(); window.opener.postMessage({type: 'CLEAR_BATTLE_PHOTO_PREF', id: '${editingId}', slotId: '${slot.id}'}, '*');"
-                                    style="margin-top:8px; width:100%; border:1px solid rgba(148,163,184,0.4); background: rgba(2,6,23,0.78); color:#e2e8f0; border-radius:8px; padding:6px 8px; font-size:10px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;"
+                                    style="margin-top:8px; width:100%; border:1px solid rgba(125,211,252,0.6); background: rgba(2,6,23,0.82); color:#e2e8f0; border-radius:8px; padding:6px 8px; font-size:10px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; box-shadow: 0 0 12px rgba(34,211,238,0.22);"
                                 >
                                     Quitar fija
                                 </button>
@@ -2225,9 +2225,9 @@ const saveProfile = (e) => {
                 return sortDirection === 'asc' ? result : -result;
             });
             return (
-                <div className="flex h-screen overflow-hidden bg-[#020617] stone-wall-surface relative">
+                <div className="app-space-theme flex h-screen overflow-hidden bg-[#020617] stone-wall-surface relative">
                     {isSidebarOpen && (
-                    <aside className="w-72 theme-surface-card stone-wall-surface border-r theme-border-secondary flex flex-col p-8 z-20 shadow-xl overflow-y-auto relative">
+                    <aside className="hud-frame hud-frame--panel w-72 theme-surface-card stone-wall-surface border-r theme-border-secondary flex flex-col p-8 z-20 shadow-xl overflow-y-auto relative">
                         <div className="corner-ember-glow corner-ember-glow--left corner-ember-glow--top" aria-hidden="true"></div>
                         <button
                             onClick={() => setIsSidebarOpen(false)}
@@ -2238,7 +2238,7 @@ const saveProfile = (e) => {
                             <LucideIcon name="panel-left-close" size={16} />
                         </button>
                         <div className="mb-12 text-center flex-shrink-0">
-                            <h1 className="text-5xl font-black text-[var(--metal-gold)] italic tracking-tighter leading-none">G2</h1>
+                            <h1 className="neon-sign neon-sign--cyan text-5xl font-black text-[var(--metal-gold)] italic tracking-tighter leading-none">G2</h1>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-2">Elite Database</p>
                         </div>
                         <nav className="flex-1 space-y-2 mb-8">
@@ -2266,7 +2266,7 @@ const saveProfile = (e) => {
                         </nav>
 
                         {activeTab === 'GALERIA' && (
-                            <div className="space-y-5 mb-8 p-6 theme-surface-soft rounded-2xl gothic-frame gothic-frame--secondary animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="hud-frame hud-frame--panel space-y-5 mb-8 p-6 theme-surface-soft rounded-2xl gothic-frame gothic-frame--secondary animate-in fade-in slide-in-from-bottom-2 duration-500">
                                 <div>
                                     <h4 className="text-[10px] font-black text-[var(--metal-gold)] uppercase tracking-widest flex items-center gap-2">
                                         <LucideIcon name="images" size={12} /> Filtros de Galería
@@ -2291,7 +2291,7 @@ const saveProfile = (e) => {
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={() => setGalleryFilterLabel('INICIAL')}
-                                        className="btn-metal px-3 py-3 rounded-2xl text-[10px] transition-all"
+                                        className="btn-neon px-3 py-3 rounded-2xl text-[10px] transition-all"
                                         style={getGalleryFilterButtonStyle('INICIAL', galleryFilterLabel === 'INICIAL')}
                                     >
                                         Inicial
@@ -2302,7 +2302,7 @@ const saveProfile = (e) => {
                                             <button
                                                 key={label}
                                                 onClick={() => setGalleryFilterLabel(label)}
-                                                className="btn-metal px-3 py-3 rounded-2xl text-[10px] transition-all"
+                                                className="btn-neon px-3 py-3 rounded-2xl text-[10px] transition-all"
                                                 style={getGalleryFilterButtonStyle(label, isActive)}
                                             >
                                                 {label} · {galleryStats[label] || 0}
@@ -2311,7 +2311,7 @@ const saveProfile = (e) => {
                                     })}
                                     <button
                                         onClick={() => setGalleryFilterLabel('100')}
-                                        className="btn-metal px-3 py-3 rounded-2xl text-[10px] transition-all"
+                                        className="btn-neon px-3 py-3 rounded-2xl text-[10px] transition-all"
                                         style={getGalleryFilterButtonStyle('100', galleryFilterLabel === '100')}
                                     >
                                         100%
@@ -2328,7 +2328,7 @@ const saveProfile = (e) => {
                         )}
 
                         {activeTab === 'RANKING' && (
-                            <div className="space-y-6 mb-8 p-6 theme-surface-soft rounded-2xl gothic-frame gothic-frame--secondary animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="hud-frame hud-frame--panel space-y-6 mb-8 p-6 theme-surface-soft rounded-2xl gothic-frame gothic-frame--secondary animate-in fade-in slide-in-from-bottom-2 duration-500">
                                 <h4 className="text-[10px] font-black text-[var(--metal-gold)] uppercase tracking-widest flex items-center gap-2">
                                     <LucideIcon name="filter" size={12} /> Filtros de Ranking
                                 </h4>
@@ -2391,7 +2391,7 @@ const saveProfile = (e) => {
                     )}
 
                     <main className="flex-1 flex flex-col overflow-hidden bg-[#020617] stone-wall-surface relative">
-                        <header className="h-24 panel-frosted stone-wall-surface border-b theme-border-secondary flex items-center px-12 justify-between z-10 flex-shrink-0 relative">
+                        <header className="hud-frame hud-frame--header h-24 panel-frosted stone-wall-surface border-b theme-border-secondary flex items-center px-12 justify-between z-10 flex-shrink-0 relative">
                             <div className="corner-ember-glow corner-ember-glow--left corner-ember-glow--top" aria-hidden="true"></div>
                             <div className="corner-ember-glow corner-ember-glow--right corner-ember-glow--top" aria-hidden="true"></div>
                             <div className="flex items-center gap-4 w-full max-w-xl">
@@ -2418,7 +2418,7 @@ const saveProfile = (e) => {
                             </div>
                         </header>
 
-                        <div className="flex-1 overflow-y-auto p-12 relative z-10 stone-wall-surface">
+                        <div className="hud-section flex-1 overflow-y-auto p-12 relative z-10 stone-wall-surface">
                             <div className="corner-ember-glow corner-ember-glow--left corner-ember-glow--top" aria-hidden="true"></div>
                             <div className="corner-ember-glow corner-ember-glow--right corner-ember-glow--top" aria-hidden="true"></div>
 
@@ -2426,7 +2426,7 @@ const saveProfile = (e) => {
                     {activeTab === 'EXPLORAR' && !selectedCategory && (
                         <div className="space-y-10 animate-in fade-in duration-500">
                             <div>
-                                <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Explorar</h2>
+                                <h2 className="neon-sign neon-sign--cyan text-4xl font-black italic text-white uppercase tracking-tighter">Explorar</h2>
                                 <p className="text-xs font-bold text-[var(--metal-gold)] uppercase tracking-widest mt-1">Organización automática por profesión</p>
                             </div>
 
@@ -2461,7 +2461,7 @@ const saveProfile = (e) => {
     {/* 2. VISTA DE PERFILES (CUANDO ENTRAS A UNA CARPETA) */}
     {selectedCategory && (
         <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between bg-slate-900/40 p-6 rounded-2xl gothic-frame gothic-frame--ornate gothic-frame--grand">
+            <div className="hud-frame hud-frame--panel flex items-center justify-between bg-slate-900/40 p-6 rounded-2xl gothic-frame gothic-frame--ornate gothic-frame--grand">
                 <button
                     onClick={() => setSelectedCategory(null)}
                     className="group flex items-center gap-3 text-[var(--metal-gold)] font-black text-xs uppercase tracking-widest"
@@ -2471,7 +2471,7 @@ const saveProfile = (e) => {
                     </div>
                     Volver
                 </button>
-                <h2 className="font-title text-6xl font-black italic text-white tracking-[0.08em] leading-none">
+                <h2 className="neon-sign neon-sign--magenta font-title text-6xl font-black italic text-white tracking-[0.08em] leading-none">
     {/* Si estamos en la pestaña de categorías, buscamos el nombre lindo. Si no, mostramos la profesión directamente */}
     {activeTab === 'CATEGORIAS'
         ? (categorias.find(c => c.firebaseId === selectedCategory)?.label || "Archivo del Reino")
@@ -2501,11 +2501,10 @@ const saveProfile = (e) => {
                                 if (typeof setEditingId === 'function') setEditingId(p.firebaseId);
                                 if (typeof setIsModalOpen === 'function') setIsModalOpen(true);
                             }}
-                            className="profile-card group relative bg-slate-900 rounded-2xl overflow-hidden gothic-frame gothic-frame--primary cursor-pointer transition-all duration-500 hover:scale-[1.02] parchment-panel"
+                            className="profile-card group relative rounded-2xl overflow-hidden cursor-pointer"
                             style={{
                                 '--card-neon-color': neonClass.color,
-                                '--card-neon-glow': neonClass.sombra,
-                                boxShadow: `0 0 20px ${neonClass.sombra}`
+                                '--card-neon-glow': neonClass.sombra
                             }}
                         >
                             <div className="aspect-[4/5] bg-slate-950 relative overflow-hidden">
@@ -2549,7 +2548,7 @@ const saveProfile = (e) => {
         <div className="space-y-10 animate-in fade-in duration-500">
             <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
                 <div>
-                    <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Galería</h2>
+                    <h2 className="neon-sign neon-sign--magenta text-4xl font-black italic text-white uppercase tracking-tighter">Galería</h2>
                     <p className="text-xs font-bold text-[var(--metal-gold)] uppercase tracking-widest mt-1">
                         {`Vista por ${currentGalleryModeLabel} · ${galleryContextLabel}`}
                     </p>
@@ -2682,10 +2681,10 @@ const saveProfile = (e) => {
                         </div>
                     )}
 
-                    <div className="flex flex-wrap gap-3">
+                    <div className="hud-frame hud-frame--panel flex flex-wrap gap-3 rounded-2xl p-4">
                         <button
                             onClick={() => setGalleryFilterLabel('INICIAL')}
-                            className="btn-metal px-4 py-2 rounded-full text-[10px] transition-all"
+                            className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
                             style={getGalleryFilterButtonStyle('INICIAL', galleryFilterLabel === 'INICIAL')}
                         >
                             Inicial
@@ -2696,7 +2695,7 @@ const saveProfile = (e) => {
                                 <button
                                     key={label}
                                     onClick={() => setGalleryFilterLabel(label)}
-                                    className="btn-metal font-title px-4 py-2 rounded-full text-[10px] tracking-[0.08em] transition-all"
+                                    className="btn-neon font-title px-4 py-2 rounded-full text-[10px] tracking-[0.08em] transition-all"
                                     style={getGalleryFilterButtonStyle(label, isActive)}
                                 >
                                     {label} · {galleryStats[label] || 0}
@@ -2705,7 +2704,7 @@ const saveProfile = (e) => {
                         })}
                         <button
                             onClick={() => setGalleryFilterLabel('100')}
-                            className="btn-metal px-4 py-2 rounded-full text-[10px] transition-all"
+                            className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
                             style={getGalleryFilterButtonStyle('100', galleryFilterLabel === '100')}
                         >
                             100%
