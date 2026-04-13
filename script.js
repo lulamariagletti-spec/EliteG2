@@ -1066,9 +1066,6 @@
         "OTRO":{ color: "#ffffff", sombra: "rgba(255,255,255,0.8)" }, // Blanco
         "DEFAULT": { color: "#334155", sombra: "transparent" }
                 };
-            const [minEdad, setMinEdad] = useState(18);
-            const [maxEdad, setMaxEdad] = useState(60);
-
             const [categorias, setCategorias] = useState(INITIAL_CATEGORIES);
             const [activeTab, setActiveTab] = useState('EXPLORAR');
             const [selectedArena, setSelectedArena] = useState(null);
@@ -1100,7 +1097,8 @@
             const [filters, setFilters] = useState({
                 nacionalidad: 'Todas',
                 profesion: 'Todas',
-                edad: 'Todas',
+                edadMayorA: '',
+                edadMenorA: '',
                 ciudad: 'Todas',
                 scoreAttr: 'Cualquiera',
                 scoreOp: 'Superior a',
@@ -2163,7 +2161,12 @@ const saveProfile = (e) => {
                         const matchProf = filters.profesion === 'Todas' || p.profesion === filters.profesion;
                         const matchCiudad = filters.ciudad === 'Todas' || p.ciudad === filters.ciudad;
 
-                        const matchEdad = edad >= minEdad && edad <= maxEdad;
+                        const edadMayorA = filters.edadMayorA === '' ? null : Number(filters.edadMayorA);
+                        const edadMenorA = filters.edadMenorA === '' ? null : Number(filters.edadMenorA);
+                        const hasEdadValida = typeof edad === 'number' && !Number.isNaN(edad);
+                        const matchEdadMayorA = edadMayorA === null || (hasEdadValida && edad > edadMayorA);
+                        const matchEdadMenorA = edadMenorA === null || (hasEdadValida && edad < edadMenorA);
+                        const matchEdad = matchEdadMayorA && matchEdadMenorA;
 
 
                         let matchScore = true;
@@ -2362,11 +2365,22 @@ const saveProfile = (e) => {
                                         {uniqueCiudades.filter(c => c !== 'Todas').map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
 
-                                    <select className="w-full theme-surface-card border theme-border-secondary p-3 rounded-2xl text-[11px] font-bold outline-none text-slate-300 filter-select" value={filters.edad} onChange={e => setFilters({...filters, edad: e.target.value})}>
-                                        <option value="Todas">Edad: Todas</option>
-                                        <option value="Menores de 30">Menores de 30</option>
-                                        <option value="Mayores de 30">Mayores de 30</option>
-                                    </select>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input
+                                            type="number"
+                                            placeholder="Mayores a"
+                                            className="w-full theme-surface-card border theme-border-secondary p-3 rounded-2xl text-[11px] font-bold outline-none text-slate-300"
+                                            value={filters.edadMayorA}
+                                            onChange={e => setFilters({...filters, edadMayorA: e.target.value})}
+                                        />
+                                        <input
+                                            type="number"
+                                            placeholder="Menores a"
+                                            className="w-full theme-surface-card border theme-border-secondary p-3 rounded-2xl text-[11px] font-bold outline-none text-slate-300"
+                                            value={filters.edadMenorA}
+                                            onChange={e => setFilters({...filters, edadMenorA: e.target.value})}
+                                        />
+                                    </div>
 
                                     <div className="pt-2 border-t theme-border-secondary mt-4">
                                         <p className="text-[9px] font-black text-slate-500 mb-2 uppercase tracking-tighter">Filtro por Atributo</p>
@@ -2386,7 +2400,7 @@ const saveProfile = (e) => {
                                         )}
                                     </div>
                                 </div>
-                                <button onClick={() => setFilters({nacionalidad:'Todas', profesion:'Todas', edad:'Todas', ciudad:'Todas', scoreAttr:'Cualquiera', scoreOp:'Superior a', scoreVal:''})} className="w-full text-[9px] font-black text-slate-600 hover:text-[var(--metal-gold)] uppercase tracking-tighter transition-colors">Limpiar Filtros</button>
+                                <button onClick={() => setFilters({nacionalidad:'Todas', profesion:'Todas', edadMayorA:'', edadMenorA:'', ciudad:'Todas', scoreAttr:'Cualquiera', scoreOp:'Superior a', scoreVal:''})} className="w-full text-[9px] font-black text-slate-600 hover:text-[var(--metal-gold)] uppercase tracking-tighter transition-colors">Limpiar Filtros</button>
                             </div>
                         )}
 
