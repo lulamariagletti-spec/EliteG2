@@ -128,7 +128,11 @@
         };
         const getGalleryLabelStyle = (label) => GALLERY_LABEL_STYLES[label] || GALLERY_LABEL_STYLES.DEFAULT;
         const getGalleryFilterButtonStyle = (label, isActive = false) => {
-            const styleForLabel = getGalleryLabelStyle(label);
+            const styleForLabel = label === 'INICIAL'
+                ? GALLERY_LABEL_STYLES.DEFAULT
+                : label === '100'
+                    ? GALLERY_LABEL_STYLES.B
+                    : getGalleryLabelStyle(label);
             return {
                 '--btn-neon-color': styleForLabel.glow,
                 borderColor: styleForLabel.border,
@@ -1062,10 +1066,16 @@
         "OTRO":{ color: "#ffffff", sombra: "rgba(255,255,255,0.8)" }, // Blanco
         "DEFAULT": { color: "#334155", sombra: "transparent" }
                 };
+            const [minEdad, setMinEdad] = useState(18);
+            const [maxEdad, setMaxEdad] = useState(60);
+
             const [categorias, setCategorias] = useState(INITIAL_CATEGORIES);
             const [activeTab, setActiveTab] = useState('EXPLORAR');
             const [selectedArena, setSelectedArena] = useState(null);
             const [arenaBattleState, setArenaBattleState] = useState({});
+            const [showResetArenaPicker, setShowResetArenaPicker] = useState(false);
+            const [resetArenaTarget, setResetArenaTarget] = useState(ARENAS[0] || '');
+            const [showBattleResetPanel, setShowBattleResetPanel] = useState(false);
             const [searchQuery, setSearchQuery] = useState('');
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [isCatModalOpen, setIsCatModalOpen] = useState(false);
@@ -1076,7 +1086,7 @@
             const [urlInput, setUrlInput] = useState('');
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
             const [galleryMediaType, setGalleryMediaType] = useState('image');
-            const [galleryFilterLabel, setGalleryFilterLabel] = useState('ALL');
+            const [galleryFilterLabel, setGalleryFilterLabel] = useState('INICIAL');
             const [galleryViewMode, setGalleryViewMode] = useState('GENERAL');
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
             const [selectedGalleryBucket, setSelectedGalleryBucket] = useState(null);
@@ -1093,8 +1103,7 @@
             const [filters, setFilters] = useState({
                 nacionalidad: 'Todas',
                 profesion: 'Todas',
-                edadMayorA: '',
-                edadMenorA: '',
+                edad: 'Todas',
                 ciudad: 'Todas',
                 scoreAttr: 'Cualquiera',
                 scoreOp: 'Superior a',
@@ -1640,9 +1649,11 @@ const getInitialCatFormData = () => ({
                 return sourceGalleryPhotos.filter(photo => {
                     const matchesLabel = galleryViewMode === 'ETIQUETA'
                         ? true
-                        : galleryFilterLabel === 'ALL'
-                            ? true
-                            : photo.label === galleryFilterLabel;
+                        : galleryFilterLabel === 'INICIAL'
+                            ? photo.label !== 'X'
+                            : galleryFilterLabel === '100'
+                                ? true
+                                : photo.label === galleryFilterLabel;
                     const matchesQuery = !query
                         || String(photo.nombre || '').toLowerCase().includes(query)
                         || String(photo.profesion || '').toLowerCase().includes(query)
@@ -1909,6 +1920,23 @@ const saveProfile = (e) => {
                 return null;
             };
 
+            const rebuildArenaStatsFromMatchups = (matchups = {}) => {
+                return Object.keys(matchups || {}).reduce((acc, key) => {
+                    if (!matchups[key]) return acc;
+                    const [profileAId, profileBId] = String(key).split('__');
+                    if (!profileAId || !profileBId) return acc;
+
+                    const prevA = acc[profileAId] || { wins: 0, battles: 0 };
+                    const prevB = acc[profileBId] || { wins: 0, battles: 0 };
+
+                    return {
+                        ...acc,
+                        [profileAId]: { wins: prevA.wins, battles: prevA.battles + 1 },
+                        [profileBId]: { wins: prevB.wins, battles: prevB.battles + 1 }
+                    };
+                }, {});
+            };
+
             const normalizeArenaState = (arenaState) => {
                 if (!arenaState) return null;
 
@@ -2145,6 +2173,122 @@ const saveProfile = (e) => {
                 }
             };
 
+            const resetArenaScores = async (arenaName) => {
+                if (!arenaName) {
+                    alert('Seleccioná un item para resetear.');
+                    return;
+                }
+
+                const confirmed = window.confirm(`Esto va a poner en 0 el item "${arenaName}" para todos los perfiles. ¿Continuar?`);
+                if (!confirmed) return;
+
+                try {
+                    await Promise.all((perfiles || []).map((profile) => {
+                        if (!profile?.firebaseId) return Promise.resolve();
+                        return db.ref(`perfiles/${profile.firebaseId}/puntuaciones/${arenaName}`).set(0);
+                    }));
+
+                    setPerfiles((prev) => prev.map((profile) => ({
+                        ...profile,
+                        puntuaciones: {
+                            ...(profile.puntuaciones || {}),
+                            [arenaName]: 0
+                        }
+                    })));
+
+                    setArenaBattleState((prev) => {
+                        if (!prev?.[arenaName]) return prev;
+                        const next = { ...prev };
+                        delete next[arenaName];
+                        return next;
+                    });
+
+                    await db.ref(`arenaBattleState/${arenaName}`).remove();
+                    alert(`Se reseteó "${arenaName}" y se limpió su estado de batallas.`);
+                } catch (error) {
+                    console.error('No se pudo resetear el item:', error);
+                    alert('No se pudo resetear ese item.');
+                }
+            };
+
+            const resetSpecificBattle = async (arenaName, profileAId, profileBId) => {
+                const arenaState = arenaBattleState?.[arenaName];
+                if (!arenaState) {
+                    alert('Esa arena no tiene estado cargado.');
+                    return;
+                }
+
+                const currentMatchups = arenaState.matchups || {};
+                const playedKeys = Object.keys(currentMatchups).filter((key) => !!currentMatchups[key]);
+                if (!playedKeys.length) {
+                    alert('No hay cruces jugados para resetear en esta arena.');
+                    return;
+                }
+
+                const pairKey = [profileAId, profileBId].sort().join('__');
+                if (!currentMatchups[pairKey]) {
+                    alert('Ese cruce no existe o no fue jugado todavía.');
+                    return;
+                }
+
+                const confirmed = window.confirm('¿Seguro que querés deshacer esta batalla?');
+                if (!confirmed) return;
+
+                try {
+                    const updatedMatchups = { ...currentMatchups };
+                    delete updatedMatchups[pairKey];
+
+                    const rebuiltStats = rebuildArenaStatsFromMatchups(updatedMatchups);
+                    const candidateState = {
+                        ...arenaState,
+                        matchups: updatedMatchups,
+                        stats: rebuiltStats
+                    };
+                    const normalizedState = normalizeArenaState(candidateState);
+
+                    if (!normalizedState) {
+                        alert('No se pudo recomponer el estado del arena.');
+                        return;
+                    }
+
+                    setArenaBattleState((prev) => ({
+                        ...prev,
+                        [arenaName]: normalizedState
+                    }));
+
+                    await db.ref(`arenaBattleState/${arenaName}`).set(normalizedState);
+
+                    const affectedIds = [profileAId, profileBId].filter(Boolean);
+                    await Promise.all(affectedIds.map(async (profileId) => {
+                        const profileStats = normalizedState.stats?.[profileId] || { wins: 0, battles: 0 };
+                        const nextScore = profileStats.battles
+                            ? Math.round((profileStats.wins / profileStats.battles) * 100)
+                            : 0;
+                        await db.ref(`perfiles/${profileId}/puntuaciones/${arenaName}`).set(nextScore);
+                    }));
+
+                    setPerfiles((prev) => prev.map((profile) => {
+                        if (!affectedIds.includes(profile.firebaseId)) return profile;
+                        const profileStats = normalizedState.stats?.[profile.firebaseId] || { wins: 0, battles: 0 };
+                        const nextScore = profileStats.battles
+                            ? Math.round((profileStats.wins / profileStats.battles) * 100)
+                            : 0;
+                        return {
+                            ...profile,
+                            puntuaciones: {
+                                ...(profile.puntuaciones || {}),
+                                [arenaName]: nextScore
+                            }
+                        };
+                    }));
+
+                    alert('Batalla reseteada correctamente.');
+                } catch (error) {
+                    console.error('No se pudo resetear la batalla:', error);
+                    alert('No se pudo resetear esa batalla.');
+                }
+            };
+
             const filteredProfiles = useMemo(() => {
                 let base = perfiles.filter(p => String(p?.nombre || '').toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -2155,12 +2299,7 @@ const saveProfile = (e) => {
                         const matchProf = filters.profesion === 'Todas' || p.profesion === filters.profesion;
                         const matchCiudad = filters.ciudad === 'Todas' || p.ciudad === filters.ciudad;
 
-                        const edadMayorA = filters.edadMayorA === '' ? null : Number(filters.edadMayorA);
-                        const edadMenorA = filters.edadMenorA === '' ? null : Number(filters.edadMenorA);
-                        const hasEdadValida = typeof edad === 'number' && !Number.isNaN(edad);
-                        const matchEdadMayorA = edadMayorA === null || (hasEdadValida && edad > edadMayorA);
-                        const matchEdadMenorA = edadMenorA === null || (hasEdadValida && edad < edadMenorA);
-                        const matchEdad = matchEdadMayorA && matchEdadMenorA;
+                        const matchEdad = edad >= minEdad && edad <= maxEdad;
 
 
                         let matchScore = true;
@@ -2192,16 +2331,10 @@ const saveProfile = (e) => {
                 if (key === 'promedio') return Number(calcularPromedio(profile)) || 0;
                 if (key === 'nombre') return (profile.nombre || '').toLowerCase();
                 if (key === 'nacionalidad') return (profile.nacionalidad || '').toLowerCase();
-                if (key === 'ubicacionPais') return (profile.nacionalidad || '').toLowerCase();
-                if (key === 'ubicacionCiudad') {
-                    const ciudad = (profile.ciudad || '').trim().toLowerCase();
-                    return ciudad || '\uffff';
-                }
                 if (key === 'edad') {
                     const edad = calcularEdad(profile.fechaNacimiento);
                     return typeof edad === 'number' ? edad : -1;
                 }
-                if (key === 'promedio') return Number(calcularPromedio(profile)) || 0;
                 if (key === 'Rostro') {
                     return getRostroScore(profile) || 0;
                 }
@@ -2213,22 +2346,8 @@ const saveProfile = (e) => {
                 }
                 return Number(profile.puntuaciones?.[key] || 0);
             };
+
             const toggleSort = (key, defaultDirection = 'asc') => {
-                if (key === 'ubicacion') {
-                    if (sortBy === 'ubicacionPais') {
-                        setSortBy('ubicacionCiudad');
-                        setSortDirection('asc');
-                        return;
-                    }
-                    if (sortBy === 'ubicacionCiudad') {
-                        setSortBy('ubicacionPais');
-                        setSortDirection('asc');
-                        return;
-                    }
-                    setSortBy('ubicacionPais');
-                    setSortDirection(defaultDirection);
-                    return;
-                }
                 if (sortBy === key) {
                     setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
                     return;
@@ -2319,6 +2438,13 @@ const saveProfile = (e) => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={() => setGalleryFilterLabel('INICIAL')}
+                                        className="btn-neon px-3 py-3 rounded-2xl text-[10px] transition-all"
+                                        style={getGalleryFilterButtonStyle('INICIAL', galleryFilterLabel === 'INICIAL')}
+                                    >
+                                        Inicial
+                                    </button>
                                     {GALLERY_LABELS.map(label => {
                                         const isActive = galleryFilterLabel === label;
                                         return (
@@ -2332,10 +2458,17 @@ const saveProfile = (e) => {
                                             </button>
                                         );
                                     })}
+                                    <button
+                                        onClick={() => setGalleryFilterLabel('100')}
+                                        className="btn-neon px-3 py-3 rounded-2xl text-[10px] transition-all"
+                                        style={getGalleryFilterButtonStyle('100', galleryFilterLabel === '100')}
+                                    >
+                                        100%
+                                    </button>
                                 </div>
 
                                 <button
-                                    onClick={() => setGalleryFilterLabel('ALL')}
+                                    onClick={() => setGalleryFilterLabel('INICIAL')}
                                     className="w-full text-[9px] font-black text-slate-600 hover:text-[var(--metal-gold)] uppercase tracking-tighter transition-colors"
                                 >
                                     Limpiar filtro de etiquetas
@@ -2365,32 +2498,21 @@ const saveProfile = (e) => {
                                         {uniqueCiudades.filter(c => c !== 'Todas').map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
 
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <input
-                                            type="number"
-                                            placeholder="Mayores a"
-                                            className="w-full theme-surface-card border theme-border-secondary p-3 rounded-2xl text-[11px] font-bold outline-none text-slate-300"
-                                            value={filters.edadMayorA}
-                                            onChange={e => setFilters({...filters, edadMayorA: e.target.value})}
-                                        />
-                                        <input
-                                            type="number"
-                                            placeholder="Menores a"
-                                            className="w-full theme-surface-card border theme-border-secondary p-3 rounded-2xl text-[11px] font-bold outline-none text-slate-300"
-                                            value={filters.edadMenorA}
-                                            onChange={e => setFilters({...filters, edadMenorA: e.target.value})}
-                                        />
-                                    </div>
+                                    <select className="w-full theme-surface-card border theme-border-secondary p-3 rounded-2xl text-[11px] font-bold outline-none text-slate-300 filter-select" value={filters.edad} onChange={e => setFilters({...filters, edad: e.target.value})}>
+                                        <option value="Todas">Edad: Todas</option>
+                                        <option value="Menores de 30">Menores de 30</option>
+                                        <option value="Mayores de 30">Mayores de 30</option>
+                                    </select>
 
                                     <div className="pt-2 border-t theme-border-secondary mt-4">
                                         <p className="text-[9px] font-black text-slate-500 mb-2 uppercase tracking-tighter">Filtro por Atributo</p>
-                                        <select className="w-full theme-surface-card border theme-border-secondary p-3 rounded-2xl text-[11px] font-bold outline-none text-slate-300 mb-2 filter-select" value={filters.scoreAttr} onChange={e => setFilters({...filters, scoreAttr: e.target.value})}>
+                                        <select className="w-full theme-surface-card border theme-border-secondary p-3 rounded-2xl text-[11px] font-bold outline-none text-slate-300 mb-2" value={filters.scoreAttr} onChange={e => setFilters({...filters, scoreAttr: e.target.value})}>
                                             <option>Cualquiera</option>
                                             {CARACTERISTICAS.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                         {filters.scoreAttr !== 'Cualquiera' && (
                                             <div className="flex gap-2">
-                                                <select className="flex-1 theme-surface-card border theme-border-secondary p-2 rounded-xl text-[10px] font-bold outline-none text-slate-300 filter-select filter-select--compact" value={filters.scoreOp} onChange={e => setFilters({...filters, scoreOp: e.target.value})}>
+                                                <select className="flex-1 theme-surface-card border theme-border-secondary p-2 rounded-xl text-[10px] font-bold outline-none text-slate-300" value={filters.scoreOp} onChange={e => setFilters({...filters, scoreOp: e.target.value})}>
                                                     <option>Superior a</option>
                                                     <option>Inferior a</option>
                                                     <option>Igual a</option>
@@ -2400,7 +2522,7 @@ const saveProfile = (e) => {
                                         )}
                                     </div>
                                 </div>
-                                <button onClick={() => setFilters({nacionalidad:'Todas', profesion:'Todas', edadMayorA:'', edadMenorA:'', ciudad:'Todas', scoreAttr:'Cualquiera', scoreOp:'Superior a', scoreVal:''})} className="w-full text-[9px] font-black text-slate-600 hover:text-[var(--metal-gold)] uppercase tracking-tighter transition-colors">Limpiar Filtros</button>
+                                <button onClick={() => setFilters({nacionalidad:'Todas', profesion:'Todas', edad:'Todas', ciudad:'Todas', scoreAttr:'Cualquiera', scoreOp:'Superior a', scoreVal:''})} className="w-full text-[9px] font-black text-slate-600 hover:text-[var(--metal-gold)] uppercase tracking-tighter transition-colors">Limpiar Filtros</button>
                             </div>
                         )}
 
@@ -2725,6 +2847,13 @@ const saveProfile = (e) => {
 
                     {galleryViewMode === 'PERSONAJE' && (
                         <div className="hud-frame hud-frame--panel flex flex-wrap gap-3 rounded-2xl p-4">
+                            <button
+                                onClick={() => setGalleryFilterLabel('INICIAL')}
+                                className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
+                                style={getGalleryFilterButtonStyle('INICIAL', galleryFilterLabel === 'INICIAL')}
+                            >
+                                Inicial
+                            </button>
                             {GALLERY_LABELS.map(label => {
                                 const isActive = galleryFilterLabel === label;
                                 return (
@@ -2738,6 +2867,13 @@ const saveProfile = (e) => {
                                     </button>
                                 );
                             })}
+                            <button
+                                onClick={() => setGalleryFilterLabel('100')}
+                                className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
+                                style={getGalleryFilterButtonStyle('100', galleryFilterLabel === '100')}
+                            >
+                                100%
+                            </button>
                         </div>
                     )}
 
@@ -3026,6 +3162,8 @@ const saveProfile = (e) => {
         <div className="space-y-10 animate-in fade-in duration-500">
             <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-3">
                     <button
                         onClick={() => setActiveTab('EXPLORAR')}
                         className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl border theme-border-secondary text-[11px] font-black uppercase tracking-[0.16em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] hover:bg-[var(--metal-bronze)]/10 transition-all"
@@ -3039,7 +3177,32 @@ const saveProfile = (e) => {
                     >
                         Resetear calificaciones
                     </button>
+                    <button
+                        onClick={() => setShowResetArenaPicker(prev => !prev)}
+                        className="bg-amber-500/20 text-amber-200 border border-amber-300/40 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.18em] hover:bg-amber-500 hover:text-slate-950 transition-all"
+                    >
+                        Resetear item
+                    </button>
                 </div>
+                {showResetArenaPicker && (
+                    <div className="theme-surface-card border theme-border-secondary rounded-2xl p-4 flex flex-wrap items-center gap-3">
+                        <select
+                            value={resetArenaTarget}
+                            onChange={(e) => setResetArenaTarget(e.target.value)}
+                            className="bg-slate-900 border theme-border-secondary rounded-xl px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white"
+                        >
+                            {ARENAS.map((arenaName) => (
+                                <option key={arenaName} value={arenaName}>{arenaName}</option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={() => resetArenaScores(resetArenaTarget)}
+                            className="bg-red-500/20 text-red-300 border border-red-400/40 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.16em] hover:bg-red-500 hover:text-white transition-all"
+                        >
+                            Confirmar reset item
+                        </button>
+                    </div>
+                )}
                 <div>
                     <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter">Arenas</h2>
                     <p className="text-xs font-bold text-[var(--metal-gold)] uppercase tracking-widest mt-1">Elegí uno de los 15 ítems para iniciar las batallas</p>
@@ -3089,7 +3252,46 @@ const saveProfile = (e) => {
                             <i data-lucide="layout-grid" className="w-4 h-4"></i>
                             Ir a Explorar
                         </button>
+                        <button
+                            onClick={() => setShowBattleResetPanel(prev => !prev)}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-red-400/40 text-[11px] font-black uppercase tracking-[0.16em] text-red-300 hover:bg-red-600 hover:text-white transition-all"
+                        >
+                            Resetear una batalla
+                        </button>
                     </div>
+                    {showBattleResetPanel && (
+                        <div className="theme-surface-card border border-red-400/30 rounded-2xl p-4 mt-3">
+                            {(() => {
+                                const playedKeys = Object.keys(arenaState?.matchups || {}).filter((key) => !!arenaState?.matchups?.[key]);
+                                if (!arenaState || !playedKeys.length) {
+                                    return <p className="text-xs text-red-200 font-bold uppercase tracking-[0.12em]">No hay cruces jugados para resetear.</p>;
+                                }
+
+                                return (
+                                    <div className="space-y-2">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-200">Elegí el cruce a deshacer:</p>
+                                        {playedKeys.map((pairKey) => {
+                                            const [profileAId, profileBId] = pairKey.split('__');
+                                            const profileA = perfiles.find((profile) => profile.firebaseId === profileAId);
+                                            const profileB = perfiles.find((profile) => profile.firebaseId === profileBId);
+                                            const labelA = profileA?.nombre || profileAId;
+                                            const labelB = profileB?.nombre || profileBId;
+
+                                            return (
+                                                <button
+                                                    key={pairKey}
+                                                    onClick={() => resetSpecificBattle(selectedArena, profileAId, profileBId)}
+                                                    className="w-full text-left px-3 py-2 rounded-xl border theme-border-secondary bg-slate-900/60 hover:border-red-300/70 transition-all"
+                                                >
+                                                    <span className="text-xs text-white font-semibold">{labelA} vs {labelB}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
                     <div className="min-w-0">
                         <h2 className="font-title text-2xl sm:text-3xl lg:text-4xl font-black italic text-white tracking-[0.08em] break-words leading-tight">
                             {selectedArena}
@@ -3186,35 +3388,54 @@ const saveProfile = (e) => {
                                 onClick={() => toggleSort('nombre', 'asc')}
                                 className="inline-flex items-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
                             >
-                                Nombre {sortBy === 'nombre' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                                Perfil {sortBy === 'nombre' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                            </button>
+                        </th>
+                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Rostro</th>
+                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Cuerpo</th>
+                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Actitud</th>
+                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">
+                            <button
+                                type="button"
+                                onClick={() => toggleSort('nacionalidad', 'asc')}
+                                className="inline-flex items-center justify-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
+                            >
+                                Ubicación {sortBy === 'nacionalidad' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                             </button>
                         </th>
                         <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">
                             <button
                                 type="button"
-                                onClick={() => toggleSort('edad', 'asc')}
+                                onClick={() => toggleSort('edad', 'desc')}
                                 className="inline-flex items-center justify-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
                             >
                                 Edad {sortBy === 'edad' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                             </button>
                         </th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">
-                            <button
-                                type="button"
-                                onClick={() => toggleSort('ubicacion', 'asc')}
-                                className="inline-flex items-center justify-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
-                            >
-                                Ubicación {(sortBy === 'ubicacionPais' || sortBy === 'ubicacionCiudad') ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
-                            </button>
-                        </th>
                         <th className="px-8 py-6 text-right">
-                            <button
-                                type="button"
-                                onClick={() => toggleSort('promedio', 'desc')}
-                                className="inline-flex items-center justify-end gap-1 text-[9px] font-black uppercase tracking-widest rock-carved-text hover:text-[var(--metal-gold)] transition-colors"
-                            >
-                                Score {sortBy === 'promedio' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
-                            </button>
+                            <div className="flex flex-col items-end gap-1">
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ordenar por</span>
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => {
+                                        setSortBy(e.target.value);
+                                        setSortDirection('desc');
+                                    }}
+                                    className="bg-slate-900 border border-[color:color-mix(in_srgb,var(--metal-gold)_30%,transparent)] text-[var(--metal-gold)] text-[10px] font-black uppercase py-1 px-2 rounded-lg outline-none cursor-pointer hover:border-cyan-500 transition-all"
+                                >
+                                    <option value="promedio">G2 SCORE TOTAL (PROMEDIO)</option>
+                                    <optgroup label="Categorías Principales" className="theme-surface-card text-slate-500">
+                                        <option value="Rostro">Rostro (Mix)</option>
+                                        <option value="Cuerpo">Cuerpo (Mix)</option>
+                                        <option value="Actitud">Actitud (Mix)</option>
+                                    </optgroup>
+                                    <optgroup label="Atributos Específicos" className="theme-surface-card text-slate-500">
+                                        {CARACTERISTICAS.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </optgroup>
+                                </select>
+                            </div>
                         </th>
                     </tr>
                 </thead>
@@ -3244,9 +3465,21 @@ const saveProfile = (e) => {
         </div>
     </td>
 
-{/* Edad */}
-<td className="px-4 py-5 text-center font-bold text-[10px] text-slate-400">
-    {calcularEdad(p.fechaNacimiento)} AÑOS
+{/* Promedios por Categoría */}
+<td className="px-4 py-5 text-center">
+    <span className="text-xs font-bold text-slate-300">
+        {getRostroScore(p).toFixed(0)}
+    </span>
+</td>
+<td className="px-4 py-5 text-center">
+    <span className="text-xs font-bold text-slate-300">
+        {getCuerpoScore(p).toFixed(0)}
+    </span>
+</td>
+<td className="px-4 py-5 text-center">
+    <span className="text-xs font-bold text-slate-300">
+        {getActitudScore(p).toFixed(0)}
+    </span>
 </td>
 
 {/* Ubicación (País y Ciudad) */}
@@ -3255,10 +3488,15 @@ const saveProfile = (e) => {
     <p className="text-[8px] font-black text-[var(--metal-gold)]/70 uppercase tracking-tighter">{p.ciudad}</p>
 </td>
 
+{/* Edad */}
+<td className="px-4 py-5 text-center font-bold text-[10px] text-slate-400">
+    {calcularEdad(p.fechaNacimiento)} AÑOS
+</td>
+
     <td className="px-8 py-5 text-right">
         <div className={`inline-block bg-slate-900 border px-4 py-2 rounded-xl transition-all duration-300 ${idx === 0 ? 'border-[#ffd700]/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : idx === 1 ? 'border-[#c0c0c0]/50 shadow-[0_0_15px_rgba(192,192,192,0.3)]' : idx === 2 ? 'border-[#cd7f32]/50 shadow-[0_0_15px_rgba(205,127,50,0.3)]' : 'theme-border-secondary group-hover:border-[color:color-mix(in_srgb,var(--metal-gold)_50%,transparent)]'}`}>
             <span className={`font-black leading-none ${idx === 0 ? 'text-gold' : idx === 1 ? 'text-silver' : idx === 2 ? 'text-bronze' : 'text-[var(--metal-gold)] text-lg'}`}>
-                {getDisplayedScore(p, sortBy)}
+                {calcularPromedio(p)}
             </span>
         </div>
     </td>
