@@ -2198,6 +2198,7 @@ const saveProfile = (e) => {
                     const edad = calcularEdad(profile.fechaNacimiento);
                     return typeof edad === 'number' ? edad : -1;
                 }
+                if (key === 'promedio') return Number(calcularPromedio(profile)) || 0;
                 if (key === 'Rostro') {
                     return getRostroScore(profile) || 0;
                 }
@@ -2208,6 +2209,15 @@ const saveProfile = (e) => {
                     return getActitudScore(profile) || 0;
                 }
                 return Number(profile.puntuaciones?.[key] || 0);
+            };
+            const getSortValue = (profile, key) => {
+                if (key === 'nombre') return (profile.nombre || '').toLowerCase();
+                if (key === 'nacionalidad') return (profile.nacionalidad || '').toLowerCase();
+                if (key === 'edad') {
+                    const edad = calcularEdad(profile.fechaNacimiento);
+                    return typeof edad === 'number' ? edad : -1;
+                }
+                return getDisplayedScore(profile, key);
             };
 
             const toggleSort = (key, defaultDirection = 'asc') => {
@@ -3244,7 +3254,7 @@ const saveProfile = (e) => {
     <td className="px-8 py-5 text-right">
         <div className={`inline-block bg-slate-900 border px-4 py-2 rounded-xl transition-all duration-300 ${idx === 0 ? 'border-[#ffd700]/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : idx === 1 ? 'border-[#c0c0c0]/50 shadow-[0_0_15px_rgba(192,192,192,0.3)]' : idx === 2 ? 'border-[#cd7f32]/50 shadow-[0_0_15px_rgba(205,127,50,0.3)]' : 'theme-border-secondary group-hover:border-[color:color-mix(in_srgb,var(--metal-gold)_50%,transparent)]'}`}>
             <span className={`font-black leading-none ${idx === 0 ? 'text-gold' : idx === 1 ? 'text-silver' : idx === 2 ? 'text-bronze' : 'text-[var(--metal-gold)] text-lg'}`}>
-                {calcularPromedio(p)}
+                {getDisplayedScore(p, sortBy)}
             </span>
         </div>
     </td>
