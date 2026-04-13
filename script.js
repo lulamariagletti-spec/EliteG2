@@ -2213,16 +2213,6 @@ const saveProfile = (e) => {
                 }
                 return Number(profile.puntuaciones?.[key] || 0);
             };
-            const getSortValue = (profile, key) => {
-                if (key === 'nombre') return (profile.nombre || '').toLowerCase();
-                if (key === 'nacionalidad') return (profile.nacionalidad || '').toLowerCase();
-                if (key === 'edad') {
-                    const edad = calcularEdad(profile.fechaNacimiento);
-                    return typeof edad === 'number' ? edad : -1;
-                }
-                return getDisplayedScore(profile, key);
-            };
-
             const toggleSort = (key, defaultDirection = 'asc') => {
                 if (key === 'ubicacion') {
                     if (sortBy === 'ubicacionPais') {
