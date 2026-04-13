@@ -2370,13 +2370,13 @@ const saveProfile = (e) => {
 
                                     <div className="pt-2 border-t theme-border-secondary mt-4">
                                         <p className="text-[9px] font-black text-slate-500 mb-2 uppercase tracking-tighter">Filtro por Atributo</p>
-                                        <select className="w-full theme-surface-card border theme-border-secondary p-3 rounded-2xl text-[11px] font-bold outline-none text-slate-300 mb-2" value={filters.scoreAttr} onChange={e => setFilters({...filters, scoreAttr: e.target.value})}>
+                                        <select className="w-full theme-surface-card border theme-border-secondary p-3 rounded-2xl text-[11px] font-bold outline-none text-slate-300 mb-2 filter-select" value={filters.scoreAttr} onChange={e => setFilters({...filters, scoreAttr: e.target.value})}>
                                             <option>Cualquiera</option>
                                             {CARACTERISTICAS.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                         {filters.scoreAttr !== 'Cualquiera' && (
                                             <div className="flex gap-2">
-                                                <select className="flex-1 theme-surface-card border theme-border-secondary p-2 rounded-xl text-[10px] font-bold outline-none text-slate-300" value={filters.scoreOp} onChange={e => setFilters({...filters, scoreOp: e.target.value})}>
+                                                <select className="flex-1 theme-surface-card border theme-border-secondary p-2 rounded-xl text-[10px] font-bold outline-none text-slate-300 filter-select filter-select--compact" value={filters.scoreOp} onChange={e => setFilters({...filters, scoreOp: e.target.value})}>
                                                     <option>Superior a</option>
                                                     <option>Inferior a</option>
                                                     <option>Igual a</option>
