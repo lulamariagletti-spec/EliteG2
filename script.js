@@ -128,11 +128,7 @@
         };
         const getGalleryLabelStyle = (label) => GALLERY_LABEL_STYLES[label] || GALLERY_LABEL_STYLES.DEFAULT;
         const getGalleryFilterButtonStyle = (label, isActive = false) => {
-            const styleForLabel = label === 'INICIAL'
-                ? GALLERY_LABEL_STYLES.DEFAULT
-                : label === '100'
-                    ? GALLERY_LABEL_STYLES.B
-                    : getGalleryLabelStyle(label);
+            const styleForLabel = getGalleryLabelStyle(label);
             return {
                 '--btn-neon-color': styleForLabel.glow,
                 borderColor: styleForLabel.border,
@@ -1083,7 +1079,7 @@
             const [urlInput, setUrlInput] = useState('');
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
             const [galleryMediaType, setGalleryMediaType] = useState('image');
-            const [galleryFilterLabel, setGalleryFilterLabel] = useState('INICIAL');
+            const [galleryFilterLabel, setGalleryFilterLabel] = useState('ALL');
             const [galleryViewMode, setGalleryViewMode] = useState('GENERAL');
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
             const [selectedGalleryBucket, setSelectedGalleryBucket] = useState(null);
@@ -1646,11 +1642,9 @@ const getInitialCatFormData = () => ({
                 return sourceGalleryPhotos.filter(photo => {
                     const matchesLabel = galleryViewMode === 'ETIQUETA'
                         ? true
-                        : galleryFilterLabel === 'INICIAL'
-                            ? photo.label !== 'X'
-                            : galleryFilterLabel === '100'
-                                ? true
-                                : photo.label === galleryFilterLabel;
+                        : galleryFilterLabel === 'ALL'
+                            ? true
+                            : photo.label === galleryFilterLabel;
                     const matchesQuery = !query
                         || String(photo.nombre || '').toLowerCase().includes(query)
                         || String(photo.profesion || '').toLowerCase().includes(query)
@@ -2302,13 +2296,6 @@ const saveProfile = (e) => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        onClick={() => setGalleryFilterLabel('INICIAL')}
-                                        className="btn-neon px-3 py-3 rounded-2xl text-[10px] transition-all"
-                                        style={getGalleryFilterButtonStyle('INICIAL', galleryFilterLabel === 'INICIAL')}
-                                    >
-                                        Inicial
-                                    </button>
                                     {GALLERY_LABELS.map(label => {
                                         const isActive = galleryFilterLabel === label;
                                         return (
@@ -2322,17 +2309,10 @@ const saveProfile = (e) => {
                                             </button>
                                         );
                                     })}
-                                    <button
-                                        onClick={() => setGalleryFilterLabel('100')}
-                                        className="btn-neon px-3 py-3 rounded-2xl text-[10px] transition-all"
-                                        style={getGalleryFilterButtonStyle('100', galleryFilterLabel === '100')}
-                                    >
-                                        100%
-                                    </button>
                                 </div>
 
                                 <button
-                                    onClick={() => setGalleryFilterLabel('INICIAL')}
+                                    onClick={() => setGalleryFilterLabel('ALL')}
                                     className="w-full text-[9px] font-black text-slate-600 hover:text-[var(--metal-gold)] uppercase tracking-tighter transition-colors"
                                 >
                                     Limpiar filtro de etiquetas
@@ -2711,13 +2691,6 @@ const saveProfile = (e) => {
 
                     {galleryViewMode === 'PERSONAJE' && (
                         <div className="hud-frame hud-frame--panel flex flex-wrap gap-3 rounded-2xl p-4">
-                            <button
-                                onClick={() => setGalleryFilterLabel('INICIAL')}
-                                className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
-                                style={getGalleryFilterButtonStyle('INICIAL', galleryFilterLabel === 'INICIAL')}
-                            >
-                                Inicial
-                            </button>
                             {GALLERY_LABELS.map(label => {
                                 const isActive = galleryFilterLabel === label;
                                 return (
@@ -2731,13 +2704,6 @@ const saveProfile = (e) => {
                                     </button>
                                 );
                             })}
-                            <button
-                                onClick={() => setGalleryFilterLabel('100')}
-                                className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
-                                style={getGalleryFilterButtonStyle('100', galleryFilterLabel === '100')}
-                            >
-                                100%
-                            </button>
                         </div>
                     )}
 
