@@ -3069,16 +3069,19 @@ const saveProfile = (e) => {
                                 );
                             })() : (
                                 <img
-                                    src={getSafeImageSrc(selectedGalleryPhoto.url, CRYING_EMOJI_FALLBACK)}
-                                    alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
-                                    onError={() => {
-                                        if (filteredGalleryPhotos.length > 1) {
-                                            showNextGalleryPhoto();
-                                        }
-                                    }}
-                                    className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
-                                    onError={applyCryingEmojiFallback}
-                                />
+    src={getSafeImageSrc(selectedGalleryPhoto.url, CRYING_EMOJI_FALLBACK)}
+    alt={`${selectedGalleryPhoto.nombre} - ${selectedGalleryPhoto.label || 'galería'}`}
+    className="w-full h-[calc(100vh-14rem)] object-contain bg-black"
+    onError={(e) => {
+        // 1. Aplicamos el fallback visual por si acaso
+        applyCryingEmojiFallback(e);
+        
+        // 2. Pasamos a la siguiente foto si hay más de una
+        if (filteredGalleryPhotos.length > 1) {
+            showNextGalleryPhoto();
+        }
+    }}
+/>
                             )}
 
                             {filteredGalleryPhotos.length > 1 && (
@@ -3162,8 +3165,6 @@ const saveProfile = (e) => {
         <div className="space-y-10 animate-in fade-in duration-500">
             <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-3">
-                <div className="flex flex-col gap-4">
-                    <div className="flex flex-wrap items-center gap-3">
                     <button
                         onClick={() => setActiveTab('EXPLORAR')}
                         className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl border theme-border-secondary text-[11px] font-black uppercase tracking-[0.16em] text-[var(--metal-gold)] hover:border-[var(--metal-gold)] hover:bg-[var(--metal-bronze)]/10 transition-all"
@@ -3512,8 +3513,7 @@ const saveProfile = (e) => {
         <div className="space-y-10 animate-in fade-in duration-500">
             <div className="flex justify-between items-end">
                 <div>
-                    <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">Mis Archivos del Reino</h2>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Crónicas personalizadas del santuario</p>
+                    <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">Carpetas</h2>
                 </div>
                 <button onClick={() => { resetCatForm(); setIsCatModalOpen(true); }} className="btn-metal btn-metal--gold px-8 py-3 rounded-xl text-xs">
                     NUEVA CATEGORÍA
@@ -3590,7 +3590,6 @@ const saveProfile = (e) => {
     )}
 </div>
                     </main>
-
                     {isModalOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm">
                             <div className="bg-[linear-gradient(180deg,#0b1222_0%,#050a16_100%)] w-full max-w-2xl rounded-3xl overflow-hidden shadow-[inset_0_1px_0_rgba(148,163,184,0.22),0_24px_60px_rgba(2,6,23,0.65)] border theme-border-secondary max-h-[90vh] flex flex-col relative animate-in zoom-in-95 duration-300">
