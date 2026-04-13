@@ -1,4 +1,4 @@
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;600;700;800&display=swap');
 
         :root {
             --metal-gold: #c9a35a;
@@ -52,7 +52,7 @@
         }
 
         body {
-            font-family: 'Inter', 'Lora', sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -67,7 +67,7 @@
 
         h1, h2, h3, h4, h5, h6,
         .font-title {
-            font-family: 'Cinzel', 'MedievalSharp', serif;
+            font-family: 'Orbitron', 'Inter', sans-serif;
             letter-spacing: 0.04em;
         }
 
@@ -230,7 +230,10 @@
 
 
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: linear-gradient(180deg, #020617 0%, #0f172a 100%); }
+        ::-webkit-scrollbar-track { background:
+                radial-gradient(circle at 20% 15%, rgba(34, 211, 238, 0.15), transparent 42%),
+                radial-gradient(circle at 78% 82%, rgba(244, 114, 182, 0.12), transparent 48%),
+                linear-gradient(180deg, #020617 0%, #081125 52%, #0b1222 100%); }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
 
         .profile-card:hover img {
@@ -242,20 +245,62 @@
         }
 
         #root:empty {
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
+            background:
+                radial-gradient(circle at 20% 15%, rgba(34, 211, 238, 0.15), transparent 42%),
+                radial-gradient(circle at 78% 82%, rgba(244, 114, 182, 0.12), transparent 48%),
+                linear-gradient(180deg, #020617 0%, #081125 52%, #0b1222 100%);
+        }
+        #root:empty::before {
+            content: '';
+            position: absolute;
+            width: min(62vw, 440px);
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.1) 12%, rgba(244, 114, 182, 0.78) 50%, rgba(34, 211, 238, 0.1) 88%, transparent 100%);
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.58), 0 0 20px rgba(244, 114, 182, 0.4);
+            transform: translateY(-16px);
+            animation: root-scan 2.8s ease-in-out infinite;
         }
         #root:empty::after {
-            content: "Abriendo el códice...";
-            font-family: 'Cinzel', serif;
+            content: "Sincronizando matriz intergaláctica...";
+            font-family: 'Orbitron', 'Inter', sans-serif;
             font-weight: 700;
-            color: #22d3ee;
-            letter-spacing: 0.2em;
+            color: #67e8f9;
+            letter-spacing: 0.24em;
             text-transform: uppercase;
             font-size: 12px;
+            text-shadow:
+                0 0 4px rgba(103, 232, 249, 0.88),
+                0 0 12px rgba(34, 211, 238, 0.82),
+                0 0 22px rgba(34, 211, 238, 0.62),
+                0 0 34px rgba(244, 114, 182, 0.5);
+            animation: root-pulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes root-pulse {
+            0%, 100% {
+                opacity: 0.78;
+                transform: scale(0.995);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.02);
+            }
+        }
+
+        @keyframes root-scan {
+            0%, 100% {
+                opacity: 0.3;
+                transform: translateY(-18px) scaleX(0.9);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(18px) scaleX(1);
+            }
         }
 
         .filter-select {
