@@ -2189,6 +2189,11 @@ const saveProfile = (e) => {
                 if (key === 'promedio') return Number(calcularPromedio(profile)) || 0;
                 if (key === 'nombre') return (profile.nombre || '').toLowerCase();
                 if (key === 'nacionalidad') return (profile.nacionalidad || '').toLowerCase();
+                if (key === 'ubicacionPais') return (profile.nacionalidad || '').toLowerCase();
+                if (key === 'ubicacionCiudad') {
+                    const ciudad = (profile.ciudad || '').trim().toLowerCase();
+                    return ciudad || '\uffff';
+                }
                 if (key === 'edad') {
                     const edad = calcularEdad(profile.fechaNacimiento);
                     return typeof edad === 'number' ? edad : -1;
@@ -2206,6 +2211,21 @@ const saveProfile = (e) => {
             };
 
             const toggleSort = (key, defaultDirection = 'asc') => {
+                if (key === 'ubicacion') {
+                    if (sortBy === 'ubicacionPais') {
+                        setSortBy('ubicacionCiudad');
+                        setSortDirection('asc');
+                        return;
+                    }
+                    if (sortBy === 'ubicacionCiudad') {
+                        setSortBy('ubicacionPais');
+                        setSortDirection('asc');
+                        return;
+                    }
+                    setSortBy('ubicacionPais');
+                    setSortDirection(defaultDirection);
+                    return;
+                }
                 if (sortBy === key) {
                     setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
                     return;
@@ -3152,54 +3172,35 @@ const saveProfile = (e) => {
                                 onClick={() => toggleSort('nombre', 'asc')}
                                 className="inline-flex items-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
                             >
-                                Perfil {sortBy === 'nombre' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
-                            </button>
-                        </th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Rostro</th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Cuerpo</th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Actitud</th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">
-                            <button
-                                type="button"
-                                onClick={() => toggleSort('nacionalidad', 'asc')}
-                                className="inline-flex items-center justify-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
-                            >
-                                Ubicación {sortBy === 'nacionalidad' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                                Nombre {sortBy === 'nombre' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                             </button>
                         </th>
                         <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">
                             <button
                                 type="button"
-                                onClick={() => toggleSort('edad', 'desc')}
+                                onClick={() => toggleSort('edad', 'asc')}
                                 className="inline-flex items-center justify-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
                             >
                                 Edad {sortBy === 'edad' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                             </button>
                         </th>
+                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">
+                            <button
+                                type="button"
+                                onClick={() => toggleSort('ubicacion', 'asc')}
+                                className="inline-flex items-center justify-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
+                            >
+                                Ubicación {(sortBy === 'ubicacionPais' || sortBy === 'ubicacionCiudad') ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                            </button>
+                        </th>
                         <th className="px-8 py-6 text-right">
-                            <div className="flex flex-col items-end gap-1">
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ordenar por</span>
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) => {
-                                        setSortBy(e.target.value);
-                                        setSortDirection('desc');
-                                    }}
-                                    className="bg-slate-900 border border-[color:color-mix(in_srgb,var(--metal-gold)_30%,transparent)] text-[var(--metal-gold)] text-[10px] font-black uppercase py-1 px-2 rounded-lg outline-none cursor-pointer hover:border-cyan-500 transition-all"
-                                >
-                                    <option value="promedio">G2 SCORE TOTAL (PROMEDIO)</option>
-                                    <optgroup label="Categorías Principales" className="theme-surface-card text-slate-500">
-                                        <option value="Rostro">Rostro (Mix)</option>
-                                        <option value="Cuerpo">Cuerpo (Mix)</option>
-                                        <option value="Actitud">Actitud (Mix)</option>
-                                    </optgroup>
-                                    <optgroup label="Atributos Específicos" className="theme-surface-card text-slate-500">
-                                        {CARACTERISTICAS.map(cat => (
-                                            <option key={cat} value={cat}>{cat}</option>
-                                        ))}
-                                    </optgroup>
-                                </select>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => toggleSort('promedio', 'desc')}
+                                className="inline-flex items-center justify-end gap-1 text-[9px] font-black uppercase tracking-widest rock-carved-text hover:text-[var(--metal-gold)] transition-colors"
+                            >
+                                Score {sortBy === 'promedio' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                            </button>
                         </th>
                     </tr>
                 </thead>
@@ -3229,32 +3230,15 @@ const saveProfile = (e) => {
         </div>
     </td>
 
-{/* Promedios por Categoría */}
-<td className="px-4 py-5 text-center">
-    <span className="text-xs font-bold text-slate-300">
-        {getRostroScore(p).toFixed(0)}
-    </span>
-</td>
-<td className="px-4 py-5 text-center">
-    <span className="text-xs font-bold text-slate-300">
-        {getCuerpoScore(p).toFixed(0)}
-    </span>
-</td>
-<td className="px-4 py-5 text-center">
-    <span className="text-xs font-bold text-slate-300">
-        {getActitudScore(p).toFixed(0)}
-    </span>
+{/* Edad */}
+<td className="px-4 py-5 text-center font-bold text-[10px] text-slate-400">
+    {calcularEdad(p.fechaNacimiento)} AÑOS
 </td>
 
 {/* Ubicación (País y Ciudad) */}
 <td className="px-4 py-5 text-center">
     <p className="text-[10px] font-bold text-slate-300 uppercase leading-none">{p.nacionalidad}</p>
     <p className="text-[8px] font-black text-[var(--metal-gold)]/70 uppercase tracking-tighter">{p.ciudad}</p>
-</td>
-
-{/* Edad */}
-<td className="px-4 py-5 text-center font-bold text-[10px] text-slate-400">
-    {calcularEdad(p.fechaNacimiento)} AÑOS
 </td>
 
     <td className="px-8 py-5 text-right">
