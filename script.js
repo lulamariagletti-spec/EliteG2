@@ -128,11 +128,7 @@
         };
         const getGalleryLabelStyle = (label) => GALLERY_LABEL_STYLES[label] || GALLERY_LABEL_STYLES.DEFAULT;
         const getGalleryFilterButtonStyle = (label, isActive = false) => {
-            const styleForLabel = label === 'INICIAL'
-                ? GALLERY_LABEL_STYLES.DEFAULT
-                : label === '100'
-                    ? GALLERY_LABEL_STYLES.B
-                    : getGalleryLabelStyle(label);
+            const styleForLabel = getGalleryLabelStyle(label);
             return {
                 '--btn-neon-color': styleForLabel.glow,
                 borderColor: styleForLabel.border,
@@ -1083,7 +1079,7 @@
             const [urlInput, setUrlInput] = useState('');
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
             const [galleryMediaType, setGalleryMediaType] = useState('image');
-            const [galleryFilterLabel, setGalleryFilterLabel] = useState('INICIAL');
+            const [galleryFilterLabel, setGalleryFilterLabel] = useState('ALL');
             const [galleryViewMode, setGalleryViewMode] = useState('GENERAL');
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
             const [selectedGalleryBucket, setSelectedGalleryBucket] = useState(null);
@@ -1646,11 +1642,9 @@ const getInitialCatFormData = () => ({
                 return sourceGalleryPhotos.filter(photo => {
                     const matchesLabel = galleryViewMode === 'ETIQUETA'
                         ? true
-                        : galleryFilterLabel === 'INICIAL'
-                            ? photo.label !== 'X'
-                            : galleryFilterLabel === '100'
-                                ? true
-                                : photo.label === galleryFilterLabel;
+                        : galleryFilterLabel === 'ALL'
+                            ? true
+                            : photo.label === galleryFilterLabel;
                     const matchesQuery = !query
                         || String(photo.nombre || '').toLowerCase().includes(query)
                         || String(photo.profesion || '').toLowerCase().includes(query)
@@ -2191,9 +2185,18 @@ const saveProfile = (e) => {
 
                 return base;
             }, [perfiles, searchQuery, activeTab, selectedCategory, filters]);
-            const getDisplayedScore = (profile, key) => {
-                if (key === 'nombre' || key === 'nacionalidad' || key === 'edad') {
-                    return Number(calcularPromedio(profile)) || 0;
+            const getSortValue = (profile, key) => {
+                if (key === 'promedio') return Number(calcularPromedio(profile)) || 0;
+                if (key === 'nombre') return (profile.nombre || '').toLowerCase();
+                if (key === 'nacionalidad') return (profile.nacionalidad || '').toLowerCase();
+                if (key === 'ubicacionPais') return (profile.nacionalidad || '').toLowerCase();
+                if (key === 'ubicacionCiudad') {
+                    const ciudad = (profile.ciudad || '').trim().toLowerCase();
+                    return ciudad || '\uffff';
+                }
+                if (key === 'edad') {
+                    const edad = calcularEdad(profile.fechaNacimiento);
+                    return typeof edad === 'number' ? edad : -1;
                 }
                 if (key === 'promedio') return Number(calcularPromedio(profile)) || 0;
                 if (key === 'Rostro') {
@@ -2218,6 +2221,21 @@ const saveProfile = (e) => {
             };
 
             const toggleSort = (key, defaultDirection = 'asc') => {
+                if (key === 'ubicacion') {
+                    if (sortBy === 'ubicacionPais') {
+                        setSortBy('ubicacionCiudad');
+                        setSortDirection('asc');
+                        return;
+                    }
+                    if (sortBy === 'ubicacionCiudad') {
+                        setSortBy('ubicacionPais');
+                        setSortDirection('asc');
+                        return;
+                    }
+                    setSortBy('ubicacionPais');
+                    setSortDirection(defaultDirection);
+                    return;
+                }
                 if (sortBy === key) {
                     setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
                     return;
@@ -2308,13 +2326,6 @@ const saveProfile = (e) => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        onClick={() => setGalleryFilterLabel('INICIAL')}
-                                        className="btn-neon px-3 py-3 rounded-2xl text-[10px] transition-all"
-                                        style={getGalleryFilterButtonStyle('INICIAL', galleryFilterLabel === 'INICIAL')}
-                                    >
-                                        Inicial
-                                    </button>
                                     {GALLERY_LABELS.map(label => {
                                         const isActive = galleryFilterLabel === label;
                                         return (
@@ -2328,17 +2339,10 @@ const saveProfile = (e) => {
                                             </button>
                                         );
                                     })}
-                                    <button
-                                        onClick={() => setGalleryFilterLabel('100')}
-                                        className="btn-neon px-3 py-3 rounded-2xl text-[10px] transition-all"
-                                        style={getGalleryFilterButtonStyle('100', galleryFilterLabel === '100')}
-                                    >
-                                        100%
-                                    </button>
                                 </div>
 
                                 <button
-                                    onClick={() => setGalleryFilterLabel('INICIAL')}
+                                    onClick={() => setGalleryFilterLabel('ALL')}
                                     className="w-full text-[9px] font-black text-slate-600 hover:text-[var(--metal-gold)] uppercase tracking-tighter transition-colors"
                                 >
                                     Limpiar filtro de etiquetas
@@ -2717,13 +2721,6 @@ const saveProfile = (e) => {
 
                     {galleryViewMode === 'PERSONAJE' && (
                         <div className="hud-frame hud-frame--panel flex flex-wrap gap-3 rounded-2xl p-4">
-                            <button
-                                onClick={() => setGalleryFilterLabel('INICIAL')}
-                                className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
-                                style={getGalleryFilterButtonStyle('INICIAL', galleryFilterLabel === 'INICIAL')}
-                            >
-                                Inicial
-                            </button>
                             {GALLERY_LABELS.map(label => {
                                 const isActive = galleryFilterLabel === label;
                                 return (
@@ -2737,13 +2734,6 @@ const saveProfile = (e) => {
                                     </button>
                                 );
                             })}
-                            <button
-                                onClick={() => setGalleryFilterLabel('100')}
-                                className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
-                                style={getGalleryFilterButtonStyle('100', galleryFilterLabel === '100')}
-                            >
-                                100%
-                            </button>
                         </div>
                     )}
 
@@ -3192,54 +3182,35 @@ const saveProfile = (e) => {
                                 onClick={() => toggleSort('nombre', 'asc')}
                                 className="inline-flex items-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
                             >
-                                Perfil {sortBy === 'nombre' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
-                            </button>
-                        </th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Rostro</th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Cuerpo</th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">Actitud</th>
-                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">
-                            <button
-                                type="button"
-                                onClick={() => toggleSort('nacionalidad', 'asc')}
-                                className="inline-flex items-center justify-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
-                            >
-                                Ubicación {sortBy === 'nacionalidad' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                                Nombre {sortBy === 'nombre' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                             </button>
                         </th>
                         <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">
                             <button
                                 type="button"
-                                onClick={() => toggleSort('edad', 'desc')}
+                                onClick={() => toggleSort('edad', 'asc')}
                                 className="inline-flex items-center justify-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
                             >
                                 Edad {sortBy === 'edad' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
                             </button>
                         </th>
+                        <th className="px-4 py-6 text-[9px] font-black uppercase tracking-widest text-center rock-carved-text">
+                            <button
+                                type="button"
+                                onClick={() => toggleSort('ubicacion', 'asc')}
+                                className="inline-flex items-center justify-center gap-1 hover:text-[var(--metal-gold)] transition-colors"
+                            >
+                                Ubicación {(sortBy === 'ubicacionPais' || sortBy === 'ubicacionCiudad') ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                            </button>
+                        </th>
                         <th className="px-8 py-6 text-right">
-                            <div className="flex flex-col items-end gap-1">
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ordenar por</span>
-                                <select
-                                    value={sortBy}
-                                    onChange={(e) => {
-                                        setSortBy(e.target.value);
-                                        setSortDirection('desc');
-                                    }}
-                                    className="bg-slate-900 border border-[color:color-mix(in_srgb,var(--metal-gold)_30%,transparent)] text-[var(--metal-gold)] text-[10px] font-black uppercase py-1 px-2 rounded-lg outline-none cursor-pointer hover:border-cyan-500 transition-all"
-                                >
-                                    <option value="promedio">GENERAL (G2 SCORE TOTAL)</option>
-                                    <optgroup label="Categorías Principales" className="theme-surface-card text-slate-500">
-                                        <option value="Rostro">Rostro (Mix)</option>
-                                        <option value="Cuerpo">Cuerpo (Mix)</option>
-                                        <option value="Actitud">Actitud (Mix)</option>
-                                    </optgroup>
-                                    <optgroup label="Atributos Específicos" className="theme-surface-card text-slate-500">
-                                        {CARACTERISTICAS.map(cat => (
-                                            <option key={cat} value={cat}>{cat}</option>
-                                        ))}
-                                    </optgroup>
-                                </select>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => toggleSort('promedio', 'desc')}
+                                className="inline-flex items-center justify-end gap-1 text-[9px] font-black uppercase tracking-widest rock-carved-text hover:text-[var(--metal-gold)] transition-colors"
+                            >
+                                Score {sortBy === 'promedio' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}
+                            </button>
                         </th>
                     </tr>
                 </thead>
@@ -3269,32 +3240,15 @@ const saveProfile = (e) => {
         </div>
     </td>
 
-{/* Promedios por Categoría */}
-<td className="px-4 py-5 text-center">
-    <span className="text-xs font-bold text-slate-300">
-        {getRostroScore(p).toFixed(0)}
-    </span>
-</td>
-<td className="px-4 py-5 text-center">
-    <span className="text-xs font-bold text-slate-300">
-        {getCuerpoScore(p).toFixed(0)}
-    </span>
-</td>
-<td className="px-4 py-5 text-center">
-    <span className="text-xs font-bold text-slate-300">
-        {getActitudScore(p).toFixed(0)}
-    </span>
+{/* Edad */}
+<td className="px-4 py-5 text-center font-bold text-[10px] text-slate-400">
+    {calcularEdad(p.fechaNacimiento)} AÑOS
 </td>
 
 {/* Ubicación (País y Ciudad) */}
 <td className="px-4 py-5 text-center">
     <p className="text-[10px] font-bold text-slate-300 uppercase leading-none">{p.nacionalidad}</p>
     <p className="text-[8px] font-black text-[var(--metal-gold)]/70 uppercase tracking-tighter">{p.ciudad}</p>
-</td>
-
-{/* Edad */}
-<td className="px-4 py-5 text-center font-bold text-[10px] text-slate-400">
-    {calcularEdad(p.fechaNacimiento)} AÑOS
 </td>
 
     <td className="px-8 py-5 text-right">
