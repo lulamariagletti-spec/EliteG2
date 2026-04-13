@@ -1084,12 +1084,14 @@
             const [galleryLabel, setGalleryLabel] = useState(GALLERY_LABELS[0]);
             const [galleryMediaType, setGalleryMediaType] = useState('image');
             const [galleryFilterLabel, setGalleryFilterLabel] = useState('INICIAL');
-            const [galleryViewMode, setGalleryViewMode] = useState('PERSONAJE');
+            const [galleryViewMode, setGalleryViewMode] = useState('GENERAL');
             const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(null);
             const [selectedGalleryBucket, setSelectedGalleryBucket] = useState(null);
             const [selectedCharacterBucketIds, setSelectedCharacterBucketIds] = useState([]);
+            const [selectedTagLabels, setSelectedTagLabels] = useState([]);
             const [isGalleryPlaying, setIsGalleryPlaying] = useState(false);
             const [isGalleryRandom, setIsGalleryRandom] = useState(false);
+            const [galleryPlaybackSeconds, setGalleryPlaybackSeconds] = useState(5);
             const [isSidebarOpen, setIsSidebarOpen] = useState(true);
             const [isEditingGalleryLabel, setIsEditingGalleryLabel] = useState(false);
             const [galleryLabelDraft, setGalleryLabelDraft] = useState('');
@@ -1626,8 +1628,12 @@ const getInitialCatFormData = () => ({
                 if (galleryViewMode === 'PERSONAJE') {
                     return selectedCharacterBuckets.flatMap((bucket) => bucket.photos || []);
                 }
+                if (galleryViewMode === 'ETIQUETA') {
+                    if (!selectedTagLabels.length) return [];
+                    return allGalleryPhotos.filter((photo) => selectedTagLabels.includes(photo.label));
+                }
                 return activeGalleryBucket?.photos || allGalleryPhotos;
-            }, [galleryViewMode, selectedCharacterBuckets, activeGalleryBucket, allGalleryPhotos]);
+            }, [galleryViewMode, selectedCharacterBuckets, activeGalleryBucket, allGalleryPhotos, selectedTagLabels]);
             const galleryStats = useMemo(() => {
                 return GALLERY_LABELS.reduce((acc, label) => {
                     acc[label] = sourceGalleryPhotos.filter(photo => photo.label === label).length;
@@ -1638,11 +1644,13 @@ const getInitialCatFormData = () => ({
                 const query = searchQuery.trim().toLowerCase();
 
                 return sourceGalleryPhotos.filter(photo => {
-                    const matchesLabel = galleryFilterLabel === 'INICIAL'
-                        ? photo.label !== 'X'
-                        : galleryFilterLabel === '100'
-                            ? true
-                            : photo.label === galleryFilterLabel;
+                    const matchesLabel = galleryViewMode === 'ETIQUETA'
+                        ? true
+                        : galleryFilterLabel === 'INICIAL'
+                            ? photo.label !== 'X'
+                            : galleryFilterLabel === '100'
+                                ? true
+                                : photo.label === galleryFilterLabel;
                     const matchesQuery = !query
                         || String(photo.nombre || '').toLowerCase().includes(query)
                         || String(photo.profesion || '').toLowerCase().includes(query)
@@ -1651,9 +1659,9 @@ const getInitialCatFormData = () => ({
 
                     return matchesLabel && matchesQuery;
                 });
-            }, [sourceGalleryPhotos, galleryFilterLabel, searchQuery]);
+            }, [sourceGalleryPhotos, galleryFilterLabel, searchQuery, galleryViewMode]);
             const currentGalleryModeLabel = GALLERY_VIEW_MODE_LABELS[galleryViewMode] || galleryViewMode;
-            const isGalleryBucketMode = galleryViewMode !== 'GENERAL';
+            const isGalleryBucketMode = galleryViewMode !== 'GENERAL' && galleryViewMode !== 'ETIQUETA';
             const availableCharacterBuckets = useMemo(() => {
                 if (galleryViewMode !== 'PERSONAJE') return [];
                 return galleryBuckets.filter((bucket) => !selectedCharacterBucketIds.includes(bucket.id));
@@ -1683,6 +1691,7 @@ const getInitialCatFormData = () => ({
                 setSelectedGalleryBucket(null);
                 setSelectedGalleryIndex(null);
                 setSelectedCharacterBucketIds([]);
+                setSelectedTagLabels([]);
             }, [galleryViewMode]);
 
             useEffect(() => {
@@ -1737,11 +1746,7 @@ const getInitialCatFormData = () => ({
 
                 if (!isGalleryPlaying || !selectedGalleryPhoto) return;
 
-                if (selectedGalleryPhoto.type === 'video') {
-                    return;
-                }
-
-                const timeoutDuration = 7000;
+                const timeoutDuration = galleryPlaybackSeconds * 1000;
                 galleryPlaybackTimeoutRef.current = setTimeout(() => {
                     setSelectedGalleryIndex((current) => getNextPlayableIndex(current, filteredGalleryPhotos, isGalleryRandom));
                 }, timeoutDuration);
@@ -1752,7 +1757,7 @@ const getInitialCatFormData = () => ({
                         galleryPlaybackTimeoutRef.current = null;
                     }
                 };
-            }, [isGalleryPlaying, selectedGalleryPhoto, filteredGalleryPhotos, isGalleryRandom]);
+            }, [isGalleryPlaying, selectedGalleryPhoto, filteredGalleryPhotos, isGalleryRandom, galleryPlaybackSeconds]);
 
             const openGalleryViewer = (index, autoplay = false) => {
                 setSelectedGalleryIndex(index);
@@ -1766,6 +1771,14 @@ const getInitialCatFormData = () => ({
             const removeCharacterFromGallerySelection = (bucketId) => {
                 if (!bucketId) return;
                 setSelectedCharacterBucketIds((current) => current.filter((id) => id !== bucketId));
+                setSelectedGalleryIndex(null);
+            };
+            const toggleEtiquetaSelection = (label) => {
+                if (!label) return;
+                setSelectedTagLabels((current) => current.includes(label)
+                    ? current.filter((selected) => selected !== label)
+                    : [...current, label]
+                );
                 setSelectedGalleryIndex(null);
             };
             const closeGalleryViewer = () => {
@@ -2681,37 +2694,54 @@ const saveProfile = (e) => {
                         </div>
                     )}
 
-                    <div className="hud-frame hud-frame--panel flex flex-wrap gap-3 rounded-2xl p-4">
-                        <button
-                            onClick={() => setGalleryFilterLabel('INICIAL')}
-                            className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
-                            style={getGalleryFilterButtonStyle('INICIAL', galleryFilterLabel === 'INICIAL')}
-                        >
-                            Inicial
-                        </button>
-                        {GALLERY_LABELS.map(label => {
-                            const isActive = galleryFilterLabel === label;
-                            return (
+                    {galleryViewMode === 'ETIQUETA' && (
+                        <div className="hud-frame hud-frame--panel flex flex-wrap gap-3 rounded-2xl p-4">
+                            {GALLERY_LABELS.map(label => (
                                 <button
                                     key={label}
-                                    onClick={() => setGalleryFilterLabel(label)}
+                                    onClick={() => toggleEtiquetaSelection(label)}
                                     className="btn-neon font-title px-4 py-2 rounded-full text-[10px] tracking-[0.08em] transition-all"
-                                    style={getGalleryFilterButtonStyle(label, isActive)}
+                                    style={getGalleryFilterButtonStyle(label, selectedTagLabels.includes(label))}
                                 >
-                                    {label} · {galleryStats[label] || 0}
+                                    {label} · {allGalleryPhotos.filter(photo => photo.label === label).length}
                                 </button>
-                            );
-                        })}
-                        <button
-                            onClick={() => setGalleryFilterLabel('100')}
-                            className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
-                            style={getGalleryFilterButtonStyle('100', galleryFilterLabel === '100')}
-                        >
-                            100%
-                        </button>
-                    </div>
+                            ))}
+                        </div>
+                    )}
 
-                    <div className="flex items-center gap-3">
+                    {galleryViewMode === 'PERSONAJE' && (
+                        <div className="hud-frame hud-frame--panel flex flex-wrap gap-3 rounded-2xl p-4">
+                            <button
+                                onClick={() => setGalleryFilterLabel('INICIAL')}
+                                className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
+                                style={getGalleryFilterButtonStyle('INICIAL', galleryFilterLabel === 'INICIAL')}
+                            >
+                                Inicial
+                            </button>
+                            {GALLERY_LABELS.map(label => {
+                                const isActive = galleryFilterLabel === label;
+                                return (
+                                    <button
+                                        key={label}
+                                        onClick={() => setGalleryFilterLabel(label)}
+                                        className="btn-neon font-title px-4 py-2 rounded-full text-[10px] tracking-[0.08em] transition-all"
+                                        style={getGalleryFilterButtonStyle(label, isActive)}
+                                    >
+                                        {label} · {galleryStats[label] || 0}
+                                    </button>
+                                );
+                            })}
+                            <button
+                                onClick={() => setGalleryFilterLabel('100')}
+                                className="btn-neon px-4 py-2 rounded-full text-[10px] transition-all"
+                                style={getGalleryFilterButtonStyle('100', galleryFilterLabel === '100')}
+                            >
+                                100%
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-3">
                         <button
                             type="button"
                             onClick={() => openGalleryViewer(0, true)}
@@ -2721,6 +2751,21 @@ const saveProfile = (e) => {
                             <LucideIcon name="play" size={14} />
                             Play {activeGalleryBucket?.nombre || currentGalleryModeLabel}
                         </button>
+                        <div className="inline-flex items-center gap-2 rounded-full border theme-border-secondary bg-slate-950/80 px-3 py-2">
+                            <label htmlFor="galleryPlaybackSeconds" className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-300">
+                                Duración
+                            </label>
+                            <select
+                                id="galleryPlaybackSeconds"
+                                className="filter-select"
+                                value={galleryPlaybackSeconds}
+                                onChange={(event) => setGalleryPlaybackSeconds(Number(event.target.value))}
+                            >
+                                {[3, 5, 7, 10].map((seconds) => (
+                                    <option key={seconds} value={seconds}>{seconds} segundos</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     {filteredGalleryPhotos.length === 0 ? (
@@ -2729,7 +2774,11 @@ const saveProfile = (e) => {
                                 <LucideIcon name="image-off" size={28} className="text-slate-600" />
                             </div>
                             <h3 className="font-title text-xl font-black italic text-white tracking-[0.06em]">No hay archivos para mostrar</h3>
-                            <p className="font-title text-xs font-medium text-slate-500 tracking-[0.06em] mt-3">Probá con otra búsqueda o quitá el filtro por etiqueta.</p>
+                            <p className="font-title text-xs font-medium text-slate-500 tracking-[0.06em] mt-3">
+                                {galleryViewMode === 'ETIQUETA' && selectedTagLabels.length === 0
+                                    ? 'Seleccioná una o más etiquetas para ver multimedia.'
+                                    : 'Probá con otra búsqueda o quitá el filtro por etiqueta.'}
+                            </p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
